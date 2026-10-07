@@ -10,33 +10,121 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as GymRouteImport } from './routes/_gym'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as GymDashboardRouteImport } from './routes/_gym.dashboard'
+import { Route as GymGymRouteImport } from './routes/_gym.gym'
+import { Route as MemberIndexRouteImport } from './routes/member.index'
+import { Route as MemberJoinRouteImport } from './routes/member.join'
+import { Route as MemberQrRouteImport } from './routes/member.qr'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const GymRoute = GymRouteImport.update({
+  id: '/_gym',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GymDashboardRoute = GymDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => GymRoute,
+} as any)
+const GymGymRoute = GymGymRouteImport.update({
+  id: '/gym',
+  path: '/gym',
+  getParentRoute: () => GymRoute,
+} as any)
+const MemberIndexRoute = MemberIndexRouteImport.update({
+  id: '/member/',
+  path: '/member/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberJoinRoute = MemberJoinRouteImport.update({
+  id: '/member/join',
+  path: '/member/join',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberQrRoute = MemberQrRouteImport.update({
+  id: '/member/qr',
+  path: '/member/qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/register': typeof RegisterRoute
+  '/dashboard': typeof GymDashboardRoute
+  '/gym': typeof GymGymRoute
+  '/member/join': typeof MemberJoinRoute
+  '/member/qr': typeof MemberQrRoute
+  '/member/': typeof MemberIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/register': typeof RegisterRoute
+  '/dashboard': typeof GymDashboardRoute
+  '/gym': typeof GymGymRoute
+  '/member/join': typeof MemberJoinRoute
+  '/member/qr': typeof MemberQrRoute
+  '/member': typeof MemberIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_gym': typeof GymRouteWithChildren
+  '/register': typeof RegisterRoute
+  '/_gym/dashboard': typeof GymDashboardRoute
+  '/_gym/gym': typeof GymGymRoute
+  '/member/join': typeof MemberJoinRoute
+  '/member/qr': typeof MemberQrRoute
+  '/member/': typeof MemberIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/'
+  fullPaths:
+    | '/'
+    | '/register'
+    | '/dashboard'
+    | '/gym'
+    | '/member/join'
+    | '/member/qr'
+    | '/member/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/'
-  id: '__root__' | '/'
+  to:
+    | '/'
+    | '/register'
+    | '/dashboard'
+    | '/gym'
+    | '/member/join'
+    | '/member/qr'
+    | '/member'
+  id:
+    | '__root__'
+    | '/'
+    | '/_gym'
+    | '/register'
+    | '/_gym/dashboard'
+    | '/_gym/gym'
+    | '/member/join'
+    | '/member/qr'
+    | '/member/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  GymRoute: typeof GymRouteWithChildren
+  RegisterRoute: typeof RegisterRoute
+  MemberJoinRoute: typeof MemberJoinRoute
+  MemberQrRoute: typeof MemberQrRoute
+  MemberIndexRoute: typeof MemberIndexRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -48,11 +136,77 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_gym': {
+      id: '/_gym'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof GymRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_gym/dashboard': {
+      id: '/_gym/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof GymDashboardRouteImport
+      parentRoute: typeof GymRoute
+    }
+    '/_gym/gym': {
+      id: '/_gym/gym'
+      path: '/gym'
+      fullPath: '/gym'
+      preLoaderRoute: typeof GymGymRouteImport
+      parentRoute: typeof GymRoute
+    }
+    '/member/': {
+      id: '/member/'
+      path: '/member'
+      fullPath: '/member/'
+      preLoaderRoute: typeof MemberIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member/join': {
+      id: '/member/join'
+      path: '/member/join'
+      fullPath: '/member/join'
+      preLoaderRoute: typeof MemberJoinRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member/qr': {
+      id: '/member/qr'
+      path: '/member/qr'
+      fullPath: '/member/qr'
+      preLoaderRoute: typeof MemberQrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
+interface GymRouteChildren {
+  GymDashboardRoute: typeof GymDashboardRoute
+  GymGymRoute: typeof GymGymRoute
+}
+
+const GymRouteChildren: GymRouteChildren = {
+  GymDashboardRoute: GymDashboardRoute,
+  GymGymRoute: GymGymRoute,
+}
+
+const GymRouteWithChildren = GymRoute._addFileChildren(GymRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  GymRoute: GymRouteWithChildren,
+  RegisterRoute: RegisterRoute,
+  MemberJoinRoute: MemberJoinRoute,
+  MemberQrRoute: MemberQrRoute,
+  MemberIndexRoute: MemberIndexRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
