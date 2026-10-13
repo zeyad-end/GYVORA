@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { DataTable, PageHeader, Panel, td } from "@/components/kit";
 import { egp, trainers } from "@/lib/mock";
+import { consumeSession, setState, useStore } from "@/lib/store";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/sessions")({
@@ -18,6 +19,8 @@ const sel = "h-10 w-full rounded-md border bg-surface px-3 text-sm";
 
 function Sessions() {
   const [name, setName] = useState("");
+  const members = useStore((s) => s.members);
+  const match = members.find((m) => m.name.toLowerCase() === name.trim().toLowerCase());
   const [list, setList] = useState([
     { name: "Karim Nabil", type: "CrossFit", trainer: "Coach Tamer", price: 150, method: "Cash" },
     { name: "Hana Mostafa", type: "Personal Training", trainer: "Coach Hossam", price: 400, method: "Card" },
@@ -31,10 +34,15 @@ function Sessions() {
             e.preventDefault();
             const d = new FormData(e.currentTarget);
             setList([{ name: name || "Walk-in", type: String(d.get("type")), trainer: String(d.get("trainer")), price: Number(d.get("price")) || 0, method: String(d.get("method")) }, ...list]);
-            toast.success("Session saved · revenue & member history updated");
+            if (match?.type === "Limited") {
+              if (match.sessionsLeft <= 0) { toast.error(`${match.name} has no sessions left`); return; }
+              const next = consumeSession(match);
+              setState((s) => ({ members: s.members.map((m) => m.id === match.id ? next : m) }));
+              toast.success(`Session saved · ${next.sessionsLeft} / ${next.sessionsTotal} sessions left`);
+            } else toast.success("Session saved · revenue & member history updated");
             setName("");
           }}>
-            <div className="space-y-2"><Label>Member name</Label><Input required maxLength={80} value={name} onChange={(e) => setName(e.target.value)} className="bg-surface" /></div>
+            <div className="space-y-2"><Label>Member name</Label><Input required maxLength={80} list="member-names" value={name} onChange={(e) => setName(e.target.value)} className="bg-surface" /><datalist id="member-names">{members.map((m) => <option key={m.id} value={m.name} />)}</datalist>{match?.type === "Limited" && <p className="text-xs text-primary">Remaining sessions: {match.sessionsLeft} / {match.sessionsTotal}</p>}</div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2"><Label>Session type</Label><select name="type" className={sel}>{["CrossFit", "Personal Training", "Boxing", "Yoga", "Gym day pass"].map((s) => <option key={s}>{s}</option>)}</select></div>
               <div className="space-y-2"><Label>Trainer</Label><select name="trainer" className={sel}>{trainers.map((t) => <option key={t.id}>{t.name}</option>)}</select></div>

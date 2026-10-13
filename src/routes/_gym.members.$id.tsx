@@ -3,6 +3,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft } from "lucide-react";
 import { Avatar, Panel, StatusPill } from "@/components/kit";
 import { members, workouts } from "@/lib/mock";
+import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/_gym/members/$id")({
   loader: ({ params }) => {
@@ -19,8 +20,9 @@ export const Route = createFileRoute("/_gym/members/$id")({
 });
 
 function MemberProfile() {
-  const m = Route.useLoaderData();
-  const w = workouts[0];
+  const seed = Route.useLoaderData();
+  const m = useStore((s) => s.members.find((x) => x.id === seed.id)) ?? seed;
+  const w = workouts[0]!;
   return (
     <div className="space-y-6">
       <Link to="/members" className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="h-4 w-4" />Members</Link>
@@ -36,7 +38,7 @@ function MemberProfile() {
       <div className="grid gap-6 lg:grid-cols-3">
         <Panel title="Membership">
           <dl className="space-y-3 text-sm">
-            {[["Current plan", m.plan], ["Start date", m.start], ["Expiry date", m.expiry], ["Remaining", `${m.remaining} days`]].map(([k, v]) => (
+            {[["Current plan", m.plan], ["Start date", m.start], ["Expiry date", m.expiry], ["Remaining", `${m.remaining} days`], ["Sessions", m.type === "Limited" ? `${m.sessionsLeft} / ${m.sessionsTotal}` : "Unlimited"]].map(([k, v]) => (
               <div key={k} className="flex justify-between"><dt className="text-muted-foreground">{k}</dt><dd className="font-medium">{v}</dd></div>
             ))}
           </dl>

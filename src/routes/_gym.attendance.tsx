@@ -27,7 +27,7 @@ function Attendance() {
       </div>
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Panel title="QR check-in">
-          <button onClick={() => setPicked(members[1])} className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-surface">
+          <button onClick={() => setPicked(members[1]!)} className="flex aspect-video w-full flex-col items-center justify-center gap-3 rounded-xl border border-dashed bg-surface">
             <ScanLine className="h-12 w-12 text-primary" /><span className="text-sm">Tap to simulate scan</span>
           </button>
         </Panel>

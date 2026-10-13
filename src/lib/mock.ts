@@ -1,3 +1,5 @@
+export const initials = (n: string) => n.split(" ").filter(Boolean).map((p) => p[0] ?? "").join("").slice(0, 2).toUpperCase();
+
 export type Status = "Active" | "Expiring" | "Expired";
 
 export const gym = {
@@ -28,16 +30,21 @@ export const members = names.map((name, i) => ({
   name,
   phone: `+20 10${(i * 7 + 13) % 10} ${String(4000000 + i * 13791).slice(0, 3)} ${String(1000 + i * 337).slice(0, 4)}`,
   email: name.toLowerCase().replace(/[^a-z]+/g, ".") + "@mail.com",
-  plan: plans[i % 3].name,
+  plan: plans[i % 3]!.name,
   start: `2026-0${(i % 8) + 1}-0${(i % 9) + 1}`,
   expiry: statuses[i] === "Expired" ? "2026-09-2" + (i % 9) : statuses[i] === "Expiring" ? "2026-10-1" + (i % 9) : "2027-0" + ((i % 8) + 1) + "-15",
-  status: statuses[i],
+  status: statuses[i]!,
   remaining: statuses[i] === "Expired" ? 0 : statuses[i] === "Expiring" ? 4 + i : 60 + i * 9,
-  initials: name.split(" ").map((p) => p[0]).join(""),
+  initials: initials(name),
+  type: (i % 4 === 1 ? "Limited" : "Unlimited") as "Unlimited" | "Limited",
+  sessionsTotal: i % 4 === 1 ? 20 : 0,
+  sessionsLeft: i % 4 === 1 ? 20 - i : 0,
+  trainer: "",
+  notes: "",
 }));
 
 export const trainers = [
-  { id: "T1", name: "Coach Hossam", specialty: "Strength & Powerlifting", phone: "+20 101 220 3301", bio: "Former national-level powerlifter. 10 years coaching.", members: 24 },
+  { id: "T1", image: "", name: "Coach Hossam", specialty: "Strength & Powerlifting", phone: "+20 101 220 3301", bio: "Former national-level powerlifter. 10 years coaching.", members: 24 },
   { id: "T2", name: "Coach Dina", specialty: "Mobility & Yoga", phone: "+20 101 220 3302", bio: "Certified RYT-500 focusing on mobility and recovery.", members: 18 },
   { id: "T3", name: "Coach Tamer", specialty: "CrossFit & HIIT", phone: "+20 101 220 3303", bio: "CF-L2 trainer, high-intensity conditioning specialist.", members: 31 },
   { id: "T4", name: "Coach Rana", specialty: "Boxing", phone: "+20 101 220 3304", bio: "Amateur boxing champion, technique-first approach.", members: 15 },
@@ -85,7 +92,7 @@ export const recurring = [
 ];
 
 export const products = [
-  { name: "Whey Protein 2kg", qty: 14, price: 1850, sales: 62, min: 10 },
+  { image: "", name: "Whey Protein 2kg", qty: 14, price: 1850, sales: 62, min: 10 },
   { name: "Creatine 300g", qty: 4, price: 650, sales: 41, min: 8 },
   { name: "Energy Drink", qty: 120, price: 45, sales: 380, min: 40 },
   { name: "IRONHAUS Shaker", qty: 22, price: 240, sales: 75, min: 10 },

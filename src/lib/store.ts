@@ -1,0 +1,72 @@
+import { useSyncExternalStore } from "react";
+import { gym as gymSeed, members as membersSeed, plans as plansSeed, products as productsSeed, staff as staffSeed, trainers as trainersSeed, workouts as workoutsSeed } from "./mock";
+
+export type Member = (typeof membersSeed)[number];
+export type Product = (typeof productsSeed)[number];
+export type Trainer = (typeof trainersSeed)[number];
+export type Plan = { id: string; name: string; duration: string; price: number; features: string[]; featured?: boolean };
+export type Workout = (typeof workoutsSeed)[number];
+export type StaffMember = { name: string; role: string; email: string; phone?: string };
+export type DayHours = { day: string; open: string; close: string; closed: boolean };
+
+const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+export type Gym = typeof gymSeed & { logo: string; cover: string; gallery: string[]; hoursByDay: DayHours[] };
+
+type State = {
+  gym: Gym;
+  members: Member[];
+  products: Product[];
+  trainers: Trainer[];
+  plans: Plan[];
+  workouts: Workout[];
+  staff: StaffMember[];
+};
+
+let state: State = {
+  gym: { ...gymSeed, logo: "", cover: "", gallery: [], hoursByDay: days.map((d) => ({ day: d, open: "08:00", close: "23:00", closed: d === "Friday" })) },
+  members: membersSeed,
+  products: productsSeed,
+  trainers: trainersSeed,
+  plans: plansSeed,
+  workouts: workoutsSeed,
+  staff: staffSeed,
+};
+
+const listeners = new Set<() => void>();
+export function setState(fn: (s: State) => Partial<State>) {
+  state = { ...state, ...fn(state) };
+  listeners.forEach((l) => l());
+}
+export function getState() {
+  return state;
+}
+export function useStore<T>(sel: (s: State) => T): T {
+  return useSyncExternalStore(
+    (l) => { listeners.add(l); return () => listeners.delete(l); },
+    () => sel(state),
+    () => sel(state),
+  );
+}
+
+/** Stock rule: 0 → Out of stock, below 10 → Low stock. */
+export function stockStatus(qty: number): "Out of stock" | "Low stock" | "In stock" {
+  if (qty <= 0) return "Out of stock";
+  if (qty < 10) return "Low stock";
+  return "In stock";
+}
+
+/** Registering a session for a limited member uses one session (never below 0). */
+export function consumeSession(m: Member): Member {
+  if (m.type !== "Limited") return m;
+  return { ...m, sessionsLeft: Math.max(0, m.sessionsLeft - 1) };
+}
+
+export function fmt12(t: string) {
+  const [h = 0, mi = 0] = t.split(":").map(Number);
+  const ap = h >= 12 ? "PM" : "AM";
+  const hh = h % 12 || 12;
+  return `${String(hh).padStart(2, "0")}:${String(mi).padStart(2, "0")} ${ap}`;
+}
+
+export const readFile = (f: File) => new Promise<string>((res) => { const r = new FileReader(); r.onload = () => res(String(r.result)); r.readAsDataURL(f); });
