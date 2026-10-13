@@ -76,3 +76,14 @@ export function DataTable({ head, children }: { head: string[]; children: ReactN
 }
 
 export const td = "py-3.5 pr-4 align-middle";
+
+export const selectCls = "h-10 w-full rounded-md border bg-surface px-3 text-sm";
+
+export function Field({ label, children, className }: { label: string; children: ReactNode; className?: string }) {
+  return (
+    <label className={cn("block space-y-2", className)}>
+      <span className="text-sm font-medium">{label}</span>
+      {children}
+    </label>
+  );
+}
