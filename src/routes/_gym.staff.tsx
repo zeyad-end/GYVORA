@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Plus, Check, Minus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar, DataTable, PageHeader, Panel, td } from "@/components/kit";
-import { staff } from "@/lib/mock";
+import { staff, initials } from "@/lib/mock";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/staff")({
@@ -27,7 +27,7 @@ function Staff() {
           <ul className="divide-y">
             {staff.map((s) => (
               <li key={s.email} className="flex items-center gap-3 py-3">
-                <Avatar initials={s.name.split(" ").map((p) => p[0]).join("")} size="sm" />
+                <Avatar initials={initials(s.name)} size="sm" />
                 <div className="min-w-0 flex-1"><div className="text-sm font-medium">{s.name}</div><div className="truncate text-xs text-muted-foreground">{s.email}</div></div>
                 <span className="rounded-full bg-secondary px-2.5 py-1 text-xs">{s.role}</span>
               </li>

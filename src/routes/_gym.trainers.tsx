@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Phone, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageHeader, Panel } from "@/components/kit";
-import { members, trainers, workouts } from "@/lib/mock";
+import { members, trainers, workouts, initials } from "@/lib/mock";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/trainers")({
@@ -12,7 +12,7 @@ export const Route = createFileRoute("/_gym/trainers")({
 });
 
 function Trainers() {
-  const [sel, setSel] = useState(trainers[0]);
+  const [sel, setSel] = useState(trainers[0]!);
   return (
     <>
       <PageHeader title="Trainers" actions={<Button><Plus className="h-4 w-4" />Add trainer</Button>} />
@@ -20,7 +20,7 @@ function Trainers() {
         <div className="space-y-3">
           {trainers.map((t) => (
             <button key={t.id} onClick={() => setSel(t)} className={`panel flex w-full items-center gap-4 p-4 text-left ${sel.id === t.id ? "border-primary/50" : ""}`}>
-              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent font-display font-semibold text-primary">{t.name.split(" ")[1][0]}</span>
+              <span className="grid h-12 w-12 shrink-0 place-items-center rounded-full bg-accent font-display font-semibold text-primary">{initials(t.name.replace("Coach ", ""))}</span>
               <div className="min-w-0"><div className="font-medium">{t.name}</div><div className="text-xs text-primary">{t.specialty}</div><div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" />{t.phone}</div></div>
             </button>
           ))}

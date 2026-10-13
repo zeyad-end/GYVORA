@@ -2,7 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { Clock, MapPin, Pencil, Share2, ExternalLink, Phone, MessageCircle, Instagram, Facebook, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/kit";
-import { gym, plans, trainers } from "@/lib/mock";
+import { gym, plans, trainers, initials } from "@/lib/mock";
 import { seo } from "@/lib/seo";
 import cover from "@/assets/gym-cover.jpg";
 import g1 from "@/assets/gallery-1.jpg";
@@ -68,7 +68,7 @@ function GymProfile() {
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {trainers.map((t) => (
             <div key={t.id} className="rounded-xl bg-surface p-5">
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-accent font-display font-semibold text-primary">{t.name.split(" ")[1][0]}</span>
+              <span className="grid h-14 w-14 place-items-center rounded-full bg-accent font-display font-semibold text-primary">{initials(t.name.replace("Coach ", ""))}</span>
               <div className="mt-4 font-semibold">{t.name}</div>
               <div className="text-xs text-primary">{t.specialty}</div>
               <p className="mt-2 text-xs text-muted-foreground">{t.bio}</p>

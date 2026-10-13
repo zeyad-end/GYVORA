@@ -20,7 +20,7 @@ export const Route = createFileRoute("/_gym/members/$id")({
 
 function MemberProfile() {
   const m = Route.useLoaderData();
-  const w = workouts[0];
+  const w = workouts[0]!;
   return (
     <div className="space-y-6">
       <Link to="/members" className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="h-4 w-4" />Members</Link>

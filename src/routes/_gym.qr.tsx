@@ -15,7 +15,7 @@ export const Route = createFileRoute("/_gym/qr")({
 
 function QR() {
   const [q, setQ] = useState("");
-  const [m, setM] = useState(members[0]);
+  const [m, setM] = useState(members[0]!);
   const list = members.filter((x) => x.name.toLowerCase().includes(q.toLowerCase())).slice(0, 6);
   return (
     <>
