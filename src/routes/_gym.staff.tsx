@@ -1,72 +1,22 @@
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { setState, useStore } from "@/lib/store";
-import { Plus, Check, Minus } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Avatar, DataTable, Field, PageHeader, Panel, selectCls, td } from "@/components/kit";
-import { initials } from "@/lib/mock";
-import { seo } from "@/lib/seo";
-
-export const Route = createFileRoute("/_gym/staff")({
-  head: () => seo("Staff & roles", "Manage staff accounts and role-based permissions."),
-  component: Staff,
-});
-
-const areas = ["Members", "Attendance", "Sessions", "Payments", "Finance", "Workout programs", "Settings"];
-const access: Record<string, string[]> = {
-  Owner: areas,
-  Admin: areas.filter((a) => a !== "Settings"),
-  Reception: ["Members", "Attendance", "Sessions", "Payments"],
-  Trainer: ["Members", "Workout programs"],
-};
-
-function Staff() {
-  const staff = useStore((s) => s.staff);
-  const [open, setOpen] = useState(false);
-  return (
-    <>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>Add staff</DialogTitle></DialogHeader>
-          <form className="space-y-4" onSubmit={(e) => {
-            e.preventDefault();
-            const d = new FormData(e.currentTarget);
-            setState((s) => ({ staff: [...s.staff, { name: String(d.get("name")).trim(), email: String(d.get("email")).trim(), phone: String(d.get("phone")).trim(), role: String(d.get("role")) }] }));
-            toast.success("Staff member added");
-            setOpen(false);
-          }}>
-            <Field label="Full name"><Input name="name" required maxLength={80} /></Field>
-            <Field label="Email"><Input name="email" type="email" required maxLength={120} /></Field>
-            <Field label="Phone number"><Input name="phone" required maxLength={30} /></Field>
-            <Field label="Role"><select name="role" className={selectCls} defaultValue="Reception">{Object.keys(access).map((r) => <option key={r}>{r}</option>)}</select></Field>
-            <DialogFooter><Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
-          </form>
-        </DialogContent>
-      </Dialog>
-      <PageHeader title="Staff & roles" actions={<Button onClick={() => setOpen(true)}><Plus className="h-4 w-4" />Add staff</Button>} />
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Panel title="Staff list">
-          <ul className="divide-y">
-            {staff.map((s) => (
-              <li key={s.email} className="flex items-center gap-3 py-3">
-                <Avatar initials={initials(s.name)} size="sm" />
-                <div className="min-w-0 flex-1"><div className="text-sm font-medium">{s.name}</div><div className="truncate text-xs text-muted-foreground">{s.email}</div></div>
-                <span className="rounded-full bg-secondary px-2.5 py-1 text-xs">{s.role}</span>
-              </li>
-            ))}
-          </ul>
-        </Panel>
-        <Panel title="Permissions">
-          <DataTable head={["Area", ...Object.keys(access)]}>
-            {areas.map((a) => (
-              <tr key={a}><td className={td}>{a}</td>{Object.keys(access).map((r) => <td key={r} className={td}>{access[r]?.includes(a) ? <Check className="h-4 w-4 text-primary" /> : <Minus className="h-4 w-4 text-muted-foreground" />}</td>)}</tr>
-            ))}
-          </DataTable>
-        </Panel>
-      </div>
-    </>
-  );
-}
+import {createFileRoute} from '@tanstack/react-router';
+import {useState,useEffect} from 'react';
+import {useServerFn} from '@tanstack/react-start';
+import {supabase} from '@/integrations/supabase/client';
+import type {Database} from '@/integrations/supabase/types';
+import {useStore,type StaffMember} from '@/lib/store';
+import {useCloud} from '@/components/CloudProvider';
+import {manageInvitation,manageStaff} from '@/lib/cloud.functions';
+import {invitationStatus} from '@/lib/validation';
+import {StaffAttendance} from '@/components/StaffAttendance';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogFooter} from '@/components/ui/dialog';
+import {Tabs,TabsList,TabsTrigger,TabsContent} from '@/components/ui/tabs';
+import {PageHeader,Panel,Field,DataTable,td,selectCls} from '@/components/kit';
+import {toast} from 'sonner';
+import {seo} from '@/lib/seo';
+export const Route=createFileRoute('/_gym/staff')({head:()=>seo('Staff & roles','Manage gym staff invitations, permissions and attendance.'),component:Staff});
+const areas=['Members','Attendance','Sessions','Payments','Finance','Workout programs','Settings'] as const;
+function Staff(){const c=useCloud();const staff=useStore(s=>s.staff);const invite=useServerFn(manageInvitation);const edit=useServerFn(manageStaff);const [open,setOpen]=useState(false);const [editing,setEditing]=useState<StaffMember|null>(null);const [permissions,setPermissions]=useState<string[]>([]);const [busy,setBusy]=useState(false);const [invitations,setInvitations]=useState<Database['public']['Tables']['staff_invitations']['Row'][]>([]);async function load(){const {data,error}=await supabase.from('staff_invitations').select('*').eq('gym_id',c.gymId).order('created_at',{ascending:false});if(error)toast.error(error.message);else setInvitations(data??[]);}useEffect(()=>{if(c.gymId)void load();},[c.gymId]);
+async function action(id:string,action:'resend'|'cancel'){try{if(action==='cancel'&&!window.confirm('Cancel this invitation?'))return;await invite({data:{gymId:c.gymId,id,action}});toast.success(action==='resend'?'Invitation renewed. Email delivery requires a sender domain.':'Invitation cancelled');await load();}catch(e){toast.error(e instanceof Error?e.message:'Could not update invitation');}}
+return <><PageHeader title="Staff & roles" actions={c.role==='Owner'&&<Button onClick={()=>{setEditing(null);setOpen(true);}}>Add Staff</Button>}/><Tabs defaultValue="staff"><TabsList className="mb-6"><TabsTrigger value="staff">Staff</TabsTrigger><TabsTrigger value="invitations">Invitations</TabsTrigger><TabsTrigger value="attendance">Staff Attendance</TabsTrigger></TabsList><TabsContent value="staff"><Panel title="Staff list"><DataTable head={['Employee','Email','Role','Permissions','Actions']}>{staff.map(s=><tr key={s.id??s.email}><td className={td}>{s.name}</td><td className={td}>{s.email}</td><td className={td}>{s.role}</td><td className={td}>{s.permissions?.join(', ')}</td><td className={td}>{c.role==='Owner'&&s.role!=='Owner'&&<Button size="sm" variant="secondary" onClick={()=>{setEditing(s);setPermissions(s.permissions??[]);setOpen(true);}}>Edit</Button>}</td></tr>)}</DataTable>{!staff.length&&<p className="py-6 text-muted-foreground">No staff members.</p>}</Panel></TabsContent><TabsContent value="invitations"><Panel title="Invitations"><DataTable head={['Employee Name','Email','Role','Status','Actions']}>{invitations.map(i=><tr key={i.id}><td className={td}>{i.full_name}</td><td className={td}>{i.email}</td><td className={td}>{i.role}</td><td className={td}>{invitationStatus(i.status,i.expires_at)}</td><td className={td}>{i.status==='Pending'&&c.role==='Owner'&&<div className="flex gap-2"><Button size="sm" variant="secondary" onClick={()=>void action(i.id,'resend')}>Resend Invitation</Button><Button size="sm" variant="destructive" onClick={()=>void action(i.id,'cancel')}>Cancel Invitation</Button></div>}</td></tr>)}</DataTable>{!invitations.length&&<p className="py-6 text-muted-foreground">No invitations yet.</p>}</Panel></TabsContent><TabsContent value="attendance"><StaffAttendance/></TabsContent></Tabs><Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editing?'Edit staff':'Invite staff'}</DialogTitle></DialogHeader><form key={editing?.id??'new'} className="space-y-4" onSubmit={async e=>{e.preventDefault();setBusy(true);const d=new FormData(e.currentTarget);try{if(editing?.id){await edit({data:{gymId:c.gymId,id:editing.id,remove:false,role:String(d.get('role')) as 'Admin'|'Reception'|'Trainer',permissions:permissions as Array<typeof areas[number]>,name:String(d.get('name')),phone:String(d.get('phone')??'')}});toast.success('Staff permissions saved');await c.selectGym(c.gymId);}else{await invite({data:{gymId:c.gymId,action:'create',name:String(d.get('name')),email:String(d.get('email')),role:String(d.get('role')) as 'Admin'|'Reception'|'Trainer'}});toast.success('Invitation saved. It appears after the recipient signs in; email delivery needs a sender domain.');await load();}setOpen(false);}catch(e){toast.error(e instanceof Error?e.message:'Could not save staff');}finally{setBusy(false);}}}><Field label="Full Name"><Input name="name" required maxLength={100} defaultValue={editing?.name}/></Field><Field label="Email"><Input name="email" type="email" required maxLength={255} defaultValue={editing?.email} readOnly={Boolean(editing)}/></Field>{editing&&<Field label="Phone"><Input name="phone" maxLength={30} defaultValue={editing.phone}/></Field>}<Field label="Role"><select name="role" className={selectCls} defaultValue={editing?.role??'Reception'}>{['Admin','Reception','Trainer'].map(r=><option key={r}>{r}</option>)}</select></Field>{editing&&<fieldset className="grid grid-cols-2 gap-2"><legend className="mb-2 text-sm">Permissions</legend>{areas.map(a=><label key={a} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={permissions.includes(a)} onChange={e=>setPermissions(e.target.checked?[...permissions,a]:permissions.filter(p=>p!==a))}/>{a}</label>)}</fieldset>}<DialogFooter>{editing?.id&&<Button type="button" variant="destructive" onClick={async()=>{if(!editing.id||!window.confirm('Remove this person from this gym? Their account stays active.'))return;try{await edit({data:{gymId:c.gymId,id:editing.id,remove:true,role:'Reception',permissions:[],name:editing.name,phone:editing.phone??''}});setOpen(false);await c.selectGym(c.gymId);}catch(e){toast.error(e instanceof Error?e.message:'Could not remove staff');}}}>Delete Staff</Button>}<Button type="button" variant="outline" onClick={()=>setOpen(false)}>Cancel</Button><Button disabled={busy}>{busy?'Saving…':editing?'Save':'Send Invitation'}</Button></DialogFooter></form></DialogContent></Dialog></>}
