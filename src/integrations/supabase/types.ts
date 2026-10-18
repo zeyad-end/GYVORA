@@ -271,23 +271,29 @@ export type Database = {
       }
       user_roles: {
         Row: {
+          display_name: string
           gym_id: string | null
           id: string
           permissions: string[]
+          phone: string
           role: string
           user_id: string
         }
         Insert: {
+          display_name?: string
           gym_id?: string | null
           id?: string
           permissions?: string[]
+          phone?: string
           role: string
           user_id: string
         }
         Update: {
+          display_name?: string
           gym_id?: string | null
           id?: string
           permissions?: string[]
+          phone?: string
           role?: string
           user_id?: string
         }
@@ -306,6 +312,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_read_image: { Args: { path: string }; Returns: boolean }
       decide_owner_request: {
         Args: { approve: boolean; request_id: string }
         Returns: string
