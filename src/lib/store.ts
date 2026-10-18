@@ -1,9 +1,11 @@
 import { useSyncExternalStore } from "react";
-import { gym as gymSeed, members as membersSeed, plans as plansSeed, products as productsSeed, staff as staffSeed, trainers as trainersSeed, workouts as workoutsSeed } from "./mock";
+import { gym as gymSeed, members as membersSeed, plans as plansSeed, products as productsSeed, staff as staffSeed, trainers as trainersSeed, transactions as transactionsSeed, workouts as workoutsSeed } from "./mock";
 
 export type Member = (typeof membersSeed)[number] & { clientId?: string; memberQrId?: string | undefined; planPrice?: number; createdByName?: string };
 export type Product = (typeof productsSeed)[number];
-export type Trainer = (typeof trainersSeed)[number];
+export type TrainerDay = { day: string; available: boolean; start: string; end: string };
+export type Trainer = (typeof trainersSeed)[number] & { schedule?: TrainerDay[] };
+export type Invoice = { id: string; number?: number; name: string; description: string; category: string; amount: number; date: string; type: string; method: string; attachment?: string; deleted?: boolean; entered?: boolean };
 export type Plan = { id: string; name: string; duration: string; price: number; features: string[]; featured?: boolean };
 export type Workout = { id?: string | undefined; name: string; trainer: string; notes: string; exercises: { name: string; sets: number; reps: string; image?: string | undefined }[] };
 export type StaffMember = { id?: string; userId?: string; name: string; role: string; email: string; phone?: string; permissions?: string[] };
@@ -28,6 +30,7 @@ export type State = {
   attendance: AttendanceEvent[];
   staffAttendance: AttendanceEvent[];
   recurring: RecurringExpense[];
+  transactions: Invoice[];
 };
 
 export const initialState: State = {
@@ -39,6 +42,7 @@ export const initialState: State = {
   workouts: workoutsSeed,
   staff: staffSeed,
   sessions: [], attendance: [], staffAttendance: [], recurring: [],
+  transactions: transactionsSeed.map((t,i)=>({...t,id:`legacy-${i}`,name:t.category,description:""})),
 };
 let state: State = structuredClone(initialState);
 
@@ -46,9 +50,10 @@ const listeners = new Set<() => void>();
 let persist: ((changes: Partial<State>) => Promise<void>) | undefined;
 export function bindPersistence(handler: typeof persist) { persist = handler; }
 export function hydrateState(next: State) { state = next; listeners.forEach(l=>l()); }
-export function setState(fn: (s: State) => Partial<State>) {
+export function setState(fn: (s: State) => Partial<State>) { void saveState(fn).catch(()=>{}); }
+export async function saveState(fn: (s: State) => Partial<State>) {
   const changes = fn(state);
-  if (persist) { void persist(changes); return; }
+  if (persist) { await persist(changes); return; }
   state = { ...state, ...changes };
   listeners.forEach((l) => l());
 }
