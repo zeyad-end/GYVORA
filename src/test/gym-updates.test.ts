@@ -1,10 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { markRecurringPaid, cashSummary, dailySummary, deletePlan, deleteProgram, createInvoice, deleteInvoice, nextInvoiceNumber, defaultSchedule, scheduleSchema, reportInvoices, reportRange, groupInvoices } from '@/lib/gym-updates';
 import { initialState, type Invoice } from '@/lib/store';
-import {
-  markRecurringPaid,
-  cashSummary,
-  dailySummary,readDemoGym,writeDemoGym} from '@/lib/demo';
+import { readDemoGym, writeDemoGym } from '@/lib/demo';
 const invoice=(date='2026-10-18'):Invoice=>({id:crypto.randomUUID(),name:'Repairs',category:'Custom category',description:'Fixed treadmill',date,amount:-100,type:'Expense',method:'Cash'});
 describe('requested gym updates',()=>{
  it('blocks deletion of a plan assigned to members',()=>{const plan=initialState.plans[0];if(!plan)throw new Error('Seed missing');expect(()=>deletePlan([plan],[{...initialState.members[0],plan:plan.name} as typeof initialState.members[number]],plan.id)).toThrow('assigned to members');});
