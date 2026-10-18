@@ -1,0 +1,7 @@
+import {useEffect,useRef,useState} from 'react';
+import {Dialog,DialogContent,DialogHeader,DialogTitle} from './ui/dialog';
+import {Input} from './ui/input';
+import {Button} from './ui/button';
+import {Field} from './kit';
+import {BrowserQRCodeReader} from '@zxing/browser';
+export function QRScanner({open,onClose,onScan}:{open:boolean;onClose:()=>void;onScan:(value:string)=>void}){const video=useRef<HTMLVideoElement>(null);const [error,setError]=useState('');const [value,setValue]=useState('');useEffect(()=>{if(!open)return;let stopped=false;let controls:{stop:()=>void}|undefined;const reader=new BrowserQRCodeReader();void reader.decodeFromVideoDevice(undefined,video.current??undefined,(result)=>{if(result&&!stopped){stopped=true;controls?.stop();onScan(result.getText());onClose();}}).then(c=>{controls=c;if(stopped)c.stop();}).catch(()=>setError('Camera unavailable. Paste the scanned QR value below.'));return()=>{stopped=true;controls?.stop();};},[open]);return <Dialog open={open} onOpenChange={v=>{if(!v)onClose();}}><DialogContent><DialogHeader><DialogTitle>Scan QR code</DialogTitle></DialogHeader><video ref={video} className="aspect-video w-full rounded-md bg-secondary" muted playsInline/>{error&&<p className="text-sm text-destructive">{error}</p>}<form className="space-y-3" onSubmit={e=>{e.preventDefault();onScan(value.trim());onClose();}}><Field label="QR value"><Input required maxLength={150} value={value} onChange={e=>setValue(e.target.value)}/></Field><Button>Use QR</Button></form></DialogContent></Dialog>}
