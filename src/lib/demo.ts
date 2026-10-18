@@ -306,10 +306,10 @@ export function readDemoGym(gymId: string, withSeed = false): State {
     const raw = localStorage.getItem(`ironhaus-demo-gym:${gymId}`) ?? (gymId === 'demo-gym' ? localStorage.getItem('ironhaus-demo-gym-state') : null);
     if (raw) stored = JSON.parse(raw) as State;
   } catch { /* Use an empty gym or the owner seed. */ }
-  const base = stored ?? (withSeed && gymId === 'demo-gym' ? structuredClone(initialState) : { ...structuredClone(initialState), members: [], plans: [], products: [], trainers: [], workouts: [], staff: [], sessions: [], attendance: [], staffAttendance: [], recurring: [] });
+  const base = stored ?? (withSeed && gymId === 'demo-gym' ? structuredClone(initialState) : { ...structuredClone(initialState), members: [], plans: [], products: [], trainers: [], workouts: [], staff: [], sessions: [], attendance: [], staffAttendance: [], recurring: [], transactions: [] });
   const local = base.staff.map(s => ({ ...s, id: s.id ?? `seed:${s.email}`, userId: s.userId ?? demoUserId(s.email) }));
   const associations = demoState.staffRoles.filter(r => r.gymId === gymId);
-  return { ...base, staff: [...local.filter(s => !associations.some(r => r.userId === s.userId)), ...associations] };
+  return { ...base, transactions: base.transactions ?? (withSeed && gymId === 'demo-gym' ? structuredClone(initialState.transactions) : []), staff: [...local.filter(s => !associations.some(r => r.userId === s.userId)), ...associations] };
 }
 export function writeDemoGym(gymId: string, state: State) {
   localStorage.setItem(`ironhaus-demo-gym:${gymId}`, JSON.stringify(state));

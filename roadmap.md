@@ -1,4 +1,7 @@
 # IronHaus update
+- [x] Add safe plan/program deletion and persistent trainer weekly schedules.
+- [x] Extend existing gym finance with persistent numbered invoices, detail/edit/delete and period reports.
+- [x] Verify all requested demo flows, including client copy preservation, and 77 regression tests; real authenticated Cloud flows remain unverified.
 - [x] Add owner staff deletion and single-record attendance editing.
 - [x] Unify staff/client entry and add invitee-scoped persistent invitation notifications and associations.
 - [x] Verify staff removal, attendance edits, invitation responses and portal separation in preview; 65 tests pass.

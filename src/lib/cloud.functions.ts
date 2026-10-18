@@ -1,12 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
+import { invoiceSchema, scheduleSchema } from './gym-updates';
 import { planSchema, programSchema, recurringSchema, sessionSchema, text } from './validation';
 
 const areas: Record<string,string> = {gym:'Settings', members:'Members',plans:'Members',workouts:'Workout programs',sessions:'Sessions',attendance:'Attendance',staffAttendance:'Attendance',products:'Finance',trainers:'Workout programs',recurring:'Finance',transactions:'Finance'};
 const memberSchema = z.object({id:text,name:text,email:z.union([z.string().email().max(255),z.literal('')]),phone:z.string().max(30),plan:text,type:z.enum(['Limited','Unlimited']),start:z.string().date(),expiry:z.string().date(),sessionsTotal:z.number().int().min(0).max(999),sessionsLeft:z.number().int().min(0).max(999),trainer:z.string().max(100),notes:z.string().max(1000),clientId:z.string().uuid().optional(),memberQrId:z.string().uuid().optional(),planPrice:z.number().min(0).optional(),createdByName:z.string().max(100).optional()}).passthrough().refine(m=>m.expiry>=m.start,'End date must not precede start date');
 const attendanceSchema = z.object({id:text,name:text,role:z.string().max(100).optional(),date:z.string().date(),time:z.string().regex(/^\d{2}:\d{2}$/),memberId:z.string().optional(),staffId:z.string().uuid().optional(),method:z.enum(['QR','Manual'])});
-const schemas: Record<string,z.ZodTypeAny> = {plans:planSchema,workouts:programSchema,sessions:sessionSchema,recurring:recurringSchema,members:memberSchema,attendance:attendanceSchema,staffAttendance:attendanceSchema};
+const schemas: Record<string,z.ZodTypeAny> = {transactions:invoiceSchema,trainers:z.object({id:text,name:text,schedule:scheduleSchema.optional()}).passthrough(),plans:planSchema,workouts:programSchema,sessions:sessionSchema,recurring:recurringSchema,members:memberSchema,attendance:attendanceSchema,staffAttendance:attendanceSchema};
 
 export const saveRecords = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
  .inputValidator(input=>z.object({gymId:z.string().uuid(),changes:z.array(z.object({kind:z.enum(['gym','members','products','trainers','plans','workouts','sessions','attendance','staffAttendance','recurring','transactions']),rows:z.array(z.record(z.unknown())).max(10000),expected:z.array(z.record(z.unknown())).max(10000)})).min(1)}).parse(input))
