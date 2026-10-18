@@ -1,7 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { gym as gymSeed, members as membersSeed, plans as plansSeed, products as productsSeed, staff as staffSeed, trainers as trainersSeed, workouts as workoutsSeed } from "./mock";
 
-export type Member = (typeof membersSeed)[number] & { clientId?: string; memberQrId?: string; planPrice?: number; createdByName?: string };
+export type Member = (typeof membersSeed)[number] & { clientId?: string; memberQrId?: string | undefined; planPrice?: number; createdByName?: string };
 export type Product = (typeof productsSeed)[number];
 export type Trainer = (typeof trainersSeed)[number];
 export type Plan = { id: string; name: string; duration: string; price: number; features: string[]; featured?: boolean };
