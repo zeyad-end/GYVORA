@@ -4,16 +4,14 @@
 - Extended existing routes, design and store with Cloud-backed gym records, account profiles, isolated gym roles, staff invitations, owner requests and private image storage.
 - Added member ID/QR lookup with manual entry, staff attendance/filters/details, editing for programs/plans/sessions/recurring expenses, and staff association management.
 - Added client attendance and subscription history, independent personal program copies, completion controls, settings and password changes; removed Payments from client home.
-- Added required unselected registration account types, password verification followed by provider email OTP, multi-gym selection, owner request/approval screens and protected data access.
-- Added server-side single-use password challenge bound to the same-account OTP session; OTP-only or link-only sessions cannot unlock app data.
+- Added required unselected registration account types, password sign-in (OTP step removed), multi-gym selection, owner request/approval screens and protected data access.
 - Added transactional snapshot checks to prevent stale edits overwriting newer gym data.
 
 ## Schema
 Seven additive migrations create profiles, gyms, role associations, gym records, personal programs, invitations, requests, verified sessions and login challenges; apply permissions and validation; establish private image access policies. Existing frontend demo data was not imported into real gyms.
 
 ## Remaining configuration and verification
-- No real accounts exist yet. Create and confirm an account to verify authenticated workflows end-to-end. Signed-out routes were browser-checked; 18 regression tests passed. Real OTP delivery, gym CRUD, invitation acceptance, images and admin approval are not end-to-end verified.
-- Email OTP uses Cloud Auth. The email must expose the provider code, not only a magic link; configure the Magic link template in Cloud > Emails / Auth settings. Code length/lifetime are hosted settings.
+- No real accounts exist yet. Create and confirm an account to verify authenticated workflows end-to-end. Signed-out routes were browser-checked; 18 regression tests passed. gym CRUD, invitation acceptance, images and admin approval are not end-to-end verified.
 - Staff invitation records and acceptance work in code, but invitation email sending is not implemented because no sender domain exists. Resend currently extends the invitation expiry only. Set up a domain you own before wiring email delivery.
 - Phone/SMS sign-in is not connected; email sign-in remains available. SMS requires provider configuration.
 - No super administrator account is provisioned. An approved administrator identity is required before safely assigning the protected role and verifying owner approval.
