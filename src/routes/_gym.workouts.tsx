@@ -44,7 +44,7 @@ function Workouts() {
           <form className="space-y-4" onSubmit={(e) => {
             e.preventDefault();
             const exercises = rows.filter((r) => r.name.trim()).map((r) => ({ ...r, name: r.name.trim() }));
-            if (!exercises.length) return toast.error("Add at least one exercise");
+            if (!exercises.length) { toast.error("Add at least one exercise"); return; }
             setState((s) => ({ workouts: [...s.workouts, { name: name.trim(), trainer, notes: "", exercises }] }));
             toast.success("Program created");
             setOpen(false);
