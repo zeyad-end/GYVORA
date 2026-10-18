@@ -224,11 +224,91 @@ function Finance() {
           <RecurringExpenses />
         </TabsContent>
         <TabsContent value="cash">
-          <div className="grid gap-4 sm:grid-cols-3">
-            <StatCard label="Current balance" value={egp(286900 + income - exp)} icon={Wallet} />
-            <StatCard label="Total income" value={egp(income)} icon={TrendingUp} tone="good" />
-            <StatCard label="Total expenses" value={egp(exp)} icon={TrendingDown} tone="bad" />
+          <div className="mb-6 flex flex-wrap items-end gap-3">
+            <Field label="Period">
+              <select
+                aria-label="Cash register period"
+                className={selectCls}
+                value={cashPeriod}
+                onChange={(e) => setCashPeriod(e.target.value as ReportPeriod)}
+              >
+                {[
+                  ["today", "Today"],
+                  ["week", "This Week"],
+                  ["month", "This Month"],
+                  ["year", "This Year"],
+                  ["custom", "Custom Date Range"],
+                ].map(([v, l]) => (
+                  <option key={v} value={v}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            {cashPeriod === "custom" && (
+              <>
+                <Field label="From">
+                  <Input
+                    aria-label="Cash register from"
+                    type="date"
+                    required
+                    value={cashFrom}
+                    onChange={(e) => setCashFrom(e.target.value)}
+                  />
+                </Field>
+                <Field label="To">
+                  <Input
+                    aria-label="Cash register to"
+                    type="date"
+                    required
+                    value={cashTo}
+                    onChange={(e) => setCashTo(e.target.value)}
+                  />
+                </Field>
+              </>
+            )}
           </div>
+          {cashInvalid ? (
+            <p role="alert" className="text-destructive">
+              End date must not precede start date.
+            </p>
+          ) : (
+            <>
+              <p className="mb-4 text-sm text-muted-foreground">
+                {cashRange.from} – {cashRange.to} · Recorded invoices only; unpaid recurring
+                expenses are not subtracted.
+              </p>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <StatCard label="Total recorded income" value={egp(cash.income)} icon={TrendingUp} tone="good" />
+                <StatCard label="Total paid expenses" value={egp(cash.expenses)} icon={TrendingDown} tone="bad" />
+                <StatCard
+                  label="Net profit"
+                  value={egp(cash.net)}
+                  icon={Wallet}
+                  tone={cash.net >= 0 ? "good" : "bad"}
+                  delta="Income − paid expenses"
+                />
+              </div>
+            </>
+          )}
+          <Panel title="Daily expense invoice summary" className="mt-8 max-w-2xl">
+            <div className="mb-4 flex flex-wrap items-end gap-3">
+              <Field label="Date">
+                <Input
+                  aria-label="Summary date"
+                  type="date"
+                  required
+                  value={day}
+                  onChange={(e) => setDay(e.target.value)}
+                />
+              </Field>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {day}: <strong className="text-foreground">{today.count}</strong> expense{" "}
+              {today.count === 1 ? "invoice" : "invoices"} · Total{" "}
+              <strong className="text-foreground">{egp(today.total)}</strong>
+            </p>
+          </Panel>
         </TabsContent>
         <TabsContent value="rep">
           <section className="mb-8 space-y-4">
