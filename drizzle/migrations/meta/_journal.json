@@ -29,6 +29,13 @@
       "when": 1792327638625,
       "tag": "0003_ironhaus_staff_details_security",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792327733524,
+      "tag": "0004_ironhaus_password_otp_session_gate",
+      "breakpoints": true
     }
   ]
 }

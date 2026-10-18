@@ -127,6 +127,38 @@ export type Database = {
           },
         ]
       }
+      login_challenges: {
+        Row: {
+          expires_at: string
+          id: string
+          token_hash: string
+          used_at: string | null
+          user_id: string
+        }
+        Insert: {
+          expires_at: string
+          id?: string
+          token_hash: string
+          used_at?: string | null
+          user_id: string
+        }
+        Update: {
+          expires_at?: string
+          id?: string
+          token_hash?: string
+          used_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "login_challenges_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       owner_requests: {
         Row: {
           created_at: string
@@ -307,6 +339,35 @@ export type Database = {
           },
         ]
       }
+      verified_sessions: {
+        Row: {
+          expires_at: string
+          session_id: string
+          user_id: string
+          verified_at: string
+        }
+        Insert: {
+          expires_at: string
+          session_id: string
+          user_id: string
+          verified_at?: string
+        }
+        Update: {
+          expires_at?: string
+          session_id?: string
+          user_id?: string
+          verified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "verified_sessions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
@@ -316,6 +377,15 @@ export type Database = {
       decide_owner_request: {
         Args: { approve: boolean; request_id: string }
         Returns: string
+      }
+      finish_login: {
+        Args: {
+          challenge_hash: string
+          expires: string
+          sid: string
+          uid: string
+        }
+        Returns: boolean
       }
       gym_access: { Args: { area?: string; g: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
