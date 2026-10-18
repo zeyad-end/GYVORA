@@ -71,7 +71,7 @@ function Login() {
             <div className="space-y-2"><Label>Full Name</Label><Input name="name" required maxLength={100} autoComplete="name" className="h-11 bg-card" /></div>
             <div className="space-y-2">
               <Label>{mode === "gym" ? "Gym email" : "Email"}</Label>
-              <Input name="identifier" type="email" autoComplete="username" maxLength={255} required placeholder={mode === "gym" ? "owner@yourgym.com" : "you@mail.com"} className="h-11 bg-card" />
+              <Input name="identifier" autoComplete="username" maxLength={255} required placeholder={mode === "gym" ? "owner@yourgym.com" : "you@mail.com"} className="h-11 bg-card" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between"><Label>Password</Label>
