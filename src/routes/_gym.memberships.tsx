@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, PageHeader } from "@/components/kit";
-import { setState, useStore } from "@/lib/store";
+import { saveState, useStore } from "@/lib/store";
+import { deletePlan } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/memberships")({
@@ -43,11 +44,11 @@ function Memberships() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
           <DialogHeader><DialogTitle>{editing?"Edit plan":"New plan"}</DialogTitle></DialogHeader>
-          <form className="space-y-4" onSubmit={(e) => {
+          <form className="space-y-4" onSubmit={async (e) => {
             e.preventDefault();
-            setState((s) => ({ plans: editing?s.plans.map(p=>p.id===editing?{...p,name:name.trim(),duration,price,features:features.map(f=>f.trim()).filter(Boolean)}:p):[...s.plans, { id: crypto.randomUUID(), name: name.trim(), duration, price, features: features.map((f) => f.trim()).filter(Boolean) }] }));
+            try { await saveState((s) => ({ plans: editing?s.plans.map(p=>p.id===editing?{...p,name:name.trim(),duration,price,features:features.map(f=>f.trim()).filter(Boolean)}:p):[...s.plans, { id: crypto.randomUUID(), name: name.trim(), duration, price, features: features.map((f) => f.trim()).filter(Boolean) }] }));
             
-            setOpen(false);
+            toast.success("Plan saved"); setOpen(false); } catch(error){toast.error(error instanceof Error?error.message:"Could not save plan");}
           }}>
             <Field label="Plan name"><Input required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} /></Field>
             <div className="grid grid-cols-2 gap-3">
@@ -64,7 +65,7 @@ function Memberships() {
               ))}
               <Button type="button" size="sm" variant="secondary" onClick={() => setFeatures([...features, ""])}><Plus className="h-4 w-4" />Add feature</Button>
             </div>
-            <DialogFooter><Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
+            <DialogFooter>{editing&&<Button type="button" variant="destructive" onClick={async()=>{if(!window.confirm("Delete this membership plan?"))return;try{await saveState(s=>({plans:deletePlan(s.plans,s.members,editing)}));toast.success("Plan deleted");setOpen(false);}catch(error){toast.error(error instanceof Error?error.message:"Could not delete plan");}}}>Delete plan</Button>}<Button type="button" variant="secondary" onClick={() => setOpen(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
           </form>
         </DialogContent>
       </Dialog>

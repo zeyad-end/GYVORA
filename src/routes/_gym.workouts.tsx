@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DataTable, Field, PageHeader, Panel, selectCls, td } from "@/components/kit";
-import { setState, useStore } from "@/lib/store";
+import { saveState, useStore } from "@/lib/store";
+import { deleteProgram } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/workouts")({
@@ -41,7 +42,7 @@ function Workouts() {
         ))}
       </div>
 
-      <ProgramEditor open={open} onClose={()=>setOpen(false)} program={editing} onSave={p=>setState(s=>({workouts:editing?s.workouts.map(w=>w===editing?p:w):[...s.workouts,p]}))}/>
+      <ProgramEditor open={open} onClose={()=>setOpen(false)} program={editing} onSave={async p=>{await saveState(s=>({workouts:editing?s.workouts.map(w=>w===editing?p:w):[...s.workouts,p]}));toast.success("Program saved");}} onDelete={async()=>{if(!editing)return;await saveState(s=>({workouts:deleteProgram(s.workouts,editing)}));toast.success("Program deleted");}}/>
 
     </>
   );
