@@ -17,7 +17,6 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as SubscriptionRequestRouteImport } from './routes/subscription-request'
 import { Route as SuperAdminRouteImport } from './routes/super-admin'
-import { Route as VerifyOtpRouteImport } from './routes/verify-otp'
 import { Route as GymActivityRouteImport } from './routes/_gym.activity'
 import { Route as GymAttendanceRouteImport } from './routes/_gym.attendance'
 import { Route as GymDashboardRouteImport } from './routes/_gym.dashboard'
@@ -79,11 +78,6 @@ const SubscriptionRequestRoute = SubscriptionRequestRouteImport.update({
 const SuperAdminRoute = SuperAdminRouteImport.update({
   id: '/super-admin',
   path: '/super-admin',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const VerifyOtpRoute = VerifyOtpRouteImport.update({
-  id: '/verify-otp',
-  path: '/verify-otp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GymActivityRoute = GymActivityRouteImport.update({
@@ -210,7 +204,6 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/subscription-request': typeof SubscriptionRequestRoute
   '/super-admin': typeof SuperAdminRoute
-  '/verify-otp': typeof VerifyOtpRoute
   '/activity': typeof GymActivityRoute
   '/attendance': typeof GymAttendanceRoute
   '/dashboard': typeof GymDashboardRoute
@@ -243,7 +236,6 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/subscription-request': typeof SubscriptionRequestRoute
   '/super-admin': typeof SuperAdminRoute
-  '/verify-otp': typeof VerifyOtpRoute
   '/activity': typeof GymActivityRoute
   '/attendance': typeof GymAttendanceRoute
   '/dashboard': typeof GymDashboardRoute
@@ -278,7 +270,6 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/subscription-request': typeof SubscriptionRequestRoute
   '/super-admin': typeof SuperAdminRoute
-  '/verify-otp': typeof VerifyOtpRoute
   '/_gym/activity': typeof GymActivityRoute
   '/_gym/attendance': typeof GymAttendanceRoute
   '/_gym/dashboard': typeof GymDashboardRoute
@@ -313,7 +304,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/subscription-request'
     | '/super-admin'
-    | '/verify-otp'
     | '/activity'
     | '/attendance'
     | '/dashboard'
@@ -346,7 +336,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/subscription-request'
     | '/super-admin'
-    | '/verify-otp'
     | '/activity'
     | '/attendance'
     | '/dashboard'
@@ -380,7 +369,6 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/subscription-request'
     | '/super-admin'
-    | '/verify-otp'
     | '/_gym/activity'
     | '/_gym/attendance'
     | '/_gym/dashboard'
@@ -415,7 +403,6 @@ export interface RootRouteChildren {
   ResetPasswordRoute: typeof ResetPasswordRoute
   SubscriptionRequestRoute: typeof SubscriptionRequestRoute
   SuperAdminRoute: typeof SuperAdminRoute
-  VerifyOtpRoute: typeof VerifyOtpRoute
   MemberAttendanceRoute: typeof MemberAttendanceRoute
   MemberBrowseRoute: typeof MemberBrowseRoute
   MemberJoinRoute: typeof MemberJoinRoute
@@ -482,13 +469,6 @@ declare module '@tanstack/react-router' {
       path: '/super-admin'
       fullPath: '/super-admin'
       preLoaderRoute: typeof SuperAdminRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/verify-otp': {
-      id: '/verify-otp'
-      path: '/verify-otp'
-      fullPath: '/verify-otp'
-      preLoaderRoute: typeof VerifyOtpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_gym/activity': {
@@ -702,7 +682,6 @@ const rootRouteChildren: RootRouteChildren = {
   ResetPasswordRoute: ResetPasswordRoute,
   SubscriptionRequestRoute: SubscriptionRequestRoute,
   SuperAdminRoute: SuperAdminRoute,
-  VerifyOtpRoute: VerifyOtpRoute,
   MemberAttendanceRoute: MemberAttendanceRoute,
   MemberBrowseRoute: MemberBrowseRoute,
   MemberJoinRoute: MemberJoinRoute,

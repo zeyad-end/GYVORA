@@ -50,6 +50,13 @@
       "when": 1792327987087,
       "tag": "0006_ironhaus_program_validation",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1792330288791,
+      "tag": "0007_remove_otp_gate",
+      "breakpoints": true
     }
   ]
 }
