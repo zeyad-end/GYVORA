@@ -11,7 +11,7 @@ export type DemoSession = DemoSessionKind | null;
 
 const SESSION_KEY = "ironhaus-demo-session";
 
-export type DemoSessionInfo = { kind: DemoSessionKind; email: string };
+export type DemoSessionInfo = { kind: DemoSessionKind; email: string; name?: string; directAccess?: boolean };
 
 export function getDemoSessionInfo(): DemoSessionInfo | null {
   try {
@@ -29,9 +29,9 @@ export function getDemoSession(): DemoSession {
   return getDemoSessionInfo()?.kind ?? null;
 }
 
-export function setDemoSession(s: DemoSession, email = "") {
+export function setDemoSession(s: DemoSession, email = "", details: Pick<DemoSessionInfo, "name" | "directAccess"> = {}) {
   try {
-    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify({ kind: s, email }));
+    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify({ kind: s, email, ...details }));
     else localStorage.removeItem(SESSION_KEY);
   } catch {
     /* private mode */
@@ -113,7 +113,7 @@ export function findDemoAccount(identifier: string, password: string): DemoAccou
 /** The account behind the current demo session, or null for legacy hardcoded sessions. */
 export function getDemoAccount(): DemoAccount | null {
   const info = getDemoSessionInfo();
-  if (!info || !info.email) return null;
+  if (!info || !info.email || info.directAccess) return null;
   return getDemoAccounts().find((a) => a.email === info.email) ?? null;
 }
 
