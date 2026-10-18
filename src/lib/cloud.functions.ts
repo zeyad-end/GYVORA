@@ -11,7 +11,7 @@ const schemas: Record<string,z.ZodTypeAny> = {plans:planSchema,workouts:programS
 export const saveRecords = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
  .inputValidator(input=>z.object({gymId:z.string().uuid(),changes:z.array(z.object({kind:z.enum(['gym','members','products','trainers','plans','workouts','sessions','attendance','staffAttendance','recurring','transactions']),rows:z.array(z.record(z.unknown())).max(10000)})).min(1)}).parse(input))
  .handler(async({data,context})=>{
-  for(const c of data.changes) { const {data: allowed,error}=await context.supabase.rpc('gym_access',{g:data.gymId,area:areas[c.kind]}); if(error||!allowed) throw new Error('You do not have permission to change this gym data.'); c.rows=c.rows.map(r=>schemas[c.kind] ? schemas[c.kind].parse(r) : r); }
+  for(const c of data.changes) { const area=areas[c.kind]; if(!area)throw new Error('Invalid record type'); const {data: allowed,error}=await context.supabase.rpc('gym_access',{g:data.gymId,area}); if(error||!allowed) throw new Error('You do not have permission to change this gym data.'); const schema=schemas[c.kind]; c.rows=c.rows.map(r=>schema ? schema.parse(r) : r); }
   const {error}=await context.supabase.rpc('save_gym_records',{g:data.gymId,changes:data.changes as never}); if(error) throw new Error(error.message); return {saved:true};
  });
 
