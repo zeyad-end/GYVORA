@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Building2, CreditCard, Users, Wallet, TrendingUp, UserPlus } from 'lucide-react';
-import { useDemoStore, PERIODS, periodRange, inRange, type Period } from '@/lib/demo';
+import { useDemoStore, PERIODS, periodRange, inRange, platformTotals, type Period } from '@/lib/demo';
 import { egp } from '@/lib/mock';
 import { seo } from '@/lib/seo';
 
@@ -18,12 +18,14 @@ function PlatformDashboard() {
   const gyms = useDemoStore((s) => s.gyms);
   const clients = useDemoStore((s) => s.clients);
   const revenue = useDemoStore((s) => s.revenue);
+  const expenses = useDemoStore((s) => s.expenses);
   const [period, setPeriod] = useState<Period>('year');
   const [custom, setCustom] = useState({ from: '2026-01-01', to: '2026-12-31' });
 
   const { from, to } = periodRange(period, custom);
   const filteredRevenue = useMemo(() => revenue.filter((r) => inRange(r.date, from, to)), [revenue, from.getTime(), to.getTime()]);
   const totalRevenue = filteredRevenue.reduce((sum, r) => sum + r.amount, 0);
+  const totals = platformTotals(revenue, expenses, from, to);
   const newGyms = gyms.filter((g) => inRange(g.start, from, to)).length;
   const activeSubs = gyms.filter((g) => g.status === 'Active').length;
 
@@ -65,11 +67,13 @@ function PlatformDashboard() {
         )}
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <StatCard label="Approved gyms" value={String(gyms.length)} icon={Building2} delta={`+${newGyms} in period`} tone="good" />
         <StatCard label="Active subscriptions" value={String(activeSubs)} icon={CreditCard} delta={`${gyms.length - activeSubs} frozen`} />
         <StatCard label="Total clients" value={String(clients.length)} icon={Users} delta="Across all gyms" />
-        <StatCard label="Demo revenue" value={egp(totalRevenue)} icon={Wallet} delta="Fictional — no payments collected" />
+        <StatCard label="Subscription Revenue (demo)" value={egp(totalRevenue)} icon={Wallet} delta="Saved demo subscription records" />
+        <StatCard label="Expenses (demo)" value={egp(totals.expenses)} icon={Wallet} delta="Platform only · selected period" />
+        <StatCard label="Net (demo)" value={`${totals.net < 0 ? '−' : ''}${egp(totals.net)}`} icon={Wallet} delta="Demo revenue minus demo expenses" />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">

@@ -2,7 +2,7 @@ import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-r
 import { useCloud } from '@/components/CloudProvider';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { LayoutDashboard, Inbox, Building2, Users, LogOut } from 'lucide-react';
+import { LayoutDashboard, Inbox, Building2, Users, LogOut, Receipt } from 'lucide-react';
 import { seo } from '@/lib/seo';
 
 export const Route = createFileRoute('/super-admin')({
@@ -15,6 +15,7 @@ const nav = [
   { to: '/super-admin/requests', label: 'Gym Requests', icon: Inbox },
   { to: '/super-admin/gyms', label: 'Approved Gyms', icon: Building2 },
   { to: '/super-admin/clients', label: 'Clients', icon: Users },
+  { to: '/super-admin/expenses', label: 'Expenses & Bills', icon: Receipt },
 ] as const;
 
 function SuperAdminLayout() {
