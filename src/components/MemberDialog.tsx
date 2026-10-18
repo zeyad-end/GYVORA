@@ -26,7 +26,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
 
   const save = (e: React.FormEvent) => {
     e.preventDefault();
-    if (f.expiry < f.start) return toast.error("End date must be after start date");
+    if (f.expiry < f.start) { toast.error("End date must be after start date"); return; }
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
     const base = { ...f, sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {

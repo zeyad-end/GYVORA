@@ -81,7 +81,7 @@ function Products() {
             e.preventDefault();
             const d = new FormData(e.currentTarget);
             const next: Product = { ...(editing ?? { sales: 0, min: 10 }), image: img, name: String(d.get("name")).trim(), qty: Math.max(0, Number(d.get("qty"))), price: Math.max(0, Number(d.get("price"))) };
-            if (!editing && products.some((p) => p.name === next.name)) return toast.error("A product with this name exists");
+            if (!editing && products.some((p) => p.name === next.name)) { toast.error("A product with this name exists"); return; }
             setState((s) => ({ products: editing ? s.products.map((x) => x.name === editing.name ? next : x) : [...s.products, next] }));
             if (editing && viewName === editing.name) setViewName(next.name);
             toast.success(editing ? "Product updated" : "Product added");
