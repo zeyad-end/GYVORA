@@ -1,23 +1,353 @@
-import {createFileRoute} from '@tanstack/react-router';
-import {useState,useEffect} from 'react';
-import {useServerFn} from '@tanstack/react-start';
-import {supabase} from '@/integrations/supabase/client';
-import type {Database} from '@/integrations/supabase/types';
-import {useStore,type StaffMember} from '@/lib/store';
-import {useCloud} from '@/components/CloudProvider';
-import {manageInvitation,manageStaff} from '@/lib/cloud.functions';
-import {invitationStatus} from '@/lib/validation';
-import {StaffAttendance} from '@/components/StaffAttendance';
-import {Button} from '@/components/ui/button';
-import {Input} from '@/components/ui/input';
-import {Dialog,DialogContent,DialogHeader,DialogTitle,DialogFooter} from '@/components/ui/dialog';
-import {Tabs,TabsList,TabsTrigger,TabsContent} from '@/components/ui/tabs';
-import {PageHeader,Panel,Field,DataTable,td,selectCls} from '@/components/kit';
-import {toast} from 'sonner';
-import {seo} from '@/lib/seo';
-import {getDemoSession,useDemoStore,createDemoInvitation,changeDemoInvitation,type DemoInvitation} from '@/lib/demo';
-export const Route=createFileRoute('/_gym/staff')({head:()=>seo('Staff & roles','Manage gym staff invitations, permissions and attendance.'),component:Staff});
-const areas=['Members','Attendance','Sessions','Payments','Finance','Workout programs','Settings'] as const;
-function Staff(){const c=useCloud();const staff=useStore(s=>s.staff);const invite=useServerFn(manageInvitation);const edit=useServerFn(manageStaff);const [open,setOpen]=useState(false);const [editing,setEditing]=useState<StaffMember|null>(null);const [permissions,setPermissions]=useState<string[]>([]);const [busy,setBusy]=useState(false);const [cloudInvitations,setInvitations]=useState<Database['public']['Tables']['staff_invitations']['Row'][]>([]);const demoInvitations=useDemoStore(s=>s.invitations);const invitations:DemoInvitation[]=getDemoSession()?demoInvitations.filter(i=>i.gym_id===c.gymId):cloudInvitations;const gymName=useStore(s=>s.gym.name);async function load(){if(getDemoSession())return;const {data,error}=await supabase.from('staff_invitations').select('*').eq('gym_id',c.gymId).order('created_at',{ascending:false});if(error)toast.error(error.message);else setInvitations(data??[]);}useEffect(()=>{if(c.gymId)void load();},[c.gymId]);
-async function action(id:string,action:'resend'|'cancel'){try{if(action==='cancel'&&!window.confirm('Cancel this invitation?'))return;if(getDemoSession())changeDemoInvitation(c.gymId,id,action);else await invite({data:{gymId:c.gymId,id,action}});toast.success(action==='resend'?'Prototype invitation renewed — no email sent.':'Invitation cancelled');await load();}catch(e){toast.error(e instanceof Error?e.message:'Could not update invitation');}}
-return <><PageHeader title="Staff & roles" actions={c.role==='Owner'&&<Button onClick={()=>{setEditing(null);setOpen(true);}}>Add Staff</Button>}/><Tabs defaultValue="staff"><TabsList className="mb-6"><TabsTrigger value="staff">Staff</TabsTrigger><TabsTrigger value="invitations">Invitations</TabsTrigger><TabsTrigger value="attendance">Staff Attendance</TabsTrigger></TabsList><TabsContent value="staff"><Panel title="Staff list"><DataTable head={['Employee','Email','Role','Permissions','Actions']}>{staff.map(s=><tr key={s.id??s.email}><td className={td}>{s.name}</td><td className={td}>{s.email}</td><td className={td}>{s.role}</td><td className={td}>{s.permissions?.join(', ')}</td><td className={td}>{c.role==='Owner'&&s.role!=='Owner'&&<Button size="sm" variant="secondary" onClick={()=>{setEditing(s);setPermissions(s.permissions??[]);setOpen(true);}}>Edit</Button>}</td></tr>)}</DataTable>{!staff.length&&<p className="py-6 text-muted-foreground">No staff members.</p>}</Panel></TabsContent><TabsContent value="invitations"><Panel title="Invitations"><DataTable head={['Invitee Full Name','Invitee Email','Invited Role','Invitation Status','Date Sent','Expiration Date','Actions']}>{invitations.map(i=><tr key={i.id}><td className={td}>{i.full_name}<div className="text-xs text-muted-foreground">{i.gym_name??gymName}</div></td><td className={td}>{i.email}</td><td className={td}>{i.role}</td><td className={td}>{invitationStatus(i.status,i.expires_at)}</td><td className={td}>{new Date(i.created_at).toLocaleDateString()}</td><td className={td}>{new Date(i.expires_at).toLocaleDateString()}</td><td className={td}>{['Pending','Expired'].includes(invitationStatus(i.status,i.expires_at))&&c.role==='Owner'&&<div className="flex gap-2"><Button size="sm" variant="secondary" onClick={()=>void action(i.id,'resend')}>Resend Invitation</Button>{invitationStatus(i.status,i.expires_at)==='Pending'&&<Button size="sm" variant="destructive" onClick={()=>void action(i.id,'cancel')}>Cancel Invitation</Button>}</div>}</td></tr>)}</DataTable>{!invitations.length&&<p className="py-6 text-muted-foreground">No invitations yet.</p>}</Panel></TabsContent><TabsContent value="attendance"><StaffAttendance/></TabsContent></Tabs><Dialog open={open} onOpenChange={setOpen}><DialogContent><DialogHeader><DialogTitle>{editing?'Edit staff':'Invite staff'}</DialogTitle></DialogHeader><form key={editing?.id??'new'} className="space-y-4" onSubmit={async e=>{e.preventDefault();setBusy(true);const d=new FormData(e.currentTarget);try{if(editing?.id){await edit({data:{gymId:c.gymId,id:editing.id,remove:false,role:String(d.get('role')) as 'Admin'|'Reception'|'Trainer',permissions:permissions as Array<typeof areas[number]>,name:String(d.get('name')),phone:String(d.get('phone')??'')}});toast.success('Staff permissions saved');await c.selectGym(c.gymId);}else{if(getDemoSession())createDemoInvitation(c.gymId,gymName,String(d.get('name')),String(d.get('email')),String(d.get('role')) as 'Admin'|'Reception'|'Trainer');else await invite({data:{gymId:c.gymId,action:'create',name:String(d.get('name')),email:String(d.get('email')),role:String(d.get('role')) as 'Admin'|'Reception'|'Trainer'}});toast.success('Prototype invitation saved — no email sent. Staff access requires acceptance.');await load();}setOpen(false);}catch(e){toast.error(e instanceof Error?e.message:'Could not save staff');}finally{setBusy(false);}}}><Field label="Full Name"><Input name="name" required maxLength={100} defaultValue={editing?.name}/></Field><Field label="Email"><Input name="email" type="email" required maxLength={255} defaultValue={editing?.email} readOnly={Boolean(editing)}/></Field>{editing&&<Field label="Phone"><Input name="phone" maxLength={30} defaultValue={editing.phone}/></Field>}<Field label="Role"><select name="role" className={selectCls} defaultValue={editing?.role??'Reception'}>{['Admin','Reception','Trainer'].map(r=><option key={r}>{r}</option>)}</select></Field>{editing&&<fieldset className="grid grid-cols-2 gap-2"><legend className="mb-2 text-sm">Permissions</legend>{areas.map(a=><label key={a} className="flex items-center gap-2 text-sm"><input type="checkbox" checked={permissions.includes(a)} onChange={e=>setPermissions(e.target.checked?[...permissions,a]:permissions.filter(p=>p!==a))}/>{a}</label>)}</fieldset>}<DialogFooter>{editing?.id&&<Button type="button" variant="destructive" onClick={async()=>{if(!editing.id||!window.confirm('Remove this person from this gym? Their account stays active.'))return;try{await edit({data:{gymId:c.gymId,id:editing.id,remove:true,role:'Reception',permissions:[],name:editing.name,phone:editing.phone??''}});setOpen(false);await c.selectGym(c.gymId);}catch(e){toast.error(e instanceof Error?e.message:'Could not remove staff');}}}>Delete Staff</Button>}<Button type="button" variant="outline" onClick={()=>setOpen(false)}>Cancel</Button><Button disabled={busy}>{busy?'Saving…':editing?'Save':'Send Invitation'}</Button></DialogFooter></form></DialogContent></Dialog></>}
+import { createFileRoute } from "@tanstack/react-router";
+import { useState, useEffect } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import { useStore, type StaffMember } from "@/lib/store";
+import { useCloud } from "@/components/CloudProvider";
+import { manageInvitation, manageStaff } from "@/lib/cloud.functions";
+import { invitationStatus } from "@/lib/validation";
+import { StaffAttendance } from "@/components/StaffAttendance";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { PageHeader, Panel, Field, DataTable, td, selectCls } from "@/components/kit";
+import { toast } from "sonner";
+import { seo } from "@/lib/seo";
+import {
+  getDemoSession,
+  useDemoStore,
+  createDemoInvitation,
+  changeDemoInvitation,
+  type DemoInvitation,
+} from "@/lib/demo";
+export const Route = createFileRoute("/_gym/staff")({
+  head: () => seo("Staff & roles", "Manage gym staff invitations, permissions and attendance."),
+  component: Staff,
+});
+const areas = [
+  "Members",
+  "Attendance",
+  "Sessions",
+  "Payments",
+  "Finance",
+  "Workout programs",
+  "Settings",
+] as const;
+function Staff() {
+  const c = useCloud();
+  const staff = useStore((s) => s.staff);
+  const invite = useServerFn(manageInvitation);
+  const edit = useServerFn(manageStaff);
+  const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<StaffMember | null>(null);
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [busy, setBusy] = useState(false);
+  const [cloudInvitations, setInvitations] = useState<
+    Database["public"]["Tables"]["staff_invitations"]["Row"][]
+  >([]);
+  const demoInvitations = useDemoStore((s) => s.invitations);
+  const invitations: DemoInvitation[] = getDemoSession()
+    ? demoInvitations.filter((i) => i.gym_id === c.gymId)
+    : cloudInvitations;
+  const gymName = useStore((s) => s.gym.name);
+  async function load() {
+    if (getDemoSession()) return;
+    const { data, error } = await supabase
+      .from("staff_invitations")
+      .select("*")
+      .eq("gym_id", c.gymId)
+      .order("created_at", { ascending: false });
+    if (error) toast.error(error.message);
+    else setInvitations(data ?? []);
+  }
+  useEffect(() => {
+    if (c.gymId) void load();
+  }, [c.gymId]);
+  async function action(id: string, action: "resend" | "cancel") {
+    try {
+      if (action === "cancel" && !window.confirm("Cancel this invitation?")) return;
+      if (getDemoSession()) changeDemoInvitation(c.gymId, id, action);
+      else await invite({ data: { gymId: c.gymId, id, action } });
+      toast.success(
+        action === "resend"
+          ? "Prototype invitation renewed — no email sent."
+          : "Invitation cancelled",
+      );
+      await load();
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not update invitation");
+    }
+  }
+  return (
+    <>
+      <PageHeader
+        title="Staff & roles"
+        actions={
+          c.role === "Owner" && (
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setOpen(true);
+              }}
+            >
+              Add Staff
+            </Button>
+          )
+        }
+      />
+      <Tabs defaultValue="staff">
+        <TabsList className="mb-6">
+          <TabsTrigger value="staff">Staff</TabsTrigger>
+          <TabsTrigger value="invitations">Invitations</TabsTrigger>
+          <TabsTrigger value="attendance">Staff Attendance</TabsTrigger>
+        </TabsList>
+        <TabsContent value="staff">
+          <Panel title="Staff list">
+            <DataTable head={["Employee", "Email", "Role", "Permissions", "Actions"]}>
+              {staff.map((s) => (
+                <tr key={s.id ?? s.email}>
+                  <td className={td}>{s.name}</td>
+                  <td className={td}>{s.email}</td>
+                  <td className={td}>{s.role}</td>
+                  <td className={td}>{s.permissions?.join(", ")}</td>
+                  <td className={td}>
+                    {c.role === "Owner" && s.role !== "Owner" && (
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={() => {
+                          setEditing(s);
+                          setPermissions(s.permissions ?? []);
+                          setOpen(true);
+                        }}
+                      >
+                        Edit
+                      </Button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
+            {!staff.length && <p className="py-6 text-muted-foreground">No staff members.</p>}
+          </Panel>
+        </TabsContent>
+        <TabsContent value="invitations">
+          <Panel title="Invitations">
+            <DataTable
+              head={[
+                "Invitee Full Name",
+                "Invitee Email",
+                "Invited Role",
+                "Invitation Status",
+                "Date Sent",
+                "Expiration Date",
+                "Actions",
+              ]}
+            >
+              {invitations.map((i) => (
+                <tr key={i.id}>
+                  <td className={td}>
+                    {i.full_name}
+                    <div className="text-xs text-muted-foreground">{i.gym_name ?? gymName}</div>
+                  </td>
+                  <td className={td}>{i.email}</td>
+                  <td className={td}>{i.role}</td>
+                  <td className={td}>{invitationStatus(i.status, i.expires_at)}</td>
+                  <td className={td}>{new Date(i.created_at).toLocaleDateString()}</td>
+                  <td className={td}>{new Date(i.expires_at).toLocaleDateString()}</td>
+                  <td className={td}>
+                    {["Pending", "Expired"].includes(invitationStatus(i.status, i.expires_at)) &&
+                      c.role === "Owner" && (
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => void action(i.id, "resend")}
+                          >
+                            Resend Invitation
+                          </Button>
+                          {invitationStatus(i.status, i.expires_at) === "Pending" && (
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              onClick={() => void action(i.id, "cancel")}
+                            >
+                              Cancel Invitation
+                            </Button>
+                          )}
+                        </div>
+                      )}
+                  </td>
+                </tr>
+              ))}
+            </DataTable>
+            {!invitations.length && (
+              <p className="py-6 text-muted-foreground">No invitations yet.</p>
+            )}
+          </Panel>
+        </TabsContent>
+        <TabsContent value="attendance">
+          <StaffAttendance />
+        </TabsContent>
+      </Tabs>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit staff" : "Invite staff"}</DialogTitle>
+          </DialogHeader>
+          <form
+            key={editing?.id ?? "new"}
+            className="space-y-4"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setBusy(true);
+              const d = new FormData(e.currentTarget);
+              try {
+                if (editing?.id) {
+                  await edit({
+                    data: {
+                      gymId: c.gymId,
+                      id: editing.id,
+                      remove: false,
+                      role: String(d.get("role")) as "Admin" | "Reception" | "Trainer",
+                      permissions: permissions as Array<(typeof areas)[number]>,
+                      name: String(d.get("name")),
+                      phone: String(d.get("phone") ?? ""),
+                    },
+                  });
+                  toast.success("Staff permissions saved");
+                  await c.selectGym(c.gymId);
+                } else {
+                  if (getDemoSession())
+                    createDemoInvitation(
+                      c.gymId,
+                      gymName,
+                      String(d.get("name")),
+                      String(d.get("email")),
+                      String(d.get("role")) as "Admin" | "Reception" | "Trainer",
+                    );
+                  else
+                    await invite({
+                      data: {
+                        gymId: c.gymId,
+                        action: "create",
+                        name: String(d.get("name")),
+                        email: String(d.get("email")),
+                        role: String(d.get("role")) as "Admin" | "Reception" | "Trainer",
+                      },
+                    });
+                  toast.success(
+                    "Prototype invitation saved — no email sent. Staff access requires acceptance.",
+                  );
+                  await load();
+                }
+                setOpen(false);
+              } catch (e) {
+                toast.error(e instanceof Error ? e.message : "Could not save staff");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          >
+            <Field label="Full Name">
+              <Input name="name" required maxLength={100} defaultValue={editing?.name} />
+            </Field>
+            <Field label="Email">
+              <Input
+                name="email"
+                type="email"
+                required
+                maxLength={255}
+                defaultValue={editing?.email}
+                readOnly={Boolean(editing)}
+              />
+            </Field>
+            {editing && (
+              <Field label="Phone">
+                <Input name="phone" maxLength={30} defaultValue={editing.phone} />
+              </Field>
+            )}
+            <Field label="Role">
+              <select name="role" className={selectCls} defaultValue={editing?.role ?? "Reception"}>
+                {["Admin", "Reception", "Trainer"].map((r) => (
+                  <option key={r}>{r}</option>
+                ))}
+              </select>
+            </Field>
+            {editing && (
+              <fieldset className="grid grid-cols-2 gap-2">
+                <legend className="mb-2 text-sm">Permissions</legend>
+                {areas.map((a) => (
+                  <label key={a} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      checked={permissions.includes(a)}
+                      onChange={(e) =>
+                        setPermissions(
+                          e.target.checked
+                            ? [...permissions, a]
+                            : permissions.filter((p) => p !== a),
+                        )
+                      }
+                    />
+                    {a}
+                  </label>
+                ))}
+              </fieldset>
+            )}
+            <DialogFooter>
+              {editing?.id && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onClick={async () => {
+                    if (
+                      !editing.id ||
+                      !window.confirm(
+                        "Remove this person from this gym? Their account stays active.",
+                      )
+                    )
+                      return;
+                    try {
+                      await edit({
+                        data: {
+                          gymId: c.gymId,
+                          id: editing.id,
+                          remove: true,
+                          role: "Reception",
+                          permissions: [],
+                          name: editing.name,
+                          phone: editing.phone ?? "",
+                        },
+                      });
+                      setOpen(false);
+                      await c.selectGym(c.gymId);
+                    } catch (e) {
+                      toast.error(e instanceof Error ? e.message : "Could not remove staff");
+                    }
+                  }}
+                >
+                  Delete Staff
+                </Button>
+              )}
+              <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                Cancel
+              </Button>
+              <Button disabled={busy}>
+                {busy ? "Saving…" : editing ? "Save" : "Send Invitation"}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+    </>
+  );
+}
