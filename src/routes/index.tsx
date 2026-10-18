@@ -1,43 +1,53 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useCloud } from "@/components/CloudProvider";
-import { resolveDestination } from "@/lib/post-login";
-import { supabase } from "@/integrations/supabase/client";
-import { z } from "zod";
 import { toast } from "sonner";
-import { useState } from "react";
-import { Building2, User } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Building2, User, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
-import { matchDemoAccount, setDemoSession, findDemoAccount, sessionKindFor, demoDestination } from "@/lib/demo";
+import { type DemoAccountType } from "@/lib/demo";
+import { enterPrototype, getPrototypePreference, savePrototypePreference } from "@/lib/prototype-login";
 import cover from "@/assets/gym-cover.jpg";
 
 export const Route = createFileRoute("/")({
-  head: () => seo("Sign in", "Sign in to IRONHAUS as a member or a gym account."),
+  head: () => seo("Demo login", "Enter the IRONHAUS local prototype as a Gym Account, Client / Individual, or Platform Super Admin."),
   component: Login,
 });
 
 function Login() {
-  const [mode, setMode] = useState<"user" | "gym">("gym");
-  const navigate = useNavigate();const cloud=useCloud();
-  const [busy,setBusy]=useState(false);
-  const [error,setError]=useState('');
-  async function signIn(e:React.FormEvent<HTMLFormElement>) {
-    e.preventDefault(); setError(''); setBusy(true);
-    const d=new FormData(e.currentTarget);
-    try { const parsed=z.object({name:z.string().trim().min(1).max(100),identifier:z.string().trim().min(1).max(255),password:z.string().min(1).max(128)}).parse({name:d.get('name'),identifier:d.get('identifier'),password:d.get('password')});
-      const demo=matchDemoAccount(parsed.name,parsed.identifier,parsed.password);
-      if(demo){setDemoSession(demo);await cloud.refresh();await navigate({to:demo==='super'?'/super-admin':'/dashboard'});return;}
-      const acc=findDemoAccount(parsed.identifier,parsed.password);
-      if(acc){setDemoSession(sessionKindFor(acc.type),acc.email);await cloud.refresh();await navigate({to:demoDestination(acc)});return;}
-      z.string().email().parse(parsed.identifier);
-      const {error:authError}=await supabase.auth.signInWithPassword({email:parsed.identifier,password:parsed.password});
-      if(authError)throw new Error(authError.message==='Email not confirmed'?authError.message:'Email or password is incorrect.');
-      await cloud.refresh();
-      await navigate({to:await resolveDestination()});
-    }catch(e){setError(e instanceof Error?e.message:'Sign-in failed');}finally{setBusy(false);}
+  const [destination, setDestination] = useState<DemoAccountType>("gym");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [remember, setRemember] = useState(false);
+  const [ready, setReady] = useState(false);
+  const navigate = useNavigate();
+  const cloud = useCloud();
+
+  useEffect(() => {
+    const preference = getPrototypePreference();
+    if (preference) {
+      setDestination(preference.destination);
+      setName(preference.name);
+      setEmail(preference.email);
+      setRemember(true);
+    }
+    setReady(true);
+  }, []);
+
+  useEffect(() => {
+    if (ready) savePrototypePreference({ destination, name, email }, remember);
+  }, [destination, name, email, remember, ready]);
+
+  async function signIn(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const to = enterPrototype({ destination, name, email }, remember);
+    await cloud.refresh();
+    await navigate({ to });
   }
 
   return (
@@ -58,36 +68,32 @@ function Login() {
             <span className="font-display text-lg font-semibold">IRONHAUS</span>
           </div>
           <h1 className="text-3xl font-semibold">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Choose how you want to sign in.</p>
+          <p className="mt-1 text-sm text-muted-foreground">Demo access · No real authentication</p>
 
-          <div className="mt-8 grid grid-cols-2 gap-2 rounded-xl border bg-card p-1">
-            {([["user", "Individual", User], ["gym", "Gym Account", Building2]] as const).map(([k, l, Icon]) => (
-              <Button type="button" variant="ghost" key={k} onClick={() => setMode(k)}
-                className={cn("flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors", mode === k ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground")}>
-                <Icon className="h-4 w-4" />{l}
+          <div className="mt-8 grid grid-cols-3 gap-1 rounded-lg border bg-card p-1" role="group" aria-label="Demo destination">
+            {([["gym", "Gym Account", Building2], ["individual", "Client / Individual", User], ["dashboard", "Dashboard", LayoutDashboard]] as const).map(([key, label, Icon]) => (
+              <Button type="button" variant="ghost" key={key} onClick={() => setDestination(key)} aria-pressed={destination === key}
+                className={cn("h-16 min-w-0 flex-col gap-1 rounded-md px-1 text-xs font-medium transition-colors", destination === key ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground")}>
+                <Icon className="h-4 w-4 shrink-0" /><span className="whitespace-normal text-center leading-tight">{label}</span>
               </Button>
             ))}
           </div>
 
-          <form className="mt-6 space-y-4" onSubmit={signIn}>
-            <div className="space-y-2"><Label>Full Name</Label><Input name="name" required maxLength={100} autoComplete="name" className="h-11 bg-card" /></div>
+          <form className="mt-6 space-y-4" onSubmit={signIn} noValidate>
+            <div className="space-y-2"><Label htmlFor="demo-name">Name</Label><Input id="demo-name" name="name" value={name} onChange={e => setName(e.target.value)} autoComplete="name" className="h-11 bg-card" /></div>
             <div className="space-y-2">
-              <Label>{mode === "gym" ? "Gym email" : "Email"}</Label>
-              <Input name="identifier" autoComplete="username" maxLength={255} required placeholder={mode === "gym" ? "owner@yourgym.com" : "you@mail.com"} className="h-11 bg-card" />
+              <Label htmlFor="demo-email">Email</Label>
+              <Input id="demo-email" name="identifier" type="text" value={email} onChange={e => setEmail(e.target.value)} autoComplete="off" placeholder="Demo email" className="h-11 bg-card" />
             </div>
             <div className="space-y-2">
-              <div className="flex justify-between"><Label>Password</Label>
-                <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={async()=>{const email=window.prompt("Your account email");if(!email)return;const v=z.string().email().safeParse(email.trim());if(!v.success){toast.error("Enter a valid email");return;}const {error}=await supabase.auth.resetPasswordForEmail(v.data,{redirectTo:window.location.origin+"/reset-password"});error?toast.error(error.message):toast.success("Check your email for the password reset link");}}>Forgot password?</Button>
+              <div className="flex justify-between"><Label htmlFor="demo-password">Password</Label>
+                <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={() => toast.info("Password recovery is unavailable in demo mode. You can log in with any values or leave the fields blank.")}>Forgot Password?</Button>
               </div>
-              <Input name="password" autoComplete="current-password" maxLength={128} required type="password" placeholder="••••••••" className="h-11 bg-card" />
+              <Input id="demo-password" name="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" type="password" placeholder="••••••••" className="h-11 bg-card" />
             </div>
-            <label className="flex items-center gap-2 text-sm"><input name="remember" type="checkbox" />Remember Me</label>{error&&<p role="alert" className="text-sm text-destructive">{error}</p>}<Button disabled={busy} type="submit" className="h-11 w-full">{busy?"Signing in…":"Sign in"}</Button>
+            <div className="flex items-center gap-2"><Checkbox id="demo-remember" checked={remember} onCheckedChange={value => setRemember(value === true)} /><Label htmlFor="demo-remember" className="text-sm font-normal">Remember Me</Label></div>
+            <Button type="submit" className="h-11 w-full">Login</Button>
           </form>
-          {(
-            <p className="mt-6 text-center text-sm text-muted-foreground">
-              New here? <Link to="/register" className="font-medium text-primary">Create account</Link>
-            </p>
-          )}
         </div>
       </div>
     </div>

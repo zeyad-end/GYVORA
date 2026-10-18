@@ -7,7 +7,8 @@
 - [ ] Wire and verify invitation email delivery — blocked by missing owned sender domain.
 - [ ] Verify authenticated workflows — blocked by no real account yet.
 - [ ] Provision and verify super administrator approvals — blocked by missing administrator identity.
-- [ ] Verify phone sign-in — blocked by missing SMS provider configuration.
+- [x] Remove phone authentication; phone fields are contact information only.
 
 - [x] Remove OTP from sign-up and sign-in; route by account type.
 - [x] Demo account registry (Gym Account / Individual / Dashboard) persisted in localStorage; Skip grants demo owner access.
+- [x] Replace prototype login with immediate selected-destination demo access, restore preferences and verify all three destinations.
