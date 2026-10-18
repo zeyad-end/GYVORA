@@ -8,7 +8,8 @@ import {
   endOfMonth,
   endOfYear,
 } from "date-fns";
-import type { Invoice, Plan, Member, TrainerDay, Workout } from "./store";
+import type { Invoice, Plan, Member, TrainerDay, Workout, RecurringExpense } from "./store";
+import { nextPayment } from "./validation";
 
 export const weekDays = [
   "Monday",
