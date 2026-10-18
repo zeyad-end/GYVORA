@@ -1,4 +1,8 @@
 # IronHaus update
+- [ ] Add gym-scoped session QR / Member ID lookup and persisted client selection.
+- [ ] Hide Gym Owner gym switcher and persist interactive sent demo invitations.
+- [ ] Add persisted platform expenses, filters and period net totals.
+- [ ] Verify requested prototype flows in the preview and run rule tests.
 - [x] Add Cloud schema, gym isolation, account profiles, password sign-in and owner approvals.
 - [x] Connect gym data and requested editing flows to persisted records.
 - [x] Add staff invitation records, management and attendance.
