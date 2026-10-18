@@ -22,3 +22,5 @@
 - [x] Remove OTP from sign-up and sign-in; route by account type.
 - [x] Demo account registry (Gym Account / Individual / Dashboard) persisted in localStorage; Skip grants demo owner access.
 - [x] Replace prototype login with immediate selected-destination demo access, restore preferences and verify all three destinations.
+- [x] Finance: recurring frequency sections with Mark as Paid (records paid expense once, advances next payment)
+- [x] Finance: Cash Register period selector with income, paid expenses, net profit; daily expense summary with date picker

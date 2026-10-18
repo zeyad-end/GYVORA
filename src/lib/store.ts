@@ -85,6 +85,8 @@ export type RecurringExpense = {
   next: string;
   start: string;
   amount: number;
+  /** Occurrence date (value of `next`) already recorded as paid — blocks double payment. */
+  lastPaidOccurrence?: string | undefined;
 };
 export type DayHours = { day: string; open: string; close: string; closed: boolean };
 
