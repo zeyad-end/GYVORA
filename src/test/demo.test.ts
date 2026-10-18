@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   matchDemoAccount, approveRequest, rejectRequest, editGym, setGymStatus, deleteGym,
   editClient, removeClientGym, deleteClient, getDemoState, periodRange, inRange,
+  registerDemoAccount, findDemoAccount, updateDemoAccount, getDemoAccounts, demoDestination, sessionKindFor,
 } from "@/lib/demo";
 
 describe("demo accounts", () => {
@@ -108,5 +109,41 @@ describe("period ranges", () => {
     const { from, to } = periodRange("month");
     expect(inRange(new Date().toISOString().slice(0, 10), from, to)).toBe(true);
     expect(inRange("1999-01-01", from, to)).toBe(false);
+  });
+});
+
+describe("demo account registry", () => {
+  it("registers an account and finds it by email + password", () => {
+    const acc = registerDemoAccount("Test User", "test@demo.com", "password123", "gym");
+    expect(acc.type).toBe("gym");
+    expect(acc.skipped).toBe(false);
+    expect(findDemoAccount("test@demo.com", "password123")?.email).toBe("test@demo.com");
+    expect(findDemoAccount("test@demo.com", "wrongpass")).toBeNull();
+  });
+  it("rejects a duplicate email with a different password", () => {
+    registerDemoAccount("Dup", "dup@demo.com", "password123", "individual");
+    expect(() => registerDemoAccount("Dup", "dup@demo.com", "otherpass1", "gym")).toThrow();
+    expect(registerDemoAccount("Dup", "dup@demo.com", "password123", "individual").type).toBe("individual");
+  });
+  it("routes each account type to its area", () => {
+    expect(demoDestination({ type: "dashboard", skipped: false })).toBe("/super-admin");
+    expect(demoDestination({ type: "individual", skipped: false })).toBe("/member");
+    expect(demoDestination({ type: "gym", skipped: false })).toBe("/subscription-request");
+    expect(demoDestination({ type: "gym", skipped: true })).toBe("/dashboard");
+  });
+  it("keeps a pending request after Skip and persists account state", () => {
+    registerDemoAccount("Skipper", "skip@demo.com", "password123", "gym");
+    updateDemoAccount("skip@demo.com", { requestPending: true });
+    updateDemoAccount("skip@demo.com", { skipped: true });
+    const acc = findDemoAccount("skip@demo.com", "password123")!;
+    expect(acc.requestPending).toBe(true);
+    expect(acc.skipped).toBe(true);
+    expect(demoDestination(acc)).toBe("/dashboard");
+    expect(getDemoAccounts().some((a) => a.email === "skip@demo.com")).toBe(true);
+  });
+  it("maps account types to session kinds", () => {
+    expect(sessionKindFor("dashboard")).toBe("super");
+    expect(sessionKindFor("gym")).toBe("owner");
+    expect(sessionKindFor("individual")).toBe("individual");
   });
 });
