@@ -17,12 +17,13 @@ export const Route = createFileRoute("/_gym/memberships")({
 function Memberships() {
   const plans = useStore((s) => s.plans);
   const members = useStore((s) => s.members);
+  const [editing,setEditing]=useState<string|null>(null);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [duration, setDuration] = useState("1 month");
   const [price, setPrice] = useState(0);
   const [features, setFeatures] = useState<string[]>([""]);
-  const reset = () => { setName(""); setDuration("1 month"); setPrice(0); setFeatures([""]); };
+  const reset = () => { setEditing(null); setName(""); setDuration("1 month"); setPrice(0); setFeatures([""]); };
 
   return (
     <>
@@ -34,18 +35,18 @@ function Memberships() {
             <h2 className="mt-3 text-2xl font-semibold">{p.name}</h2>
             <div className="mt-4 font-display text-3xl text-primary">EGP {p.price.toLocaleString()}</div>
             <ul className="mt-6 flex-1 space-y-2.5 text-sm text-muted-foreground">{p.features.map((f) => <li key={f} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 text-primary" />{f}</li>)}</ul>
-            <div className="mt-6 flex items-center justify-between border-t pt-4 text-xs text-muted-foreground"><span>{members.filter((m) => m.plan === p.name).length} members</span><Button size="sm" variant="secondary"><Pencil className="h-3.5 w-3.5" />Edit</Button></div>
+            <div className="mt-6 flex items-center justify-between border-t pt-4 text-xs text-muted-foreground"><span>{members.filter((m) => m.plan === p.name).length} members</span><Button size="sm" variant="secondary" onClick={()=>{setEditing(p.id);setName(p.name);setDuration(p.duration);setPrice(p.price);setFeatures([...p.features]);setOpen(true);}}><Pencil className="h-3.5 w-3.5" />Edit</Button></div>
           </div>
         ))}
       </div>
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-lg">
-          <DialogHeader><DialogTitle>New plan</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{editing?"Edit plan":"New plan"}</DialogTitle></DialogHeader>
           <form className="space-y-4" onSubmit={(e) => {
             e.preventDefault();
-            setState((s) => ({ plans: [...s.plans, { id: crypto.randomUUID(), name: name.trim(), duration, price, features: features.map((f) => f.trim()).filter(Boolean) }] }));
-            toast.success("Plan created");
+            setState((s) => ({ plans: editing?s.plans.map(p=>p.id===editing?{...p,name:name.trim(),duration,price,features:features.map(f=>f.trim()).filter(Boolean)}:p):[...s.plans, { id: crypto.randomUUID(), name: name.trim(), duration, price, features: features.map((f) => f.trim()).filter(Boolean) }] }));
+            
             setOpen(false);
           }}>
             <Field label="Plan name"><Input required maxLength={40} value={name} onChange={(e) => setName(e.target.value)} /></Field>

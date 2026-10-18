@@ -1,0 +1,3 @@
+import { supabase } from '@/integrations/supabase/client';
+export async function uploadImage(file:File){if(!['image/jpeg','image/png','image/webp'].includes(file.type)||file.size>5*1024*1024)throw new Error('Choose a JPG, PNG or WebP image under 5 MB.');const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Sign in first');const path=`${user.id}/${crypto.randomUUID()}.${file.type.split('/')[1]}`;const {error}=await supabase.storage.from('ironhaus-images').upload(path,file,{contentType:file.type});if(error)throw error;return path;}
+export async function imageUrl(path:string){if(!path)return '';const {data,error}=await supabase.storage.from('ironhaus-images').createSignedUrl(path,3600);if(error)throw error;return data.signedUrl;}

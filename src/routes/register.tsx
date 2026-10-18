@@ -1,71 +1,13 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
-import { QRCodeSVG } from "qrcode.react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { seo } from "@/lib/seo";
-
-export const Route = createFileRoute("/register")({
-  head: () => seo("Create account", "Create your IRONHAUS member account and get your personal QR code."),
-  component: Register,
-});
-
-function Register() {
-  const [done, setDone] = useState<{ name: string; id: string } | null>(null);
-  return (
-    <div className="flex min-h-screen items-center justify-center px-6 py-12">
-      <div className="panel w-full max-w-lg p-8">
-        {done ? (
-          <div className="text-center">
-            <span className="eyebrow">Account created</span>
-            <h1 className="mt-2 text-2xl font-semibold">Your personal QR is ready</h1>
-            <div className="mx-auto mt-6 w-fit rounded-2xl bg-foreground p-5">
-              <QRCodeSVG value={`ironhaus:member:${done.id}`} size={200} bgColor="transparent" fgColor="currentColor" className="text-background" />
-            </div>
-            <div className="mt-4 font-display text-lg">{done.name}</div>
-            <div className="text-sm text-muted-foreground">Member ID {done.id}</div>
-            <Button asChild className="mt-8 w-full"><Link to="/member">Go to my dashboard</Link></Button>
-          </div>
-        ) : (
-          <>
-            <h1 className="text-2xl font-semibold">Create your account</h1>
-            <p className="mt-1 text-sm text-muted-foreground">A personal QR code is generated automatically.</p>
-            <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={(e) => {
-              e.preventDefault();
-              const name = String(new FormData(e.currentTarget).get("name") || "Member").slice(0, 80);
-              setDone({ name, id: `M-${Math.floor(2000 + Math.random() * 7000)}` });
-            }}>
-              <Field label="Full name" name="name" className="sm:col-span-2" />
-              <Field label="Phone number" name="phone" type="tel" />
-              <Field label="Email" name="email" type="email" />
-              <Field label="Password" name="password" type="password" />
-              <Field label="Date of birth" name="dob" type="date" />
-              <div className="space-y-2 sm:col-span-2">
-                <Label>Gender</Label>
-                <div className="grid grid-cols-2 gap-2">
-                  {["Male", "Female"].map((g) => (
-                    <label key={g} className="flex cursor-pointer items-center gap-2 rounded-lg border bg-card px-3 py-2.5 text-sm has-[:checked]:border-primary">
-                      <input type="radio" name="gender" value={g} required className="accent-[var(--primary)]" />{g}
-                    </label>
-                  ))}
-                </div>
-              </div>
-              <Button type="submit" className="h-11 sm:col-span-2">Create account</Button>
-            </form>
-            <p className="mt-6 text-center text-sm text-muted-foreground">Already a member? <Link to="/" className="text-primary">Sign in</Link></p>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, className, ...p }: { label: string; className?: string } & React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <div className={`space-y-2 ${className ?? ""}`}>
-      <Label>{label}</Label>
-      <Input required maxLength={120} className="h-11 bg-card" {...p} />
-    </div>
-  );
-}
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { useState } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { z } from 'zod';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Field } from '@/components/kit';
+import { seo } from '@/lib/seo';
+export const Route=createFileRoute('/register')({head:()=>seo('Create account','Register your IronHaus client, owner or staff account.'),component:Register});
+function Register(){const [done,setDone]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+return <div className="flex min-h-screen items-center justify-center px-6 py-12"><div className="w-full max-w-lg"><h1 className="text-2xl font-semibold">Create your account</h1>{done?<><p className="mt-6">Check your email to confirm your account, then sign in to verify your OTP.</p><Button asChild className="mt-6"><Link to="/">Sign in</Link></Button></>:<form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');const d=new FormData(e.currentTarget);try{const p=z.object({full_name:z.string().trim().min(1).max(100),email:z.string().trim().email().max(255),phone:z.string().trim().min(5).max(30),password:z.string().min(8).max(128),account_type:z.enum(['client','owner','staff'])}).parse(Object.fromEntries(d));const {error}=await supabase.auth.signUp({email:p.email,password:p.password,options:{emailRedirectTo:window.location.origin+'/verify-otp',data:{full_name:p.full_name,phone:p.phone,account_type:p.account_type}}});if(error)throw error;setDone(true);}catch(e){setError(e instanceof Error?e.message:'Registration failed');}finally{setBusy(false);}}}>
+<fieldset className="sm:col-span-2"><legend className="mb-2 text-sm">Account type</legend><div className="grid gap-2 sm:grid-cols-3">{[['client','Client'],['owner','Gym Owner'],['staff','Staff Member']].map(([v,l])=><label key={v} className="flex items-center gap-2 rounded-md border p-3 text-sm"><input required type="radio" name="account_type" value={v}/>{l}</label>)}</div></fieldset>
+<Field label="Full Name" className="sm:col-span-2"><Input name="full_name" required maxLength={100}/></Field><Field label="Email"><Input name="email" type="email" required maxLength={255}/></Field><Field label="Phone Number"><Input name="phone" type="tel" required maxLength={30}/></Field><Field label="Password" className="sm:col-span-2"><Input name="password" type="password" required minLength={8} maxLength={128}/></Field><Field label="Date of birth"><Input name="dob" type="date"/></Field><Field label="Gender"><select name="gender" className="h-10 w-full rounded-md border bg-card px-3"><option value="">Not specified</option><option>Male</option><option>Female</option></select></Field>{error&&<p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p>}<Button type="submit" disabled={busy} className="sm:col-span-2">{busy?'Creating account…':'Create account'}</Button><p className="text-sm text-muted-foreground sm:col-span-2">Already have an account? <Link to="/" className="text-primary">Sign in</Link></p></form>}</div></div>}

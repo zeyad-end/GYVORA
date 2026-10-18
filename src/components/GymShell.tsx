@@ -5,7 +5,10 @@ import {
   Package, Wallet, ShieldCheck, QrCode, Settings, History, Menu, X, Search, Bell, LogOut,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { gym } from "@/lib/mock";
+import { useCloud } from "./CloudProvider";
+import { useStore } from "@/lib/store";
+import { initials } from "@/lib/mock";
+import { Button } from "./ui/button";
 
 const nav = [
   { to: "/gym", label: "Gym Profile", icon: Building2 },
@@ -25,6 +28,7 @@ const nav = [
 ] as const;
 
 export function GymShell({ children }: { children: ReactNode }) {
+  const c=useCloud(); const gym=useStore(s=>s.gym);
   const [open, setOpen] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
 
@@ -51,9 +55,9 @@ export function GymShell({ children }: { children: ReactNode }) {
         })}
       </nav>
       <div className="border-t border-sidebar-border p-3">
-        <Link to="/" className="flex items-center gap-3 rounded-lg px-3 py-2 text-sm hover:bg-sidebar-accent/60">
+        <Button variant="ghost" className="w-full justify-start" onClick={()=>void c.logout()}>
           <LogOut className="h-4 w-4" /> Sign out
-        </Link>
+        </Button>
       </div>
     </aside>
   );
@@ -77,9 +81,9 @@ export function GymShell({ children }: { children: ReactNode }) {
           <button aria-label="Notifications" className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border bg-card">
             <Bell className="h-4 w-4" /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
           </button>
-          <div className="hidden items-center gap-2 sm:flex">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-accent font-display text-xs font-semibold text-primary">ZM</span>
-            <div className="text-xs"><div className="font-semibold">Zeyad M.</div><div className="text-muted-foreground">Owner</div></div>
+          <Button asChild size="sm" variant="outline"><Link to="/gyms">Switch gym</Link></Button><div className="hidden items-center gap-2 sm:flex">
+            <span className="grid h-9 w-9 place-items-center rounded-full bg-accent font-display text-xs font-semibold text-primary">{initials(c.profile?.full_name??"")}</span>
+            <div className="text-xs"><div className="font-semibold">{c.profile?.full_name}</div><div className="text-muted-foreground">{c.role}</div></div>
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8">{children}</main>

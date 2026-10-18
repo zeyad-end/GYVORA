@@ -2,27 +2,20 @@ import { createFileRoute, Link, notFound } from "@tanstack/react-router";
 import { QRCodeSVG } from "qrcode.react";
 import { ArrowLeft } from "lucide-react";
 import { Avatar, Panel, StatusPill } from "@/components/kit";
-import { members, workouts } from "@/lib/mock";
+import {seo} from "@/lib/seo";
 import { useStore } from "@/lib/store";
 
 export const Route = createFileRoute("/_gym/members/$id")({
-  loader: ({ params }) => {
-    const m = members.find((x) => x.id === params.id);
-    if (!m) throw notFound();
-    return m;
-  },
-  head: ({ loaderData }) => ({
-    meta: loaderData
-      ? [{ title: `${loaderData.name} — IRONHAUS Gym OS` }, { name: "description", content: `Member profile for ${loaderData.name}.` }, { property: "og:title", content: loaderData.name }, { property: "og:description", content: "Member profile" }]
-      : [{ title: "Not found" }, { name: "robots", content: "noindex" }],
-  }),
+  head: ()=>seo("Member profile","Gym member subscription details and history."),
   component: MemberProfile,
 });
 
 function MemberProfile() {
-  const seed = Route.useLoaderData();
-  const m = useStore((s) => s.members.find((x) => x.id === seed.id)) ?? seed;
-  const w = workouts[0]!;
+  const {id}=Route.useParams();
+  const m=useStore(s=>s.members.find(x=>x.id===id));
+  const visits=useStore(s=>s.attendance);const sessions=useStore(s=>s.sessions);
+  const w=useStore(s=>s.workouts[0]);
+  if(!m)return <div className="py-10"><h1 className="text-2xl">Member unavailable</h1><Link to="/members" className="mt-5 block text-primary">Back to members</Link></div>;
   return (
     <div className="space-y-6">
       <Link to="/members" className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="h-4 w-4" />Members</Link>
@@ -50,19 +43,12 @@ function MemberProfile() {
             ))}
           </div>
         </Panel>
-        <Panel title="Notes"><p className="text-sm text-muted-foreground">Prefers evening sessions. Mild knee sensitivity — avoid deep lunges. Goal: strength + fat loss.</p></Panel>
-        <Panel title="Attendance history">
-          <ul className="space-y-2 text-sm">{["Oct 7 · 19:42", "Oct 5 · 20:10", "Oct 3 · 18:55", "Oct 1 · 19:30"].map((d) => <li key={d} className="flex justify-between"><span>Check-in</span><span className="text-muted-foreground">{d}</span></li>)}</ul>
-        </Panel>
-        <Panel title="Session history">
-          <ul className="space-y-2 text-sm">{[["CrossFit", "Coach Tamer"], ["PT", "Coach Hossam"], ["Boxing", "Coach Rana"]].map(([s, t]) => <li key={s} className="flex justify-between"><span>{s}</span><span className="text-muted-foreground">{t}</span></li>)}</ul>
-        </Panel>
-        <Panel title="Payment history">
-          <ul className="space-y-2 text-sm">{[["Premium renewal", "EGP 2,100"], ["PT session", "EGP 400"], ["Whey protein", "EGP 1,850"]].map(([s, a]) => <li key={s} className="flex justify-between"><span>{s}</span><span className="text-primary">{a}</span></li>)}</ul>
-        </Panel>
-        <Panel title={`Workout program · ${w.name}`} className="lg:col-span-3">
+        <Panel title="Notes"><p className="text-sm text-muted-foreground">{m.notes||"No notes recorded."}</p></Panel>
+        <Panel title="Attendance history"><ul className="space-y-2 text-sm">{visits.filter(v=>v.memberId===m.id).map(v=><li key={v.id}>{v.date} · {v.time}</li>)}</ul></Panel>
+        <Panel title="Session history"><ul className="space-y-2 text-sm">{sessions.filter(v=>v.memberId===m.id).map(v=><li key={v.id}>{v.date} · {v.type} · {v.trainer}</li>)}</ul></Panel>
+        {w&&<Panel title={`Workout program · ${w.name}`} className="lg:col-span-3">
           <div className="grid gap-2 sm:grid-cols-4">{w.exercises.map((e) => <div key={e.name} className="rounded-lg bg-surface p-3"><div className="text-sm font-medium">{e.name}</div><div className="text-xs text-muted-foreground">{e.sets} × {e.reps}</div></div>)}</div>
-        </Panel>
+        </Panel>}
       </div>
     </div>
   );

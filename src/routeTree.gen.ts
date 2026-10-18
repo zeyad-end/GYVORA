@@ -11,7 +11,13 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GymRouteImport } from './routes/_gym'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as GymsRouteImport } from './routes/gyms'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as SubscriptionRequestRouteImport } from './routes/subscription-request'
+import { Route as SuperAdminRouteImport } from './routes/super-admin'
+import { Route as VerifyOtpRouteImport } from './routes/verify-otp'
 import { Route as GymActivityRouteImport } from './routes/_gym.activity'
 import { Route as GymAttendanceRouteImport } from './routes/_gym.attendance'
 import { Route as GymDashboardRouteImport } from './routes/_gym.dashboard'
@@ -26,8 +32,13 @@ import { Route as GymStaffRouteImport } from './routes/_gym.staff'
 import { Route as GymTrainersRouteImport } from './routes/_gym.trainers'
 import { Route as GymWorkoutsRouteImport } from './routes/_gym.workouts'
 import { Route as MemberIndexRouteImport } from './routes/member.index'
+import { Route as MemberAttendanceRouteImport } from './routes/member.attendance'
+import { Route as MemberBrowseRouteImport } from './routes/member.browse'
 import { Route as MemberJoinRouteImport } from './routes/member.join'
+import { Route as MemberMembershipRouteImport } from './routes/member.membership'
 import { Route as MemberQrRouteImport } from './routes/member.qr'
+import { Route as MemberSettingsRouteImport } from './routes/member.settings'
+import { Route as MemberWorkoutsRouteImport } from './routes/member.workouts'
 import { Route as GymMembersIndexRouteImport } from './routes/_gym.members.index'
 import { Route as GymMembersIdRouteImport } from './routes/_gym.members.$id'
 
@@ -40,9 +51,39 @@ const GymRoute = GymRouteImport.update({
   id: '/_gym',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GymsRoute = GymsRouteImport.update({
+  id: '/gyms',
+  path: '/gyms',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SubscriptionRequestRoute = SubscriptionRequestRouteImport.update({
+  id: '/subscription-request',
+  path: '/subscription-request',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SuperAdminRoute = SuperAdminRouteImport.update({
+  id: '/super-admin',
+  path: '/super-admin',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyOtpRoute = VerifyOtpRouteImport.update({
+  id: '/verify-otp',
+  path: '/verify-otp',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GymActivityRoute = GymActivityRouteImport.update({
@@ -115,14 +156,39 @@ const MemberIndexRoute = MemberIndexRouteImport.update({
   path: '/member/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MemberAttendanceRoute = MemberAttendanceRouteImport.update({
+  id: '/member/attendance',
+  path: '/member/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberBrowseRoute = MemberBrowseRouteImport.update({
+  id: '/member/browse',
+  path: '/member/browse',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MemberJoinRoute = MemberJoinRouteImport.update({
   id: '/member/join',
   path: '/member/join',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MemberMembershipRoute = MemberMembershipRouteImport.update({
+  id: '/member/membership',
+  path: '/member/membership',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MemberQrRoute = MemberQrRouteImport.update({
   id: '/member/qr',
   path: '/member/qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberSettingsRoute = MemberSettingsRouteImport.update({
+  id: '/member/settings',
+  path: '/member/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberWorkoutsRoute = MemberWorkoutsRouteImport.update({
+  id: '/member/workouts',
+  path: '/member/workouts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GymMembersIndexRoute = GymMembersIndexRouteImport.update({
@@ -138,7 +204,13 @@ const GymMembersIdRoute = GymMembersIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/subscription-request': typeof SubscriptionRequestRoute
+  '/super-admin': typeof SuperAdminRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/activity': typeof GymActivityRoute
   '/attendance': typeof GymAttendanceRoute
   '/dashboard': typeof GymDashboardRoute
@@ -152,15 +224,26 @@ export interface FileRoutesByFullPath {
   '/staff': typeof GymStaffRoute
   '/trainers': typeof GymTrainersRoute
   '/workouts': typeof GymWorkoutsRoute
+  '/member/attendance': typeof MemberAttendanceRoute
+  '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
+  '/member/membership': typeof MemberMembershipRoute
   '/member/qr': typeof MemberQrRoute
+  '/member/settings': typeof MemberSettingsRoute
+  '/member/workouts': typeof MemberWorkoutsRoute
   '/member/': typeof MemberIndexRoute
   '/members/$id': typeof GymMembersIdRoute
   '/members/': typeof GymMembersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/auth': typeof AuthRoute
+  '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/subscription-request': typeof SubscriptionRequestRoute
+  '/super-admin': typeof SuperAdminRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/activity': typeof GymActivityRoute
   '/attendance': typeof GymAttendanceRoute
   '/dashboard': typeof GymDashboardRoute
@@ -174,8 +257,13 @@ export interface FileRoutesByTo {
   '/staff': typeof GymStaffRoute
   '/trainers': typeof GymTrainersRoute
   '/workouts': typeof GymWorkoutsRoute
+  '/member/attendance': typeof MemberAttendanceRoute
+  '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
+  '/member/membership': typeof MemberMembershipRoute
   '/member/qr': typeof MemberQrRoute
+  '/member/settings': typeof MemberSettingsRoute
+  '/member/workouts': typeof MemberWorkoutsRoute
   '/member': typeof MemberIndexRoute
   '/members/$id': typeof GymMembersIdRoute
   '/members': typeof GymMembersIndexRoute
@@ -184,7 +272,13 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_gym': typeof GymRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/subscription-request': typeof SubscriptionRequestRoute
+  '/super-admin': typeof SuperAdminRoute
+  '/verify-otp': typeof VerifyOtpRoute
   '/_gym/activity': typeof GymActivityRoute
   '/_gym/attendance': typeof GymAttendanceRoute
   '/_gym/dashboard': typeof GymDashboardRoute
@@ -198,8 +292,13 @@ export interface FileRoutesById {
   '/_gym/staff': typeof GymStaffRoute
   '/_gym/trainers': typeof GymTrainersRoute
   '/_gym/workouts': typeof GymWorkoutsRoute
+  '/member/attendance': typeof MemberAttendanceRoute
+  '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
+  '/member/membership': typeof MemberMembershipRoute
   '/member/qr': typeof MemberQrRoute
+  '/member/settings': typeof MemberSettingsRoute
+  '/member/workouts': typeof MemberWorkoutsRoute
   '/member/': typeof MemberIndexRoute
   '/_gym/members/$id': typeof GymMembersIdRoute
   '/_gym/members/': typeof GymMembersIndexRoute
@@ -208,7 +307,13 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/auth'
+    | '/gyms'
     | '/register'
+    | '/reset-password'
+    | '/subscription-request'
+    | '/super-admin'
+    | '/verify-otp'
     | '/activity'
     | '/attendance'
     | '/dashboard'
@@ -222,15 +327,26 @@ export interface FileRouteTypes {
     | '/staff'
     | '/trainers'
     | '/workouts'
+    | '/member/attendance'
+    | '/member/browse'
     | '/member/join'
+    | '/member/membership'
     | '/member/qr'
+    | '/member/settings'
+    | '/member/workouts'
     | '/member/'
     | '/members/$id'
     | '/members/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/auth'
+    | '/gyms'
     | '/register'
+    | '/reset-password'
+    | '/subscription-request'
+    | '/super-admin'
+    | '/verify-otp'
     | '/activity'
     | '/attendance'
     | '/dashboard'
@@ -244,8 +360,13 @@ export interface FileRouteTypes {
     | '/staff'
     | '/trainers'
     | '/workouts'
+    | '/member/attendance'
+    | '/member/browse'
     | '/member/join'
+    | '/member/membership'
     | '/member/qr'
+    | '/member/settings'
+    | '/member/workouts'
     | '/member'
     | '/members/$id'
     | '/members'
@@ -253,7 +374,13 @@ export interface FileRouteTypes {
     | '__root__'
     | '/'
     | '/_gym'
+    | '/auth'
+    | '/gyms'
     | '/register'
+    | '/reset-password'
+    | '/subscription-request'
+    | '/super-admin'
+    | '/verify-otp'
     | '/_gym/activity'
     | '/_gym/attendance'
     | '/_gym/dashboard'
@@ -267,8 +394,13 @@ export interface FileRouteTypes {
     | '/_gym/staff'
     | '/_gym/trainers'
     | '/_gym/workouts'
+    | '/member/attendance'
+    | '/member/browse'
     | '/member/join'
+    | '/member/membership'
     | '/member/qr'
+    | '/member/settings'
+    | '/member/workouts'
     | '/member/'
     | '/_gym/members/$id'
     | '/_gym/members/'
@@ -277,9 +409,20 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GymRoute: typeof GymRouteWithChildren
+  AuthRoute: typeof AuthRoute
+  GymsRoute: typeof GymsRoute
   RegisterRoute: typeof RegisterRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  SubscriptionRequestRoute: typeof SubscriptionRequestRoute
+  SuperAdminRoute: typeof SuperAdminRoute
+  VerifyOtpRoute: typeof VerifyOtpRoute
+  MemberAttendanceRoute: typeof MemberAttendanceRoute
+  MemberBrowseRoute: typeof MemberBrowseRoute
   MemberJoinRoute: typeof MemberJoinRoute
+  MemberMembershipRoute: typeof MemberMembershipRoute
   MemberQrRoute: typeof MemberQrRoute
+  MemberSettingsRoute: typeof MemberSettingsRoute
+  MemberWorkoutsRoute: typeof MemberWorkoutsRoute
   MemberIndexRoute: typeof MemberIndexRoute
 }
 
@@ -299,11 +442,53 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GymRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gyms': {
+      id: '/gyms'
+      path: '/gyms'
+      fullPath: '/gyms'
+      preLoaderRoute: typeof GymsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/subscription-request': {
+      id: '/subscription-request'
+      path: '/subscription-request'
+      fullPath: '/subscription-request'
+      preLoaderRoute: typeof SubscriptionRequestRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/super-admin': {
+      id: '/super-admin'
+      path: '/super-admin'
+      fullPath: '/super-admin'
+      preLoaderRoute: typeof SuperAdminRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-otp': {
+      id: '/verify-otp'
+      path: '/verify-otp'
+      fullPath: '/verify-otp'
+      preLoaderRoute: typeof VerifyOtpRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_gym/activity': {
@@ -404,6 +589,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/member/attendance': {
+      id: '/member/attendance'
+      path: '/member/attendance'
+      fullPath: '/member/attendance'
+      preLoaderRoute: typeof MemberAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member/browse': {
+      id: '/member/browse'
+      path: '/member/browse'
+      fullPath: '/member/browse'
+      preLoaderRoute: typeof MemberBrowseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/member/join': {
       id: '/member/join'
       path: '/member/join'
@@ -411,11 +610,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberJoinRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/member/membership': {
+      id: '/member/membership'
+      path: '/member/membership'
+      fullPath: '/member/membership'
+      preLoaderRoute: typeof MemberMembershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/member/qr': {
       id: '/member/qr'
       path: '/member/qr'
       fullPath: '/member/qr'
       preLoaderRoute: typeof MemberQrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member/settings': {
+      id: '/member/settings'
+      path: '/member/settings'
+      fullPath: '/member/settings'
+      preLoaderRoute: typeof MemberSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member/workouts': {
+      id: '/member/workouts'
+      path: '/member/workouts'
+      fullPath: '/member/workouts'
+      preLoaderRoute: typeof MemberWorkoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_gym/members/': {
@@ -476,9 +696,20 @@ const GymRouteWithChildren = GymRoute._addFileChildren(GymRouteChildren)
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GymRoute: GymRouteWithChildren,
+  AuthRoute: AuthRoute,
+  GymsRoute: GymsRoute,
   RegisterRoute: RegisterRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  SubscriptionRequestRoute: SubscriptionRequestRoute,
+  SuperAdminRoute: SuperAdminRoute,
+  VerifyOtpRoute: VerifyOtpRoute,
+  MemberAttendanceRoute: MemberAttendanceRoute,
+  MemberBrowseRoute: MemberBrowseRoute,
   MemberJoinRoute: MemberJoinRoute,
+  MemberMembershipRoute: MemberMembershipRoute,
   MemberQrRoute: MemberQrRoute,
+  MemberSettingsRoute: MemberSettingsRoute,
+  MemberWorkoutsRoute: MemberWorkoutsRoute,
   MemberIndexRoute: MemberIndexRoute,
 }
 export const routeTree = rootRouteImport

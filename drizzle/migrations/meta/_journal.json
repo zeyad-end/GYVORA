@@ -1,0 +1,55 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1792327215645,
+      "tag": "0000_ironhaus_accounts_gym_isolation",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792327279178,
+      "tag": "0001_ironhaus_transactional_records",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1792327413227,
+      "tag": "0002_ironhaus_private_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1792327638625,
+      "tag": "0003_ironhaus_staff_details_security",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1792327733524,
+      "tag": "0004_ironhaus_password_otp_session_gate",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1792327882170,
+      "tag": "0005_ironhaus_snapshot_concurrency",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792327987087,
+      "tag": "0006_ironhaus_program_validation",
+      "breakpoints": true
+    }
+  ]
+}
