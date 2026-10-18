@@ -317,6 +317,10 @@ export type Database = {
         Args: { accept: boolean; invitation_id: string }
         Returns: undefined
       }
+      save_gym_records: {
+        Args: { changes: Json; g: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never

@@ -8,6 +8,13 @@
       "when": 1792327215645,
       "tag": "0000_ironhaus_accounts_gym_isolation",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1792327279178,
+      "tag": "0001_ironhaus_transactional_records",
+      "breakpoints": true
     }
   ]
 }
