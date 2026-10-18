@@ -1,3 +1,4 @@
+import { RecurringExpenses } from "@/components/RecurringExpenses";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
@@ -64,12 +65,7 @@ function Finance() {
         </TabsContent>
 
         <TabsContent value="rec">
-          <Panel title="Recurring expenses" action={<Button size="sm">New recurring</Button>}>
-            <DataTable head={["Name", "Category", "Frequency", "Start", "Next payment", "Amount"]}>
-              {recurring.map((r) => <tr key={r.name}><td className={`${td} font-medium`}>{r.name}</td><td className={td}>{r.category}</td><td className={td}>{r.frequency}</td><td className={`${td} text-muted-foreground`}>{r.start}</td><td className={`${td} text-primary`}>{r.next}</td><td className={td}>{egp(r.amount)}</td></tr>)}
-            </DataTable>
-            <p className="mt-4 text-xs text-muted-foreground">Expenses are created automatically on each payment date.</p>
-          </Panel>
+          <RecurringExpenses />
         </TabsContent>
 
         <TabsContent value="cash">
