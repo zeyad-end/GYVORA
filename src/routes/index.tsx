@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
-import { matchDemoAccount, setDemoSession } from "@/lib/demo";
+import { matchDemoAccount, setDemoSession, findDemoAccount, sessionKindFor, demoDestination } from "@/lib/demo";
 import cover from "@/assets/gym-cover.jpg";
 
 export const Route = createFileRoute("/")({
@@ -30,6 +30,8 @@ function Login() {
     try { const parsed=z.object({name:z.string().trim().min(1).max(100),identifier:z.string().trim().min(1).max(255),password:z.string().min(1).max(128)}).parse({name:d.get('name'),identifier:d.get('identifier'),password:d.get('password')});
       const demo=matchDemoAccount(parsed.name,parsed.identifier,parsed.password);
       if(demo){setDemoSession(demo);await cloud.refresh();await navigate({to:demo==='super'?'/super-admin':'/dashboard'});return;}
+      const acc=findDemoAccount(parsed.identifier,parsed.password);
+      if(acc){setDemoSession(sessionKindFor(acc.type),acc.email);await cloud.refresh();await navigate({to:demoDestination(acc)});return;}
       z.string().email().parse(parsed.identifier);
       const {error:authError}=await supabase.auth.signInWithPassword({email:parsed.identifier,password:parsed.password});
       if(authError)throw new Error(authError.message==='Email not confirmed'?authError.message:'Email or password is incorrect.');

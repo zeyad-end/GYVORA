@@ -10,3 +10,4 @@
 - [ ] Verify phone sign-in — blocked by missing SMS provider configuration.
 
 - [x] Remove OTP from sign-up and sign-in; route by account type.
+- [x] Demo account registry (Gym Account / Individual / Dashboard) persisted in localStorage; Skip grants demo owner access.

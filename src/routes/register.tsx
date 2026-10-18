@@ -1,15 +1,114 @@
 import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useCloud } from '@/components/CloudProvider';
-import { resolveDestination } from '@/lib/post-login';
 import { useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { z } from 'zod';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field } from '@/components/kit';
 import { seo } from '@/lib/seo';
-export const Route=createFileRoute('/register')({head:()=>seo('Create account','Register your IronHaus client, owner or staff account.'),component:Register});
-function Register(){const navigate=useNavigate();const cloud=useCloud();const [done,setDone]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
-return <div className="flex min-h-screen items-center justify-center px-6 py-12"><div className="w-full max-w-lg"><h1 className="text-2xl font-semibold">Create your account</h1>{done?<><p className="mt-6">Your account was created. Sign in to continue.</p><Button asChild className="mt-6"><Link to="/">Sign in</Link></Button></>:<form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={async e=>{e.preventDefault();setBusy(true);setError('');const d=new FormData(e.currentTarget);try{const p=z.object({full_name:z.string().trim().min(1).max(100),email:z.string().trim().email().max(255),phone:z.string().trim().min(5).max(30),password:z.string().min(8).max(128),account_type:z.enum(['client','owner','staff'])}).parse(Object.fromEntries(d));const {data:su,error}=await supabase.auth.signUp({email:p.email,password:p.password,options:{emailRedirectTo:window.location.origin,data:{full_name:p.full_name,phone:p.phone,account_type:p.account_type}}});if(error)throw error;if(su.session){await cloud.refresh();await navigate({to:await resolveDestination()});return;}setDone(true);}catch(e){setError(e instanceof Error?e.message:'Registration failed');}finally{setBusy(false);}}}>
-<fieldset className="sm:col-span-2"><legend className="mb-2 text-sm">Account type</legend><div className="grid gap-2 sm:grid-cols-3">{[['client','Client'],['owner','Gym Owner'],['staff','Staff Member']].map(([v,l])=><label key={v} className="flex items-center gap-2 rounded-md border p-3 text-sm"><input required type="radio" name="account_type" value={v}/>{l}</label>)}</div></fieldset>
-<Field label="Full Name" className="sm:col-span-2"><Input name="full_name" required maxLength={100}/></Field><Field label="Email"><Input name="email" type="email" required maxLength={255}/></Field><Field label="Phone Number"><Input name="phone" type="tel" required maxLength={30}/></Field><Field label="Password" className="sm:col-span-2"><Input name="password" type="password" required minLength={8} maxLength={128}/></Field><Field label="Date of birth"><Input name="dob" type="date"/></Field><Field label="Gender"><select name="gender" className="h-10 w-full rounded-md border bg-card px-3"><option value="">Not specified</option><option>Male</option><option>Female</option></select></Field>{error&&<p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p>}<Button type="submit" disabled={busy} className="sm:col-span-2">{busy?'Creating account…':'Create account'}</Button><p className="text-sm text-muted-foreground sm:col-span-2">Already have an account? <Link to="/" className="text-primary">Sign in</Link></p></form>}</div></div>}
+import { registerDemoAccount, setDemoSession, sessionKindFor, demoDestination, type DemoAccountType } from '@/lib/demo';
+
+export const Route = createFileRoute('/register')({
+  head: () => seo('Create account', 'Register your IronHaus client, owner or staff account.'),
+  component: Register,
+});
+
+const ACCOUNT_TYPES: { value: DemoAccountType; label: string; hint: string }[] = [
+  { value: 'gym', label: 'Gym Account', hint: 'Gym Owner — run your club' },
+  { value: 'individual', label: 'Individual', hint: 'Client — member portal' },
+  { value: 'dashboard', label: 'Dashboard', hint: 'Platform business owner (Super Admin)' },
+];
+
+function Register() {
+  const navigate = useNavigate();
+  const cloud = useCloud();
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setBusy(true);
+    setError('');
+    const d = new FormData(e.currentTarget);
+    try {
+      const p = z
+        .object({
+          full_name: z.string().trim().min(1).max(100),
+          email: z.string().trim().email().max(255),
+          phone: z.string().trim().max(30).optional(),
+          password: z.string().min(8).max(128),
+          account_type: z.enum(['gym', 'individual', 'dashboard'], { message: 'Select an account type to continue.' }),
+        })
+        .parse(Object.fromEntries(d));
+      // Prototype: demo accounts are stored locally and isolated from production auth.
+      const acc = registerDemoAccount(p.full_name, p.email, p.password, p.account_type);
+      setDemoSession(sessionKindFor(acc.type), acc.email);
+      await cloud.refresh();
+      await navigate({ to: demoDestination(acc) });
+    } catch (err) {
+      setError(err instanceof z.ZodError ? (err.issues[0]?.message ?? 'Check the form') : err instanceof Error ? err.message : 'Registration failed');
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="flex min-h-screen items-center justify-center px-6 py-12">
+      <div className="w-full max-w-lg">
+        <h1 className="text-2xl font-semibold">Create your account</h1>
+        <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
+          <fieldset className="sm:col-span-2">
+            <legend className="mb-2 text-sm">Account type</legend>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {ACCOUNT_TYPES.map((t) => (
+                <label key={t.value} className="flex cursor-pointer flex-col gap-1 rounded-md border p-3 text-sm has-checked:border-primary has-checked:bg-secondary">
+                  <span className="flex items-center gap-2 font-medium">
+                    <input required type="radio" name="account_type" value={t.value} />
+                    {t.label}
+                  </span>
+                  <span className="text-xs text-muted-foreground">{t.hint}</span>
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <Field label="Full Name" className="sm:col-span-2">
+            <Input name="full_name" required maxLength={100} />
+          </Field>
+          <Field label="Email">
+            <Input name="email" type="email" required maxLength={255} />
+          </Field>
+          <Field label="Phone Number">
+            <Input name="phone" type="tel" maxLength={30} />
+          </Field>
+          <Field label="Password" className="sm:col-span-2">
+            <Input name="password" type="password" required minLength={8} maxLength={128} />
+          </Field>
+          <Field label="Date of birth">
+            <Input name="dob" type="date" />
+          </Field>
+          <Field label="Gender">
+            <select name="gender" className="h-10 w-full rounded-md border bg-card px-3">
+              <option value="">Not specified</option>
+              <option>Male</option>
+              <option>Female</option>
+            </select>
+          </Field>
+          {error && (
+            <p role="alert" className="text-sm text-destructive sm:col-span-2">
+              {error}
+            </p>
+          )}
+          <Button type="submit" disabled={busy} className="sm:col-span-2">
+            {busy ? 'Creating account…' : 'Create account'}
+          </Button>
+          <p className="text-sm text-muted-foreground sm:col-span-2">
+            Already have an account?{' '}
+            <Link to="/" className="text-primary">
+              Sign in
+            </Link>
+          </p>
+        </form>
+      </div>
+    </div>
+  );
+}
