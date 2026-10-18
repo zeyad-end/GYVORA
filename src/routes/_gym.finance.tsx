@@ -27,6 +27,8 @@ import {
   reportRange,
   reportInvoices,
   groupInvoices,
+  cashSummary,
+  dailySummary,
   type ReportPeriod,
 } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
@@ -57,8 +59,14 @@ function Finance() {
   const [from, setFrom] = useState(format(new Date(), "yyyy-MM-dd"));
   const [to, setTo] = useState(from);
   const [group, setGroup] = useState<"daily" | "weekly" | "monthly" | "yearly">("daily");
-  const income = tx.filter((t) => t.amount > 0).reduce((a, t) => a + t.amount, 0);
-  const exp = tx.filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+  const [cashPeriod, setCashPeriod] = useState<ReportPeriod>("month");
+  const [cashFrom, setCashFrom] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [cashTo, setCashTo] = useState(cashFrom);
+  const [day, setDay] = useState(format(new Date(), "yyyy-MM-dd"));
+  const cashRange = reportRange(cashPeriod, new Date(), { from: cashFrom, to: cashTo });
+  const cashInvalid = cashRange.from > cashRange.to;
+  const cash = cashInvalid ? { income: 0, expenses: 0, net: 0 } : cashSummary(records, cashRange);
+  const today = dailySummary(records, day);
   const range = reportRange(period, new Date(), { from, to });
   const invalid = range.from > range.to;
   const matches = invalid ? [] : reportInvoices(records, range);
