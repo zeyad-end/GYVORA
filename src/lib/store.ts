@@ -21,7 +21,7 @@ export type TrainerDay = { day: string; available: boolean; start: string; end: 
 export type Trainer = (typeof trainersSeed)[number] & { schedule?: TrainerDay[] };
 export type Invoice = {
   id: string;
-  number?: number;
+  number?: number | undefined;
   name: string;
   description: string;
   category: string;
@@ -29,9 +29,9 @@ export type Invoice = {
   date: string;
   type: string;
   method: string;
-  attachment?: string;
-  deleted?: boolean;
-  entered?: boolean;
+  attachment?: string | undefined;
+  deleted?: boolean | undefined;
+  entered?: boolean | undefined;
 };
 export type Plan = {
   id: string;
