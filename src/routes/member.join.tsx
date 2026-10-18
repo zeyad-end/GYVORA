@@ -17,7 +17,7 @@ function Join() {
       <Link to="/member" className="inline-flex items-center gap-2 text-sm text-muted-foreground"><ArrowLeft className="h-4 w-4" />Back</Link>
       <h1 className="mt-6 text-2xl font-semibold">Join a gym</h1>
       <p className="mt-1 text-sm text-muted-foreground">Connect your account with your club.</p>
-      <div className="mt-8 space-y-4"><p className="text-sm text-muted-foreground">Show your Member ID or personal QR to reception. Staff will link your existing account to the gym when creating your subscription.</p><Button asChild><Link to="/member/qr">Show my QR code</Link></Button><Button asChild variant="outline"><Link to="/gyms">Your gyms</Link></Button></div>
+      <div className="mt-8 space-y-4"><p className="text-sm text-muted-foreground">Show your Member ID or personal QR to reception. Staff will link your existing account to the gym when creating your subscription.</p><Button asChild><Link to="/member/qr">Show my QR code</Link></Button></div>
     </div>
   );
 }

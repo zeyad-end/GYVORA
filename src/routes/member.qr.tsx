@@ -19,7 +19,7 @@ function MemberQR() {
       <div className="panel mt-6 p-8 text-center">
         <span className="eyebrow">Scan at reception</span>
         <div className="mx-auto mt-6 w-fit rounded-3xl bg-foreground p-6">
-          <QRCodeSVG value={`ironhaus:member:${c.profile?.member_id??""}`} size={200} bgColor="transparent" fgColor="currentColor" className="text-background" />
+          {c.profile?.member_id?<QRCodeSVG value={`ironhaus:member:${c.profile?.member_id??""}`} size={200} bgColor="transparent" fgColor="currentColor" className="text-background" />:<p className="text-background">No member QR available yet.</p>}
         </div>
         <h1 className="mt-6 text-2xl font-semibold">{c.profile?.full_name}</h1>
         <div className="mt-1 text-sm text-muted-foreground">Member ID · {c.profile?.member_id}</div>

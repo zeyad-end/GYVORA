@@ -9,12 +9,12 @@ import { Avatar, StatusPill } from "@/components/kit";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/member/")({
-  head: () => seo("My dashboard", "Your membership status, QR code and training at a glance."),
+  head: () => seo("My account", "Your membership status, QR code and training at a glance."),
   component: MemberHome,
 });
 
 const actions = [
-  { label: "My QR Code", icon: QrCode, to: "/member/qr" },
+  { label: "My QR", icon: QrCode, to: "/member/qr" },
   { label: "My Membership", icon: CreditCard, to: "/member/membership" },
   { label: "Attendance History", icon: CalendarCheck, to: "/member/attendance" },
   { label: "Workout Program", icon: ClipboardList, to: "/member/workouts" },
@@ -30,7 +30,7 @@ function MemberHome() {
           <Avatar initials={initials(c.profile?.full_name??"")} />
           <div><div className="text-xs text-muted-foreground">Good evening</div><div className="font-display font-semibold">{c.profile?.full_name}</div></div>
         </Link>
-        <Button variant="outline" size="icon" aria-label="Sign out" onClick={()=>void c.logout()}><LogOut className="h-4 w-4" /></Button>
+        <Button variant="outline" size="icon" aria-label="Sign out" onClick={()=>void c.logout()}><LogOut className="h-4 w-4" /></Button></div>
       </div>
 
       <div className="panel mt-6 p-6">
