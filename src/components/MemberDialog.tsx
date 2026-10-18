@@ -42,7 +42,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
       setState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
       
     } else {
-      const id = `M-${1040 + getState().members.length + Math.floor(Math.random() * 900)}`;
+      const id = crypto.randomUUID();
       setState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
       
     }
@@ -74,7 +74,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
           <Field label="Trainer" className="sm:col-span-2"><select className={selectCls} value={f.trainer} onChange={(e) => up({ trainer: e.target.value })}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
           <Field label="Notes" className="sm:col-span-2"><Textarea maxLength={500} value={f.notes} onChange={(e) => up({ notes: e.target.value })} /></Field>
           <DialogFooter className="gap-2 sm:col-span-2">
-            {member && <Button type="button" variant="destructive" className="sm:mr-auto" onClick={() => { if(!window.confirm("Delete this gym subscription?"))return; setState((s) => ({ members: s.members.filter((m) => m.id !== member.id) })); toast.success("Member deleted"); onOpenChange(false); }}>Delete member</Button>}
+            {member && <Button type="button" variant="destructive" className="sm:mr-auto" onClick={() => { if(!window.confirm("Delete this gym subscription?"))return; setState((s) => ({ members: s.members.filter((m) => m.id !== member.id) }));  onOpenChange(false); }}>Delete member</Button>}
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit">{member ? "Save changes" : "Save"}</Button>
           </DialogFooter>

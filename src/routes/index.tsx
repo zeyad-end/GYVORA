@@ -57,10 +57,10 @@ function Login() {
 
           <div className="mt-8 grid grid-cols-2 gap-2 rounded-xl border bg-card p-1">
             {([["user", "Individual", User], ["gym", "Gym Account", Building2]] as const).map(([k, l, Icon]) => (
-              <button key={k} onClick={() => setMode(k)}
+              <Button type="button" variant="ghost" key={k} onClick={() => setMode(k)}
                 className={cn("flex items-center justify-center gap-2 rounded-lg py-2.5 text-sm font-medium transition-colors", mode === k ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground")}>
                 <Icon className="h-4 w-4" />{l}
-              </button>
+              </Button>
             ))}
           </div>
 
