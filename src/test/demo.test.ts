@@ -96,7 +96,8 @@ describe("demo platform store", () => {
 describe("period ranges", () => {
   it("last 7 days spans 7 calendar days", () => {
     const { from, to } = periodRange("7d");
-    expect(Math.round((to.getTime() - from.getTime()) / 86400000)).toBe(6);
+    const days = (d: Date) => Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) / 86400000;
+    expect(days(to) - days(from)).toBe(6);
   });
   it("last month stays within the previous month", () => {
     const { from, to } = periodRange("lastMonth");
