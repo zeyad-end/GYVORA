@@ -38,6 +38,7 @@ import { Route as MemberMembershipRouteImport } from './routes/member.membership
 import { Route as MemberQrRouteImport } from './routes/member.qr'
 import { Route as MemberSettingsRouteImport } from './routes/member.settings'
 import { Route as MemberWorkoutsRouteImport } from './routes/member.workouts'
+import { Route as SuperAdminIndexRouteImport } from './routes/super-admin.index'
 import { Route as SuperAdminClientsRouteImport } from './routes/super-admin.clients'
 import { Route as SuperAdminGymsRouteImport } from './routes/super-admin.gyms'
 import { Route as SuperAdminRequestsRouteImport } from './routes/super-admin.requests'
@@ -188,6 +189,11 @@ const MemberWorkoutsRoute = MemberWorkoutsRouteImport.update({
   path: '/member/workouts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuperAdminIndexRoute = SuperAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 const SuperAdminClientsRoute = SuperAdminClientsRouteImport.update({
   id: '/clients',
   path: '/clients',
@@ -246,6 +252,7 @@ export interface FileRoutesByFullPath {
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member/': typeof MemberIndexRoute
+  '/super-admin/': typeof SuperAdminIndexRoute
   '/members/$id': typeof GymMembersIdRoute
   '/members/': typeof GymMembersIndexRoute
 }
@@ -256,7 +263,6 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/subscription-request': typeof SubscriptionRequestRoute
-  '/super-admin': typeof SuperAdminRouteWithChildren
   '/activity': typeof GymActivityRoute
   '/attendance': typeof GymAttendanceRoute
   '/dashboard': typeof GymDashboardRoute
@@ -281,6 +287,7 @@ export interface FileRoutesByTo {
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member': typeof MemberIndexRoute
+  '/super-admin': typeof SuperAdminIndexRoute
   '/members/$id': typeof GymMembersIdRoute
   '/members': typeof GymMembersIndexRoute
 }
@@ -318,6 +325,7 @@ export interface FileRoutesById {
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member/': typeof MemberIndexRoute
+  '/super-admin/': typeof SuperAdminIndexRoute
   '/_gym/members/$id': typeof GymMembersIdRoute
   '/_gym/members/': typeof GymMembersIndexRoute
 }
@@ -355,6 +363,7 @@ export interface FileRouteTypes {
     | '/super-admin/gyms'
     | '/super-admin/requests'
     | '/member/'
+    | '/super-admin/'
     | '/members/$id'
     | '/members/'
   fileRoutesByTo: FileRoutesByTo
@@ -365,7 +374,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/subscription-request'
-    | '/super-admin'
     | '/activity'
     | '/attendance'
     | '/dashboard'
@@ -390,6 +398,7 @@ export interface FileRouteTypes {
     | '/super-admin/gyms'
     | '/super-admin/requests'
     | '/member'
+    | '/super-admin'
     | '/members/$id'
     | '/members'
   id:
@@ -426,6 +435,7 @@ export interface FileRouteTypes {
     | '/super-admin/gyms'
     | '/super-admin/requests'
     | '/member/'
+    | '/super-admin/'
     | '/_gym/members/$id'
     | '/_gym/members/'
   fileRoutesById: FileRoutesById
@@ -654,6 +664,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberWorkoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/super-admin/': {
+      id: '/super-admin/'
+      path: '/'
+      fullPath: '/super-admin/'
+      preLoaderRoute: typeof SuperAdminIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/super-admin/clients': {
       id: '/super-admin/clients'
       path: '/clients'
@@ -734,12 +751,14 @@ interface SuperAdminRouteChildren {
   SuperAdminClientsRoute: typeof SuperAdminClientsRoute
   SuperAdminGymsRoute: typeof SuperAdminGymsRoute
   SuperAdminRequestsRoute: typeof SuperAdminRequestsRoute
+  SuperAdminIndexRoute: typeof SuperAdminIndexRoute
 }
 
 const SuperAdminRouteChildren: SuperAdminRouteChildren = {
   SuperAdminClientsRoute: SuperAdminClientsRoute,
   SuperAdminGymsRoute: SuperAdminGymsRoute,
   SuperAdminRequestsRoute: SuperAdminRequestsRoute,
+  SuperAdminIndexRoute: SuperAdminIndexRoute,
 }
 
 const SuperAdminRouteWithChildren = SuperAdminRoute._addFileChildren(
