@@ -1,4 +1,7 @@
 # IronHaus update
+- [ ] Add owner staff deletion and single-record attendance editing.
+- [ ] Unify staff/client entry and add invitee-scoped persistent invitation notifications and associations.
+- [ ] Verify staff removal, attendance edits, invitation responses and portal separation in preview.
 - [x] Add gym-scoped session QR / Member ID lookup and persisted client selection.
 - [x] Hide Gym Owner gym switcher and persist interactive sent demo invitations.
 - [x] Add persisted platform expenses, filters and period net totals.
