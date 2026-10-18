@@ -175,7 +175,7 @@ export type DemoState = {
 };
 export type DemoStaffRole = StaffMember & { id: string; userId: string; gymId: string; gymName: string };
 export type DemoProgram = { id: string; user_id: string; definition: Workout; completion: number[]; created_at: string };
-export const demoUserId = (email: string) => `demo-user:${email.trim().toLowerCase() || 'anonymous'}`;
+export const demoUserId = (email: string) => `demo-user-${email.trim().toLowerCase() || 'anonymous'}`;
 
 export const PLAN_PRICES: Record<string, number> = { Basic: 800, Premium: 2100, VIP: 7200 };
 export const PLAN_MONTHS: Record<string, number> = { Basic: 1, Premium: 3, VIP: 12 };

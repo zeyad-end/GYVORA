@@ -30,12 +30,12 @@ describe('unified member invitations',()=>{
   const one=createDemoInvitation('remove-one','One','Multi',email,'Trainer');
   const two=createDemoInvitation('remove-two','Two','Multi',email,'Admin');
   setDemoSession('individual',email);respondDemoInvitation(one.id,true);respondDemoInvitation(two.id,true);
-  const state=structuredClone(initialState);state.members[0]={...state.members[0],clientId:demoUserId(email)};writeDemoGym('remove-one',state);
+  const state=structuredClone(initialState);const member=state.members[0];if(!member)throw new Error('Missing seed member');state.members[0]={...member,clientId:demoUserId(email)};writeDemoGym('remove-one',state);
   expect(()=>changeDemoStaff('remove-one',one.id,null)).toThrow('Only gym owners');
   setDemoSession('owner');changeDemoStaff('remove-one',one.id,null);
   expect(readDemoGym('remove-one').staff.some(s=>s.id===one.id)).toBe(false);
   expect(getDemoState().staffRoles.some(r=>r.id===two.id)).toBe(true);
-  expect(readDemoGym('remove-one').members[0].clientId).toBe(demoUserId(email));
+  expect(readDemoGym('remove-one').members[0]?.clientId).toBe(demoUserId(email));
  });
  it('personal program changes cannot modify another user’s library',()=>{
   setDemoSession('individual','workout@own.test');saveDemoProgram(demoUserId('workout@own.test'),{name:'Own',trainer:'',notes:'',exercises:[]});
