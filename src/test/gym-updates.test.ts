@@ -24,15 +24,15 @@ describe("recurring payments and cash summaries", () => {
   it("markRecurringPaid records a paid expense and advances next payment", () => {
     const { recurring: r, transactions: t } = markRecurringPaid(recurring, [], "r1", "2026-10-02");
     expect(t).toHaveLength(1);
-    expect(t[0].amount).toBe(-5000);
-    expect(t[0].date).toBe("2026-10-02");
-    expect(t[0].entered).toBe(true);
-    expect(r[0].next).toBe("2026-11-01");
-    expect(r[0].lastPaidOccurrence).toBe("2026-10-01");
+    expect(t[0]!.amount).toBe(-5000);
+    expect(t[0]!.date).toBe("2026-10-02");
+    expect(t[0]!.entered).toBe(true);
+    expect(r[0]!.next).toBe("2026-11-01");
+    expect(r[0]!.lastPaidOccurrence).toBe("2026-10-01");
   });
   it("blocks recording the same occurrence as paid twice", () => {
     const once = markRecurringPaid(recurring, [], "r1", "2026-10-02");
-    const again = [{ ...once.recurring[0], next: "2026-10-01" }];
+    const again = [{ ...once.recurring[0]!, next: "2026-10-01" }];
     expect(() => markRecurringPaid(again, once.transactions, "r1", "2026-10-03")).toThrow(/already recorded/);
   });
   it("unpaid recurring expenses do not reduce net profit", () => {
