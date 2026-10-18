@@ -30,7 +30,6 @@ function Login() {
     try { const parsed=z.object({name:z.string().trim().min(1).max(100),identifier:z.string().trim().min(1).max(255),password:z.string().min(1).max(128)}).parse({name:d.get('name'),identifier:d.get('identifier'),password:d.get('password')});
       const demo=matchDemoAccount(parsed.name,parsed.identifier,parsed.password);
       if(demo){setDemoSession(demo);await cloud.refresh();await navigate({to:demo==='super'?'/super-admin':'/dashboard'});return;}
-      if(!parsed.identifier.includes('@'))throw new Error('Phone sign-in requires an SMS provider in Cloud → Users → Auth Settings → Phone. Please use your email.');
       z.string().email().parse(parsed.identifier);
       const {error:authError}=await supabase.auth.signInWithPassword({email:parsed.identifier,password:parsed.password});
       if(authError)throw new Error(authError.message==='Email not confirmed'?authError.message:'Email or password is incorrect.');
@@ -71,8 +70,8 @@ function Login() {
           <form className="mt-6 space-y-4" onSubmit={signIn}>
             <div className="space-y-2"><Label>Full Name</Label><Input name="name" required maxLength={100} autoComplete="name" className="h-11 bg-card" /></div>
             <div className="space-y-2">
-              <Label>{mode === "gym" ? "Gym email" : "Email or phone number"}</Label>
-              <Input name="identifier" autoComplete="username" maxLength={255} required placeholder={mode === "gym" ? "owner@yourgym.com" : "you@mail.com or +20…"} className="h-11 bg-card" />
+              <Label>{mode === "gym" ? "Gym email" : "Email"}</Label>
+              <Input name="identifier" autoComplete="username" maxLength={255} required placeholder={mode === "gym" ? "owner@yourgym.com" : "you@mail.com"} className="h-11 bg-card" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between"><Label>Password</Label>
