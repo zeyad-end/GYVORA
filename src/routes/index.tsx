@@ -1,4 +1,7 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import { z } from "zod";
+import { toast } from "sonner";
 import { useState } from "react";
 import { Building2, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -16,6 +19,22 @@ export const Route = createFileRoute("/")({
 function Login() {
   const [mode, setMode] = useState<"user" | "gym">("gym");
   const navigate = useNavigate();
+  const [busy,setBusy]=useState(false);
+  const [error,setError]=useState('');
+  async function signIn(e:React.FormEvent<HTMLFormElement>) {
+    e.preventDefault(); setError(''); setBusy(true);
+    const d=new FormData(e.currentTarget);
+    try { const parsed=z.object({name:z.string().trim().min(1).max(100),identifier:z.string().trim().min(3).max(255),password:z.string().min(1).max(128)}).parse({name:d.get('name'),identifier:d.get('identifier'),password:d.get('password')});
+      if(!parsed.identifier.includes('@'))throw new Error('Phone sign-in requires an SMS provider in Cloud → Users → Auth Settings → Phone. Please use your email.');
+      z.string().email().parse(parsed.identifier);
+      const {error:authError}=await supabase.auth.signInWithPassword({email:parsed.identifier,password:parsed.password}); if(authError)throw authError;
+      await supabase.auth.signOut();
+      const {error:otpError}=await supabase.auth.signInWithOtp({email:parsed.identifier,options:{shouldCreateUser:false,emailRedirectTo:window.location.origin+'/verify-otp'}});if(otpError)throw otpError;
+      sessionStorage.setItem('ironhaus-otp-email',parsed.identifier);sessionStorage.setItem('ironhaus-remember',d.get('remember')?'yes':'no');
+      await navigate({to:'/verify-otp'});
+    }catch(e){setError(e instanceof Error?e.message:'Sign-in failed');}finally{setBusy(false);}
+  }
+
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden lg:block">
@@ -45,20 +64,21 @@ function Login() {
             ))}
           </div>
 
-          <form className="mt-6 space-y-4" onSubmit={(e) => { e.preventDefault(); navigate({ to: mode === "gym" ? "/gym" : "/member" }); }}>
+          <form className="mt-6 space-y-4" onSubmit={signIn}>
+            <div className="space-y-2"><Label>Full Name</Label><Input name="name" required maxLength={100} autoComplete="name" className="h-11 bg-card" /></div>
             <div className="space-y-2">
               <Label>{mode === "gym" ? "Gym email" : "Email or phone number"}</Label>
-              <Input required placeholder={mode === "gym" ? "owner@yourgym.com" : "you@mail.com or +20…"} className="h-11 bg-card" />
+              <Input name="identifier" autoComplete="username" maxLength={255} required placeholder={mode === "gym" ? "owner@yourgym.com" : "you@mail.com or +20…"} className="h-11 bg-card" />
             </div>
             <div className="space-y-2">
               <div className="flex justify-between"><Label>Password</Label>
-                {mode === "user" && <a href="#" className="text-xs text-primary">Forgot password?</a>}
+                <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={async()=>{const email=window.prompt("Your account email");if(!email)return;const v=z.string().email().safeParse(email.trim());if(!v.success){toast.error("Enter a valid email");return;}const {error}=await supabase.auth.resetPasswordForEmail(v.data,{redirectTo:window.location.origin+"/reset-password"});error?toast.error(error.message):toast.success("Check your email for the password reset link");}}>Forgot password?</Button>
               </div>
-              <Input required type="password" placeholder="••••••••" className="h-11 bg-card" />
+              <Input name="password" autoComplete="current-password" maxLength={128} required type="password" placeholder="••••••••" className="h-11 bg-card" />
             </div>
-            <Button type="submit" className="h-11 w-full">Sign in</Button>
+            <label className="flex items-center gap-2 text-sm"><input name="remember" type="checkbox" />Remember Me</label>{error&&<p role="alert" className="text-sm text-destructive">{error}</p>}<Button disabled={busy} type="submit" className="h-11 w-full">{busy?"Signing in…":"Sign in"}</Button>
           </form>
-          {mode === "user" && (
+          {(
             <p className="mt-6 text-center text-sm text-muted-foreground">
               New here? <Link to="/register" className="font-medium text-primary">Create account</Link>
             </p>
