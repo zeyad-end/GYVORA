@@ -1,93 +1,459 @@
 import { RecurringExpenses } from "@/components/RecurringExpenses";
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { format } from "date-fns";
 import { Bar, BarChart, ResponsiveContainer, Tooltip, XAxis } from "recharts";
-import { Wallet, TrendingUp, TrendingDown, Upload } from "lucide-react";
+import { Wallet, TrendingUp, TrendingDown, Eye, Pencil, Upload } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { DataTable, PageHeader, Panel, StatCard, td } from "@/components/kit";
-import { egp, expenseCategories, recurring, revenueSeries, transactions } from "@/lib/mock";
+import { DataTable, PageHeader, Panel, StatCard, td, selectCls, Field } from "@/components/kit";
+import { InvoiceFields } from "@/components/InvoiceFields";
+import { egp, revenueSeries } from "@/lib/mock";
+import { useStore, saveState, readFile, type Invoice } from "@/lib/store";
+import {
+  createInvoice,
+  deleteInvoice,
+  invoiceSchema,
+  nextInvoiceNumber,
+  reportRange,
+  reportInvoices,
+  groupInvoices,
+  type ReportPeriod,
+} from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
-
 export const Route = createFileRoute("/_gym/finance")({
-  head: () => seo("Finance", "Transactions, expenses, recurring costs, cash register and reports."),
+  head: () =>
+    seo("Finance", "Gym invoices, expenses, recurring costs and date-filtered invoice reports."),
   component: Finance,
 });
-
-const sel = "h-10 w-full rounded-md border bg-surface px-3 text-sm";
-
+const blank = (): Invoice => ({
+  id: crypto.randomUUID(),
+  name: "",
+  category: "",
+  description: "",
+  date: format(new Date(), "yyyy-MM-dd"),
+  amount: 0,
+  type: "Expense",
+  method: "Cash",
+});
 function Finance() {
-  const [tx, setTx] = useState(transactions);
+  const records = useStore((s) => s.transactions);
+  const tx = records.filter((r) => !r.deleted);
+  const [draft, setDraft] = useState(blank);
+  const [selected, setSelected] = useState<Invoice | null>(null);
+  const [mode, setMode] = useState<"view" | "edit">("view");
+  const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [period, setPeriod] = useState<ReportPeriod>("month");
+  const [from, setFrom] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [to, setTo] = useState(from);
+  const [group, setGroup] = useState<"daily" | "weekly" | "monthly" | "yearly">("daily");
   const income = tx.filter((t) => t.amount > 0).reduce((a, t) => a + t.amount, 0);
   const exp = tx.filter((t) => t.amount < 0).reduce((a, t) => a - t.amount, 0);
+  const range = reportRange(period, new Date(), { from, to });
+  const invalid = range.from > range.to;
+  const matches = invalid ? [] : reportInvoices(records, range);
+  const groups = groupInvoices(matches, group);
+  const failure = (e: unknown) =>
+    toast.error(e instanceof Error ? e.message : "Could not save invoice");
+  const reportTable = (
+    <DataTable head={["Invoice #", "Name", "Category", "Date", "Amount", "Description"]}>
+      {matches.map((r) => (
+        <tr key={r.id}>
+          <td className={td}>{r.number}</td>
+          <td className={td}>{r.name}</td>
+          <td className={td}>{r.category}</td>
+          <td className={td}>{r.date}</td>
+          <td className={td}>{egp(r.amount)}</td>
+          <td className={`${td} max-w-xs whitespace-normal`}>{r.description || "—"}</td>
+        </tr>
+      ))}
+    </DataTable>
+  );
   return (
     <>
       <PageHeader title="Finance" subtitle="Every financial movement in one place" />
       <Tabs defaultValue="tx">
         <TabsList className="mb-6 flex h-auto flex-wrap justify-start bg-card">
-          <TabsTrigger value="tx">Transactions</TabsTrigger>
-          <TabsTrigger value="exp">Expenses</TabsTrigger>
-          <TabsTrigger value="rec">Recurring</TabsTrigger>
-          <TabsTrigger value="cash">Cash register</TabsTrigger>
-          <TabsTrigger value="rep">Reports</TabsTrigger>
+          {[
+            ["tx", "Transactions"],
+            ["exp", "Expenses"],
+            ["rec", "Recurring"],
+            ["cash", "Cash register"],
+            ["rep", "Reports"],
+          ].map(([v, label]) => (
+            <TabsTrigger key={v} value={v ?? ""}>
+              {label}
+            </TabsTrigger>
+          ))}
         </TabsList>
-
         <TabsContent value="tx">
           <Panel>
-            <DataTable head={["Date", "Type", "Category", "Method", "Amount"]}>
-              {tx.map((t, i) => <tr key={i}><td className={`${td} text-muted-foreground`}>{t.date}</td><td className={td}>{t.type}</td><td className={td}>{t.category}</td><td className={td}>{t.method}</td><td className={`${td} font-medium ${t.amount < 0 ? "text-destructive" : "text-success"}`}>{t.amount < 0 ? "−" : "+"}{egp(t.amount)}</td></tr>)}
+            <DataTable
+              head={[
+                "Invoice #",
+                "Name",
+                "Date",
+                "Type",
+                "Category",
+                "Method",
+                "Amount",
+                "Actions",
+              ]}
+            >
+              {tx.map((t) => (
+                <tr key={t.id}>
+                  <td className={td}>{t.number ?? "—"}</td>
+                  <td className={td}>{t.name}</td>
+                  <td className={td}>{t.date}</td>
+                  <td className={td}>{t.type}</td>
+                  <td className={td}>{t.category}</td>
+                  <td className={td}>{t.method}</td>
+                  <td className={`${td} ${t.amount < 0 ? "text-destructive" : "text-success"}`}>
+                    {t.amount < 0 ? "−" : "+"}
+                    {egp(t.amount)}
+                  </td>
+                  <td className={td}>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`View invoice ${t.name}`}
+                        title="View invoice"
+                        onClick={() => {
+                          setSelected({ ...t });
+                          setMode("view");
+                        }}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        aria-label={`Edit invoice ${t.name}`}
+                        title="Edit invoice"
+                        onClick={() => {
+                          setSelected({ ...t });
+                          setMode("edit");
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
             </DataTable>
+            {!tx.length && <p className="py-6 text-sm text-muted-foreground">No transactions.</p>}
           </Panel>
         </TabsContent>
-
         <TabsContent value="exp">
           <Panel title="Add expense" className="max-w-2xl">
-            <form className="grid gap-4 sm:grid-cols-2" onSubmit={(e) => {
-              e.preventDefault();
-              const d = new FormData(e.currentTarget);
-              const amount = Math.abs(Number(d.get("amount")) || 0);
-              setTx([{ date: String(d.get("date")), type: "Expense", category: String(d.get("cat")), amount: -amount, method: "Cash" }, ...tx]);
-              toast.success("Expense added and deducted from profit");
-              e.currentTarget.reset();
-            }}>
-              <div className="space-y-2"><Label>Category</Label><select name="cat" className={sel}>{expenseCategories.map((c) => <option key={c}>{c}</option>)}</select></div>
-              <div className="space-y-2"><Label>Amount (EGP)</Label><Input name="amount" type="number" min={1} required className="bg-surface" /></div>
-              <div className="space-y-2"><Label>Date</Label><Input name="date" type="date" required defaultValue="2026-10-07" className="bg-surface" /></div>
-              <div className="space-y-2"><Label>Invoice</Label><label className="flex h-10 cursor-pointer items-center gap-2 rounded-md border border-dashed bg-surface px-3 text-sm text-muted-foreground"><Upload className="h-4 w-4" />Upload file<input type="file" className="hidden" /></label></div>
-              <div className="space-y-2 sm:col-span-2"><Label>Description</Label><Textarea maxLength={500} className="bg-surface" /></div>
-              <Button type="submit" className="sm:col-span-2">Save expense</Button>
+            <form
+              className="space-y-4"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setBusy(true);
+                try {
+                  await saveState((s) => ({ transactions: createInvoice(s.transactions, draft) }));
+                  toast.success("Expense saved");
+                  setDraft(blank());
+                } catch (error) {
+                  failure(error);
+                } finally {
+                  setBusy(false);
+                }
+              }}
+            >
+              <div className="text-sm text-muted-foreground">
+                Invoice #{nextInvoiceNumber(records)}
+              </div>
+              <InvoiceFields value={draft} onChange={(p) => setDraft((v) => ({ ...v, ...p }))} />
+              <Field label="Invoice">
+                <label className="flex min-h-10 cursor-pointer items-center gap-2 rounded-md border border-dashed bg-surface px-3 text-sm text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  {uploading ? "Uploading…" : draft.attachment ? "Invoice attached" : "Upload file"}
+                  <Input
+                    aria-label="Invoice attachment"
+                    type="file"
+                    className="hidden"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
+                    disabled={uploading || busy}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      if (file.size > 1000000) {
+                        toast.error("Invoice attachment must be 1 MB or smaller");
+                        return;
+                      }
+                      setUploading(true);
+                      try {
+                        const attachment = await readFile(file);
+                        setDraft((v) => ({ ...v, attachment }));
+                      } catch (error) {
+                        failure(error);
+                      } finally {
+                        setUploading(false);
+                      }
+                    }}
+                  />
+                </label>
+              </Field>
+              <Button disabled={busy || uploading}>{busy ? "Saving…" : "Save expense"}</Button>
             </form>
           </Panel>
         </TabsContent>
-
         <TabsContent value="rec">
           <RecurringExpenses />
         </TabsContent>
-
         <TabsContent value="cash">
           <div className="grid gap-4 sm:grid-cols-3">
             <StatCard label="Current balance" value={egp(286900 + income - exp)} icon={Wallet} />
-            <StatCard label="Total income" value={egp(income)} icon={TrendingUp} tone="good" delta="Last 3 days" />
-            <StatCard label="Total expenses" value={egp(exp)} icon={TrendingDown} tone="bad" delta="Last 3 days" />
+            <StatCard label="Total income" value={egp(income)} icon={TrendingUp} tone="good" />
+            <StatCard label="Total expenses" value={egp(exp)} icon={TrendingDown} tone="bad" />
           </div>
         </TabsContent>
-
         <TabsContent value="rep">
+          <section className="mb-8 space-y-4">
+            <h2 className="text-lg font-semibold">Entered invoices</h2>
+            <div className="flex flex-wrap items-end gap-3">
+              <Field label="Period">
+                <select
+                  aria-label="Report period"
+                  className={selectCls}
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value as ReportPeriod)}
+                >
+                  {[
+                    ["today", "Today"],
+                    ["week", "This Week"],
+                    ["month", "This Month"],
+                    ["year", "This Year"],
+                    ["custom", "Custom Date Range"],
+                  ].map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              {period === "custom" && (
+                <>
+                  <Field label="From">
+                    <Input
+                      aria-label="Report from"
+                      type="date"
+                      required
+                      value={from}
+                      onChange={(e) => setFrom(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="To">
+                    <Input
+                      aria-label="Report to"
+                      type="date"
+                      required
+                      value={to}
+                      onChange={(e) => setTo(e.target.value)}
+                    />
+                  </Field>
+                </>
+              )}
+              <Field label="Group by">
+                <select
+                  aria-label="Group invoices"
+                  className={selectCls}
+                  value={group}
+                  onChange={(e) => setGroup(e.target.value as typeof group)}
+                >
+                  {["daily", "weekly", "monthly", "yearly"].map((v) => (
+                    <option key={v}>{v}</option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+            {invalid ? (
+              <p role="alert" className="text-destructive">
+                End date must not precede start date.
+              </p>
+            ) : (
+              <>
+                <p className="text-sm text-muted-foreground">
+                  {range.from} – {range.to} · {matches.length} invoices ·{" "}
+                  <strong className="text-foreground">
+                    Total {egp(matches.reduce((a, r) => a + Math.abs(r.amount), 0))}
+                  </strong>
+                </p>
+                {reportTable}
+                {!matches.length && (
+                  <p className="py-4 text-sm text-muted-foreground">
+                    No entered invoices in this period.
+                  </p>
+                )}
+                {groups.length > 0 && (
+                  <DataTable head={["Period", "Total amount"]}>
+                    {groups.map(([date, total]) => (
+                      <tr key={date}>
+                        <td className={td}>{date}</td>
+                        <td className={td}>{egp(total)}</td>
+                      </tr>
+                    ))}
+                  </DataTable>
+                )}
+              </>
+            )}
+          </section>
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
             <StatCard label="Daily revenue" value="EGP 18,420" icon={TrendingUp} />
             <StatCard label="Monthly revenue" value="EGP 212,000" icon={TrendingUp} />
             <StatCard label="Yearly revenue" value="EGP 1.73M" icon={TrendingUp} />
-            <StatCard label="Net profit (YTD)" value="EGP 812,000" icon={Wallet} tone="good" delta="Expenses deducted" />
+            <StatCard
+              label="Net profit (YTD)"
+              value="EGP 812,000"
+              icon={Wallet}
+              tone="good"
+              delta="Expenses deducted"
+            />
           </div>
           <Panel title="Monthly revenue">
-            <div className="h-64"><ResponsiveContainer><BarChart data={revenueSeries}><XAxis dataKey="month" stroke="var(--muted-foreground)" fontSize={11} tickLine={false} axisLine={false} /><Tooltip contentStyle={{ background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 10 }} cursor={{ fill: "var(--secondary)" }} /><Bar dataKey="revenue" fill="var(--chart-1)" radius={[6, 6, 0, 0]} /><Bar dataKey="expenses" fill="var(--chart-4)" radius={[6, 6, 0, 0]} /></BarChart></ResponsiveContainer></div>
+            <div className="h-64">
+              <ResponsiveContainer>
+                <BarChart data={revenueSeries}>
+                  <XAxis
+                    dataKey="month"
+                    stroke="var(--muted-foreground)"
+                    fontSize={11}
+                    tickLine={false}
+                    axisLine={false}
+                  />
+                  <Tooltip
+                    contentStyle={{
+                      background: "var(--popover)",
+                      border: "1px solid var(--border)",
+                      borderRadius: 8,
+                    }}
+                    cursor={{ fill: "var(--secondary)" }}
+                  />
+                  <Bar dataKey="revenue" fill="var(--chart-1)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="expenses" fill="var(--chart-4)" radius={[6, 6, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
           </Panel>
         </TabsContent>
       </Tabs>
+      <Dialog
+        open={!!selected}
+        onOpenChange={(v) => {
+          if (!v) setSelected(null);
+        }}
+      >
+        <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{mode === "view" ? "Invoice details" : "Edit invoice"}</DialogTitle>
+          </DialogHeader>
+          {selected && (
+            <>
+              {mode === "view" ? (
+                <>
+                  <dl className="grid grid-cols-2 gap-4 text-sm">
+                    {Object.entries({
+                      "Invoice #": selected.number ?? "—",
+                      Name: selected.name,
+                      Type: selected.type,
+                      Category: selected.category,
+                      Amount: egp(selected.amount),
+                      Date: selected.date,
+                      Method: selected.method,
+                      Description: selected.description || "—",
+                    }).map(([key, v]) => (
+                      <div key={key} className={key === "Description" ? "col-span-2" : ""}>
+                        <dt className="text-muted-foreground">{key}</dt>
+                        <dd className="mt-1 break-words whitespace-pre-wrap">{v}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {selected.attachment && (
+                    <a
+                      href={selected.attachment}
+                      download={`${selected.name}-invoice`}
+                      className="text-primary underline"
+                    >
+                      Download invoice attachment
+                    </a>
+                  )}
+                  <DialogFooter>
+                    <Button onClick={() => setMode("edit")}>Edit invoice</Button>
+                  </DialogFooter>
+                </>
+              ) : (
+                <form
+                  className="space-y-4"
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    setBusy(true);
+                    try {
+                      const row = invoiceSchema.parse(selected);
+                      await saveState((s) => ({
+                        transactions: s.transactions.map((r) => (r.id === row.id ? row : r)),
+                      }));
+                      toast.success("Invoice saved");
+                      setSelected(null);
+                    } catch (error) {
+                      failure(error);
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}
+                >
+                  <p className="text-sm text-muted-foreground">Invoice #{selected.number ?? "—"}</p>
+                  <InvoiceFields
+                    value={selected}
+                    onChange={(p) => setSelected((v) => (v ? { ...v, ...p } : v))}
+                  />
+                  <DialogFooter>
+                    <Button
+                      type="button"
+                      variant="destructive"
+                      disabled={busy}
+                      onClick={async () => {
+                        if (!window.confirm("Delete this invoice?")) return;
+                        setBusy(true);
+                        try {
+                          await saveState((s) => ({
+                            transactions: deleteInvoice(s.transactions, selected.id),
+                          }));
+                          toast.success("Invoice deleted");
+                          setSelected(null);
+                        } catch (error) {
+                          failure(error);
+                        } finally {
+                          setBusy(false);
+                        }
+                      }}
+                    >
+                      Delete invoice
+                    </Button>
+                    <Button type="button" variant="outline" onClick={() => setSelected(null)}>
+                      Cancel
+                    </Button>
+                    <Button disabled={busy}>{busy ? "Saving…" : "Save invoice"}</Button>
+                  </DialogFooter>
+                </form>
+              )}
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
