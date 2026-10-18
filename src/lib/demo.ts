@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import type { Database } from '@/integrations/supabase/types';
 import { z } from 'zod';
 import { invitationStatus } from './validation';
+import { initialState, type State, type StaffMember, type Workout } from './store';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -169,13 +170,18 @@ export type DemoState = {
   expenses: PlatformExpense[];
   invitations: DemoInvitation[];
   sessionClients: Record<string, string>;
+  staffRoles: DemoStaffRole[];
+  programs: DemoProgram[];
 };
+export type DemoStaffRole = StaffMember & { id: string; userId: string; gymId: string; gymName: string };
+export type DemoProgram = { id: string; user_id: string; definition: Workout; completion: number[]; created_at: string };
+export const demoUserId = (email: string) => `demo-user-${email.trim().toLowerCase() || 'anonymous'}`;
 
 export const PLAN_PRICES: Record<string, number> = { Basic: 800, Premium: 2100, VIP: 7200 };
 export const PLAN_MONTHS: Record<string, number> = { Basic: 1, Premium: 3, VIP: 12 };
 
 const seed: DemoState = {
-  expenses: [], invitations: [], sessionClients: {},
+  expenses: [], invitations: [], sessionClients: {}, staffRoles: [], programs: [],
   requests: [
     { id: "req-1", gymName: "Titan Strength Club", phone: "+20 100 222 8871", email: "owner@titanstrength.com", plan: "Premium", requestDate: "2026-10-14", status: "Pending" },
     { id: "req-2", gymName: "Pulse Fitness Studio", phone: "+20 111 905 4432", email: "hello@pulsefit.com", plan: "Basic", requestDate: "2026-10-16", status: "Pending" },
@@ -278,6 +284,56 @@ export function changeDemoInvitation(gymId: string, id: string, action: 'resend'
   if (!row || !['Pending','Expired'].includes(invitationStatus(row.status, row.expires_at))) throw new Error('Invitation unavailable');
   if (action === 'cancel' && invitationStatus(row.status, row.expires_at) !== 'Pending') throw new Error('Only pending invitations can be cancelled');
   commit({ ...demoState, invitations: demoState.invitations.map(i => i.id === id && i.gym_id === gymId ? { ...i, ...(action === 'cancel' ? { status: 'Cancelled' } : { status: 'Pending', created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 7 * 86400000).toISOString() }) } : i) });
+}
+
+export function pendingDemoInvitations(email: string, rows = demoState.invitations) {
+  const normalized = email.trim().toLowerCase();
+  return normalized ? rows.filter(i => i.email.toLowerCase() === normalized && invitationStatus(i.status, i.expires_at) === 'Pending') : [];
+}
+export function respondDemoInvitation(id: string, accept: boolean) {
+  const info = getDemoSessionInfo();
+  if (!info || info.kind !== 'individual') throw new Error('Open your member account to respond');
+  const row = pendingDemoInvitations(info.email).find(i => i.id === id);
+  if (!row) throw new Error('Invitation unavailable for this account');
+  const userId = demoUserId(info.email);
+  const role: DemoStaffRole = { id: row.id, userId, gymId: row.gym_id, gymName: row.gym_name ?? 'Gym', name: info.name || row.full_name, email: row.email, role: row.role, permissions: [...row.permissions] };
+  commit({ ...demoState, invitations: demoState.invitations.map(i => i.id === id ? { ...i, status: accept ? 'Accepted' : 'Declined', accepted_by: accept ? userId : null } : i), staffRoles: accept ? [...demoState.staffRoles.filter(r => !(r.gymId === row.gym_id && r.userId === userId)), role] : demoState.staffRoles });
+}
+
+export function readDemoGym(gymId: string, withSeed = false): State {
+  let stored: State | undefined;
+  try {
+    const raw = localStorage.getItem(`ironhaus-demo-gym:${gymId}`) ?? (gymId === 'demo-gym' ? localStorage.getItem('ironhaus-demo-gym-state') : null);
+    if (raw) stored = JSON.parse(raw) as State;
+  } catch { /* Use an empty gym or the owner seed. */ }
+  const base = stored ?? (withSeed && gymId === 'demo-gym' ? structuredClone(initialState) : { ...structuredClone(initialState), members: [], plans: [], products: [], trainers: [], workouts: [], staff: [], sessions: [], attendance: [], staffAttendance: [], recurring: [] });
+  const local = base.staff.map(s => ({ ...s, id: s.id ?? `seed:${s.email}`, userId: s.userId ?? demoUserId(s.email) }));
+  const associations = demoState.staffRoles.filter(r => r.gymId === gymId);
+  return { ...base, staff: [...local.filter(s => !associations.some(r => r.userId === s.userId)), ...associations] };
+}
+export function writeDemoGym(gymId: string, state: State) {
+  localStorage.setItem(`ironhaus-demo-gym:${gymId}`, JSON.stringify(state));
+  if (gymId === 'demo-gym') localStorage.setItem('ironhaus-demo-gym-state', JSON.stringify(state));
+}
+export function changeDemoStaff(gymId: string, id: string, patch: Partial<Pick<StaffMember, 'name' | 'phone' | 'role' | 'permissions'>> | null) {
+  if (getDemoSession() !== 'owner') throw new Error('Only gym owners can manage staff');
+  const state = readDemoGym(gymId, true);
+  const row = state.staff.find(s => s.id === id);
+  if (!row || row.role === 'Owner') throw new Error('Staff member unavailable');
+  writeDemoGym(gymId, { ...state, staff: patch ? state.staff.map(s => s.id === id ? { ...s, ...patch } : s) : state.staff.filter(s => s.id !== id) });
+  commit({ ...demoState, staffRoles: patch ? demoState.staffRoles.map(r => r.gymId === gymId && r.id === id ? { ...r, ...patch } : r) : demoState.staffRoles.filter(r => !(r.gymId === gymId && r.id === id)) });
+}
+export function saveDemoProgram(userId: string, definition: Workout, id?: string) {
+  if (getDemoSession() !== 'individual' || demoUserId(getDemoSessionInfo()?.email ?? '') !== userId) throw new Error('Your own programs only');
+  const row: DemoProgram = { id: id ?? uid(), user_id: userId, definition: structuredClone(definition), completion: [], created_at: new Date().toISOString() };
+  if (id && !demoState.programs.some(p => p.id === id && p.user_id === userId)) throw new Error('Program unavailable');
+  commit({ ...demoState, programs: id ? demoState.programs.map(p => p.id === id && p.user_id === userId ? row : p) : [row, ...demoState.programs] });
+}
+export function changeDemoProgram(id: string, completion: number[] | null) {
+  const userId = demoUserId(getDemoSessionInfo()?.email ?? '');
+  const row = demoState.programs.find(p => p.id === id && p.user_id === userId);
+  if (getDemoSession() !== 'individual' || !row) throw new Error('Program unavailable');
+  commit({ ...demoState, programs: completion === null ? demoState.programs.filter(p => p.id !== id) : demoState.programs.map(p => p.id === id ? { ...p, completion } : p) });
 }
 
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`);

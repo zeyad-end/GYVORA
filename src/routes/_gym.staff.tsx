@@ -26,6 +26,7 @@ import {
   useDemoStore,
   createDemoInvitation,
   changeDemoInvitation,
+  changeDemoStaff,
   type DemoInvitation,
 } from "@/lib/demo";
 export const Route = createFileRoute("/_gym/staff")({
@@ -86,6 +87,16 @@ function Staff() {
       toast.error(e instanceof Error ? e.message : "Could not update invitation");
     }
   }
+  async function removeStaff(s: StaffMember) {
+    if (!s.id || !window.confirm(`Remove ${s.name} from this gym? Their account and other gyms stay unchanged.`)) return;
+    setBusy(true);
+    try {
+      if (getDemoSession()) changeDemoStaff(c.gymId, s.id, null);
+      else await edit({ data: { gymId: c.gymId, id: s.id, remove: true, role: 'Reception', permissions: [], name: s.name, phone: s.phone ?? '' } });
+      await c.selectGym(c.gymId); setOpen(false); toast.success('Staff removed from this gym');
+    } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not remove staff'); }
+    finally { setBusy(false); }
+  }
   return (
     <>
       <PageHeader
@@ -120,7 +131,7 @@ function Staff() {
                   <td className={td}>{s.permissions?.join(", ")}</td>
                   <td className={td}>
                     {c.role === "Owner" && s.role !== "Owner" && (
-                      <Button
+                      <div className="flex gap-2"><Button
                         size="sm"
                         variant="secondary"
                         onClick={() => {
@@ -130,7 +141,7 @@ function Staff() {
                         }}
                       >
                         Edit
-                      </Button>
+                      </Button><Button size="sm" variant="destructive" disabled={busy} onClick={()=>void removeStaff(s)}>Delete Staff</Button></div>
                     )}
                   </td>
                 </tr>
@@ -212,7 +223,8 @@ function Staff() {
               const d = new FormData(e.currentTarget);
               try {
                 if (editing?.id) {
-                  await edit({
+                  if (getDemoSession()) changeDemoStaff(c.gymId, editing.id, { role: String(d.get("role")), permissions, name: String(d.get("name")), phone: String(d.get("phone") ?? "") });
+                  else await edit({
                     data: {
                       gymId: c.gymId,
                       id: editing.id,
@@ -308,32 +320,8 @@ function Staff() {
                 <Button
                   type="button"
                   variant="destructive"
-                  onClick={async () => {
-                    if (
-                      !editing.id ||
-                      !window.confirm(
-                        "Remove this person from this gym? Their account stays active.",
-                      )
-                    )
-                      return;
-                    try {
-                      await edit({
-                        data: {
-                          gymId: c.gymId,
-                          id: editing.id,
-                          remove: true,
-                          role: "Reception",
-                          permissions: [],
-                          name: editing.name,
-                          phone: editing.phone ?? "",
-                        },
-                      });
-                      setOpen(false);
-                      await c.selectGym(c.gymId);
-                    } catch (e) {
-                      toast.error(e instanceof Error ? e.message : "Could not remove staff");
-                    }
-                  }}
+                  disabled={busy}
+                  onClick={() => void removeStaff(editing)}
                 >
                   Delete Staff
                 </Button>

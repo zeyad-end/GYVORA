@@ -12,9 +12,7 @@ export function destinationFor(accountType: string | null | undefined, roles: Ar
     if (owned.length === 0) return '/subscription-request';
     return gymRoles.length > 1 ? '/gyms' : '/dashboard';
   }
-  // staff
-  if (gymRoles.length > 1) return '/gyms';
-  if (gymRoles.length === 1) return '/dashboard';
+  // Staff and clients share the member-facing portal; gym roles remain unchanged.
   return '/member';
 }
 

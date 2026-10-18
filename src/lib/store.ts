@@ -30,7 +30,7 @@ export type State = {
   recurring: RecurringExpense[];
 };
 
-let state: State = {
+export const initialState: State = {
   gym: { ...gymSeed, logo: "", cover: "", gallery: [], hoursByDay: days.map((d) => ({ day: d, open: "08:00", close: "23:00", closed: d === "Friday" })) },
   members: membersSeed,
   products: productsSeed,
@@ -40,6 +40,7 @@ let state: State = {
   staff: staffSeed,
   sessions: [], attendance: [], staffAttendance: [], recurring: [],
 };
+let state: State = structuredClone(initialState);
 
 const listeners = new Set<() => void>();
 let persist: ((changes: Partial<State>) => Promise<void>) | undefined;
