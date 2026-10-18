@@ -1,13 +1,13 @@
 import { useSyncExternalStore } from "react";
 import { gym as gymSeed, members as membersSeed, plans as plansSeed, products as productsSeed, staff as staffSeed, trainers as trainersSeed, workouts as workoutsSeed } from "./mock";
 
-export type Member = (typeof membersSeed)[number] & { clientId?: string; planPrice?: number; createdByName?: string };
+export type Member = (typeof membersSeed)[number] & { clientId?: string; memberQrId?: string; planPrice?: number; createdByName?: string };
 export type Product = (typeof productsSeed)[number];
 export type Trainer = (typeof trainersSeed)[number];
 export type Plan = { id: string; name: string; duration: string; price: number; features: string[]; featured?: boolean };
-export type Workout = { id?: string; name: string; trainer: string; notes: string; exercises: { name: string; sets: number; reps: string; image?: string }[] };
+export type Workout = { id?: string | undefined; name: string; trainer: string; notes: string; exercises: { name: string; sets: number; reps: string; image?: string | undefined }[] };
 export type StaffMember = { id?: string; userId?: string; name: string; role: string; email: string; phone?: string; permissions?: string[] };
-export type Session = { id: string; name: string; trainer: string; price: number; date: string; type: string; method: string; memberId?: string };
+export type Session = { id: string; name: string; trainer: string; price: number; date: string; type: string; method: string; memberId?: string | undefined };
 export type AttendanceEvent = { id: string; name: string; role?: string; date: string; time: string; memberId?: string; staffId?: string; method: 'QR' | 'Manual' };
 export type RecurringExpense = { id: string; name: string; category: string; frequency: 'Weekly'|'Monthly'|'Yearly'|'Custom'; next: string; start: string; amount: number };
 export type DayHours = { day: string; open: string; close: string; closed: boolean };

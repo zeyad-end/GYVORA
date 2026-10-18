@@ -36,7 +36,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
     e.preventDefault();
     if (f.expiry < f.start) { toast.error("End date must be after start date"); return; }
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
-    const base = { ...f, ...(clientId?{clientId}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
+    const base = { ...f, ...(clientId?{clientId,memberQrId:memberId||member?.memberQrId}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
       const left = f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0;
       setState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
