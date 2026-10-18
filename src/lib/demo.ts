@@ -6,22 +6,32 @@ import { useSyncExternalStore } from "react";
  * never touch Supabase. No real payments, emails, or SMS are involved.
  */
 
-export type DemoSession = "super" | "owner" | null;
+export type DemoSessionKind = "super" | "owner" | "individual";
+export type DemoSession = DemoSessionKind | null;
 
 const SESSION_KEY = "ironhaus-demo-session";
 
-export function getDemoSession(): DemoSession {
+export type DemoSessionInfo = { kind: DemoSessionKind; email: string };
+
+export function getDemoSessionInfo(): DemoSessionInfo | null {
   try {
     const v = localStorage.getItem(SESSION_KEY);
-    return v === "super" || v === "owner" ? v : null;
+    if (!v) return null;
+    if (v === "super" || v === "owner") return { kind: v, email: "" }; // legacy hardcoded demo accounts
+    const o = JSON.parse(v) as DemoSessionInfo;
+    return o && (o.kind === "super" || o.kind === "owner" || o.kind === "individual") ? o : null;
   } catch {
     return null;
   }
 }
 
-export function setDemoSession(s: DemoSession) {
+export function getDemoSession(): DemoSession {
+  return getDemoSessionInfo()?.kind ?? null;
+}
+
+export function setDemoSession(s: DemoSession, email = "") {
   try {
-    if (s) localStorage.setItem(SESSION_KEY, s);
+    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify({ kind: s, email }));
     else localStorage.removeItem(SESSION_KEY);
   } catch {
     /* private mode */
@@ -39,6 +49,83 @@ export function matchDemoAccount(name: string, identifier: string, password: str
   const i = identifier.trim().toLowerCase();
   const hit = DEMO_ACCOUNTS.find((a) => a.name === n && a.identifier === i && a.password === password);
   return hit ? hit.session : null;
+}
+
+/* ---------------- Demo account registry (prototype sign-up) ---------------- */
+
+export type DemoAccountType = "gym" | "individual" | "dashboard";
+
+export type DemoAccount = {
+  name: string;
+  email: string;
+  password: string;
+  type: DemoAccountType;
+  /** Gym Account chose Skip — demo access to the owner dashboard. */
+  skipped: boolean;
+  /** Gym Account submitted a subscription request. */
+  requestPending: boolean;
+};
+
+const ACCOUNTS_KEY = "ironhaus-demo-accounts-v1";
+
+export function getDemoAccounts(): DemoAccount[] {
+  try {
+    const raw = localStorage.getItem(ACCOUNTS_KEY);
+    if (raw) return JSON.parse(raw) as DemoAccount[];
+  } catch {
+    /* corrupted storage -> empty */
+  }
+  return [];
+}
+
+function saveAccounts(list: DemoAccount[]) {
+  try {
+    localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list));
+  } catch {
+    /* storage unavailable */
+  }
+}
+
+/** Creates a demo account; returns the existing one when email+password match. */
+export function registerDemoAccount(name: string, email: string, password: string, type: DemoAccountType): DemoAccount {
+  const e = email.trim().toLowerCase();
+  const list = getDemoAccounts();
+  const existing = list.find((a) => a.email === e);
+  if (existing) {
+    if (existing.password !== password) throw new Error("An account with this email already exists. Sign in instead.");
+    return existing;
+  }
+  const acc: DemoAccount = { name: name.trim(), email: e, password, type, skipped: false, requestPending: false };
+  saveAccounts([...list, acc]);
+  return acc;
+}
+
+export function updateDemoAccount(email: string, patch: Partial<Pick<DemoAccount, "skipped" | "requestPending">>) {
+  saveAccounts(getDemoAccounts().map((a) => (a.email === email ? { ...a, ...patch } : a)));
+}
+
+/** Finds a registered demo account by email + password. */
+export function findDemoAccount(identifier: string, password: string): DemoAccount | null {
+  const i = identifier.trim().toLowerCase();
+  return getDemoAccounts().find((a) => a.email === i && a.password === password) ?? null;
+}
+
+/** The account behind the current demo session, or null for legacy hardcoded sessions. */
+export function getDemoAccount(): DemoAccount | null {
+  const info = getDemoSessionInfo();
+  if (!info || !info.email) return null;
+  return getDemoAccounts().find((a) => a.email === info.email) ?? null;
+}
+
+export function sessionKindFor(type: DemoAccountType): DemoSessionKind {
+  return type === "dashboard" ? "super" : type === "gym" ? "owner" : "individual";
+}
+
+/** Where a registered demo account lands after sign-in. */
+export function demoDestination(acc: Pick<DemoAccount, "type" | "skipped">): "/super-admin" | "/member" | "/dashboard" | "/subscription-request" {
+  if (acc.type === "dashboard") return "/super-admin";
+  if (acc.type === "individual") return "/member";
+  return acc.skipped ? "/dashboard" : "/subscription-request";
 }
 
 /* ---------------- Demo platform data (Super Admin) ---------------- */
