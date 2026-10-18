@@ -43,6 +43,13 @@
       "when": 1792327882170,
       "tag": "0005_ironhaus_snapshot_concurrency",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1792327987087,
+      "tag": "0006_ironhaus_program_validation",
+      "breakpoints": true
     }
   ]
 }
