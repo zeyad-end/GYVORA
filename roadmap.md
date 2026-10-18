@@ -11,4 +11,4 @@
 
 - [x] Remove OTP from sign-up and sign-in; route by account type.
 - [x] Demo account registry (Gym Account / Individual / Dashboard) persisted in localStorage; Skip grants demo owner access.
-- [ ] Replace prototype login with immediate selected-destination demo access, restore preferences and verify all three destinations.
+- [x] Replace prototype login with immediate selected-destination demo access, restore preferences and verify all three destinations.
