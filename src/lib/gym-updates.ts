@@ -112,6 +112,59 @@ export function reportInvoices(rows: Invoice[], range: { from: string; to: strin
     (r) => r.entered && !r.deleted && r.amount < 0 && r.date >= range.from && r.date <= range.to,
   );
 }
+/** Record a recurring invoice's current occurrence as a paid expense and advance its next payment. */
+export function markRecurringPaid(
+  recurring: RecurringExpense[],
+  transactions: Invoice[],
+  id: string,
+  payDate: string,
+) {
+  const row = recurring.find((r) => r.id === id);
+  if (!row) throw new Error("Recurring invoice not found");
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(payDate)) throw new Error("Enter a valid payment date");
+  const occurrence = row.next;
+  if (row.lastPaidOccurrence === occurrence)
+    throw new Error("This scheduled payment was already recorded as paid");
+  const transactionsNext = createInvoice(transactions, {
+    id: crypto.randomUUID(),
+    name: row.name,
+    category: row.category,
+    description: `Recurring payment (${row.frequency}) due ${occurrence}`,
+    date: payDate,
+    amount: -row.amount,
+    method: "Cash",
+    type: "Expense",
+  });
+  const recurringNext = recurring.map((r) =>
+    r.id === id
+      ? {
+          ...r,
+          lastPaidOccurrence: occurrence,
+          next:
+            r.frequency === "Custom"
+              ? r.next
+              : nextPayment(r.frequency, new Date(`${occurrence}T12:00:00`)),
+        }
+      : r,
+  );
+  return { recurring: recurringNext, transactions: transactionsNext };
+}
+/** Income, paid expenses and net profit for one shared period. Only recorded invoices count. */
+export function cashSummary(rows: Invoice[], range: { from: string; to: string }) {
+  const inRange = rows.filter(
+    (r) => !r.deleted && r.date >= range.from && r.date <= range.to,
+  );
+  const income = inRange.filter((r) => r.amount > 0).reduce((a, r) => a + r.amount, 0);
+  const expenses = inRange.filter((r) => r.amount < 0).reduce((a, r) => a - r.amount, 0);
+  return { income, expenses, net: income - expenses };
+}
+/** Count and total of entered expense invoices on a single date. */
+export function dailySummary(rows: Invoice[], date: string) {
+  const day = rows.filter(
+    (r) => r.entered && !r.deleted && r.amount < 0 && r.date === date,
+  );
+  return { count: day.length, total: day.reduce((a, r) => a - r.amount, 0) };
+}
 export function groupInvoices(rows: Invoice[], group: "daily" | "weekly" | "monthly" | "yearly") {
   const groups = new Map<string, number>();
   for (const r of rows) {
