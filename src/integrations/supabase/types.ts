@@ -14,13 +14,309 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      client_programs: {
+        Row: {
+          completion: number[]
+          created_at: string
+          definition: Json
+          id: string
+          user_id: string
+        }
+        Insert: {
+          completion?: number[]
+          created_at?: string
+          definition: Json
+          id?: string
+          user_id: string
+        }
+        Update: {
+          completion?: number[]
+          created_at?: string
+          definition?: Json
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_programs_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_records: {
+        Row: {
+          client_id: string | null
+          created_at: string
+          created_by: string | null
+          data: Json
+          gym_id: string
+          id: string
+          kind: string
+        }
+        Insert: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data: Json
+          gym_id: string
+          id: string
+          kind: string
+        }
+        Update: {
+          client_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          data?: Json
+          gym_id?: string
+          id?: string
+          kind?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_records_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_records_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "gym_records_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gyms: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          owner_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          owner_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          owner_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gyms_owner_id_fkey"
+            columns: ["owner_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      owner_requests: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decision_by: string | null
+          gym_id: string | null
+          gym_name: string
+          id: string
+          plan: string
+          status: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decision_by?: string | null
+          gym_id?: string | null
+          gym_name: string
+          id?: string
+          plan: string
+          status?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decision_by?: string | null
+          gym_id?: string | null
+          gym_name?: string
+          id?: string
+          plan?: string
+          status?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "owner_requests_decision_by_fkey"
+            columns: ["decision_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_requests_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "owner_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          account_type: string
+          email: string
+          full_name: string
+          id: string
+          member_id: string
+          phone: string
+          photo: string
+        }
+        Insert: {
+          account_type?: string
+          email?: string
+          full_name?: string
+          id: string
+          member_id?: string
+          phone?: string
+          photo?: string
+        }
+        Update: {
+          account_type?: string
+          email?: string
+          full_name?: string
+          id?: string
+          member_id?: string
+          phone?: string
+          photo?: string
+        }
+        Relationships: []
+      }
+      staff_invitations: {
+        Row: {
+          accepted_by: string | null
+          created_at: string
+          email: string
+          expires_at: string
+          full_name: string
+          gym_id: string
+          id: string
+          permissions: string[]
+          role: string
+          status: string
+        }
+        Insert: {
+          accepted_by?: string | null
+          created_at?: string
+          email: string
+          expires_at?: string
+          full_name: string
+          gym_id: string
+          id?: string
+          permissions?: string[]
+          role: string
+          status?: string
+        }
+        Update: {
+          accepted_by?: string | null
+          created_at?: string
+          email?: string
+          expires_at?: string
+          full_name?: string
+          gym_id?: string
+          id?: string
+          permissions?: string[]
+          role?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "staff_invitations_accepted_by_fkey"
+            columns: ["accepted_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_invitations_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_roles: {
+        Row: {
+          gym_id: string | null
+          id: string
+          permissions: string[]
+          role: string
+          user_id: string
+        }
+        Insert: {
+          gym_id?: string | null
+          id?: string
+          permissions?: string[]
+          role: string
+          user_id: string
+        }
+        Update: {
+          gym_id?: string | null
+          id?: string
+          permissions?: string[]
+          role?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_roles_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      decide_owner_request: {
+        Args: { approve: boolean; request_id: string }
+        Returns: string
+      }
+      gym_access: { Args: { area?: string; g: string }; Returns: boolean }
+      is_super_admin: { Args: never; Returns: boolean }
+      otp_verified: { Args: never; Returns: boolean }
+      respond_invitation: {
+        Args: { accept: boolean; invitation_id: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
