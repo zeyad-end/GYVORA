@@ -1,4 +1,6 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import {useServerFn} from "@tanstack/react-start";
+import {beginLogin} from "@/lib/login.functions";
 import { supabase } from "@/integrations/supabase/client";
 import { z } from "zod";
 import { toast } from "sonner";
@@ -18,7 +20,7 @@ export const Route = createFileRoute("/")({
 
 function Login() {
   const [mode, setMode] = useState<"user" | "gym">("gym");
-  const navigate = useNavigate();
+  const navigate = useNavigate();const startLogin=useServerFn(beginLogin);
   const [busy,setBusy]=useState(false);
   const [error,setError]=useState('');
   async function signIn(e:React.FormEvent<HTMLFormElement>) {
@@ -27,9 +29,7 @@ function Login() {
     try { const parsed=z.object({name:z.string().trim().min(1).max(100),identifier:z.string().trim().min(3).max(255),password:z.string().min(1).max(128)}).parse({name:d.get('name'),identifier:d.get('identifier'),password:d.get('password')});
       if(!parsed.identifier.includes('@'))throw new Error('Phone sign-in requires an SMS provider in Cloud → Users → Auth Settings → Phone. Please use your email.');
       z.string().email().parse(parsed.identifier);
-      const {error:authError}=await supabase.auth.signInWithPassword({email:parsed.identifier,password:parsed.password}); if(authError)throw authError;
-      await supabase.auth.signOut();
-      const {error:otpError}=await supabase.auth.signInWithOtp({email:parsed.identifier,options:{shouldCreateUser:false,emailRedirectTo:window.location.origin+'/verify-otp'}});if(otpError)throw otpError;
+      await startLogin({data:{name:parsed.name,email:parsed.identifier,password:parsed.password,remember:Boolean(d.get('remember'))}});
       sessionStorage.setItem('ironhaus-otp-email',parsed.identifier);sessionStorage.setItem('ironhaus-remember',d.get('remember')?'yes':'no');
       await navigate({to:'/verify-otp'});
     }catch(e){setError(e instanceof Error?e.message:'Sign-in failed');}finally{setBusy(false);}
