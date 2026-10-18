@@ -64,6 +64,13 @@
       "when": 1792348906355,
       "tag": "0008_gym_invoice_and_plan_safety",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1792349088867,
+      "tag": "0009_gym_invoice_snapshot_compatibility",
+      "breakpoints": true
     }
   ]
 }
