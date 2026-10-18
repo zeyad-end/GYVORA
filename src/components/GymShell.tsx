@@ -81,7 +81,7 @@ export function GymShell({ children }: { children: ReactNode }) {
           <button aria-label="Notifications" className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border bg-card">
             <Bell className="h-4 w-4" /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
           </button>
-          <Button asChild size="sm" variant="outline"><Link to="/gyms">Switch gym</Link></Button><div className="hidden items-center gap-2 sm:flex">
+          {c.role !== 'Owner' && <Button asChild size="sm" variant="outline"><Link to="/gyms">Switch gym</Link></Button>}<div className="hidden items-center gap-2 sm:flex">
             <span className="grid h-9 w-9 place-items-center rounded-full bg-accent font-display text-xs font-semibold text-primary">{initials(c.profile?.full_name??"")}</span>
             <div className="text-xs"><div className="font-semibold">{c.profile?.full_name}</div><div className="text-muted-foreground">{c.role}</div></div>
           </div>

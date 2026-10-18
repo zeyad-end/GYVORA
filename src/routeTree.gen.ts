@@ -40,6 +40,7 @@ import { Route as MemberSettingsRouteImport } from './routes/member.settings'
 import { Route as MemberWorkoutsRouteImport } from './routes/member.workouts'
 import { Route as SuperAdminIndexRouteImport } from './routes/super-admin.index'
 import { Route as SuperAdminClientsRouteImport } from './routes/super-admin.clients'
+import { Route as SuperAdminExpensesRouteImport } from './routes/super-admin.expenses'
 import { Route as SuperAdminGymsRouteImport } from './routes/super-admin.gyms'
 import { Route as SuperAdminRequestsRouteImport } from './routes/super-admin.requests'
 import { Route as GymMembersIndexRouteImport } from './routes/_gym.members.index'
@@ -199,6 +200,11 @@ const SuperAdminClientsRoute = SuperAdminClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => SuperAdminRoute,
 } as any)
+const SuperAdminExpensesRoute = SuperAdminExpensesRouteImport.update({
+  id: '/expenses',
+  path: '/expenses',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 const SuperAdminGymsRoute = SuperAdminGymsRouteImport.update({
   id: '/gyms',
   path: '/gyms',
@@ -249,6 +255,7 @@ export interface FileRoutesByFullPath {
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
   '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member/': typeof MemberIndexRoute
@@ -284,6 +291,7 @@ export interface FileRoutesByTo {
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
   '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member': typeof MemberIndexRoute
@@ -322,6 +330,7 @@ export interface FileRoutesById {
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
   '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member/': typeof MemberIndexRoute
@@ -360,6 +369,7 @@ export interface FileRouteTypes {
     | '/member/settings'
     | '/member/workouts'
     | '/super-admin/clients'
+    | '/super-admin/expenses'
     | '/super-admin/gyms'
     | '/super-admin/requests'
     | '/member/'
@@ -395,6 +405,7 @@ export interface FileRouteTypes {
     | '/member/settings'
     | '/member/workouts'
     | '/super-admin/clients'
+    | '/super-admin/expenses'
     | '/super-admin/gyms'
     | '/super-admin/requests'
     | '/member'
@@ -432,6 +443,7 @@ export interface FileRouteTypes {
     | '/member/settings'
     | '/member/workouts'
     | '/super-admin/clients'
+    | '/super-admin/expenses'
     | '/super-admin/gyms'
     | '/super-admin/requests'
     | '/member/'
@@ -678,6 +690,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminClientsRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/super-admin/expenses': {
+      id: '/super-admin/expenses'
+      path: '/expenses'
+      fullPath: '/super-admin/expenses'
+      preLoaderRoute: typeof SuperAdminExpensesRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/super-admin/gyms': {
       id: '/super-admin/gyms'
       path: '/gyms'
@@ -749,6 +768,7 @@ const GymRouteWithChildren = GymRoute._addFileChildren(GymRouteChildren)
 
 interface SuperAdminRouteChildren {
   SuperAdminClientsRoute: typeof SuperAdminClientsRoute
+  SuperAdminExpensesRoute: typeof SuperAdminExpensesRoute
   SuperAdminGymsRoute: typeof SuperAdminGymsRoute
   SuperAdminRequestsRoute: typeof SuperAdminRequestsRoute
   SuperAdminIndexRoute: typeof SuperAdminIndexRoute
@@ -756,6 +776,7 @@ interface SuperAdminRouteChildren {
 
 const SuperAdminRouteChildren: SuperAdminRouteChildren = {
   SuperAdminClientsRoute: SuperAdminClientsRoute,
+  SuperAdminExpensesRoute: SuperAdminExpensesRoute,
   SuperAdminGymsRoute: SuperAdminGymsRoute,
   SuperAdminRequestsRoute: SuperAdminRequestsRoute,
   SuperAdminIndexRoute: SuperAdminIndexRoute,

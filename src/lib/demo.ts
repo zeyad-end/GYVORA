@@ -1,4 +1,7 @@
 import { useSyncExternalStore } from "react";
+import type { Database } from '@/integrations/supabase/types';
+import { z } from 'zod';
+import { invitationStatus } from './validation';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -154,18 +157,25 @@ export type ApprovedGym = {
 export type DemoClient = { id: string; name: string; phone: string; photo: string; gyms: string[] };
 
 export type RevenueEvent = { id: string; date: string; amount: number; gymName: string };
+export type DemoInvitation = Database['public']['Tables']['staff_invitations']['Row'] & { gym_name?: string };
+export const expenseSchema = z.object({ id: z.string().min(1), name: z.string().trim().min(1).max(100), category: z.string().trim().min(1).max(100), amount: z.number().finite().positive(), date: z.string().date(), method: z.string().max(100), notes: z.string().max(2000), receipt: z.string().max(3000000).optional(), receiptName: z.string().max(255).optional() });
+export type PlatformExpense = z.infer<typeof expenseSchema>;
 
 export type DemoState = {
   requests: GymRequest[];
   gyms: ApprovedGym[];
   clients: DemoClient[];
   revenue: RevenueEvent[];
+  expenses: PlatformExpense[];
+  invitations: DemoInvitation[];
+  sessionClients: Record<string, string>;
 };
 
 export const PLAN_PRICES: Record<string, number> = { Basic: 800, Premium: 2100, VIP: 7200 };
 export const PLAN_MONTHS: Record<string, number> = { Basic: 1, Premium: 3, VIP: 12 };
 
 const seed: DemoState = {
+  expenses: [], invitations: [], sessionClients: {},
   requests: [
     { id: "req-1", gymName: "Titan Strength Club", phone: "+20 100 222 8871", email: "owner@titanstrength.com", plan: "Premium", requestDate: "2026-10-14", status: "Pending" },
     { id: "req-2", gymName: "Pulse Fitness Studio", phone: "+20 111 905 4432", email: "hello@pulsefit.com", plan: "Basic", requestDate: "2026-10-16", status: "Pending" },
@@ -201,7 +211,7 @@ const listeners = new Set<() => void>();
 function load(): DemoState {
   try {
     const raw = localStorage.getItem(DATA_KEY);
-    if (raw) return JSON.parse(raw) as DemoState;
+    if (raw) return { ...structuredClone(seed), ...JSON.parse(raw) } as DemoState;
   } catch {
     /* corrupted or unavailable storage -> reseed */
   }
@@ -233,6 +243,41 @@ export function useDemoStore<T>(sel: (s: DemoState) => T): T {
 
 export function getDemoState() {
   return demoState;
+}
+
+export function selectSessionClient(gymId: string, memberId: string) {
+  commit({ ...demoState, sessionClients: { ...demoState.sessionClients, [gymId]: memberId } });
+}
+
+export function savePlatformExpense(expense: PlatformExpense) {
+  const row = expenseSchema.parse(expense);
+  commit({ ...demoState, expenses: demoState.expenses.some(e => e.id === row.id) ? demoState.expenses.map(e => e.id === row.id ? row : e) : [row, ...demoState.expenses] });
+}
+export function deletePlatformExpense(id: string) {
+  commit({ ...demoState, expenses: demoState.expenses.filter(e => e.id !== id) });
+}
+export function filterExpenses(rows: PlatformExpense[], search: string, category: string, from: string, to: string) {
+  return rows.filter(e => (!search || `${e.name} ${e.notes}`.toLowerCase().includes(search.toLowerCase())) && (!category || e.category === category) && (!from || e.date >= from) && (!to || e.date <= to));
+}
+export function platformTotals(revenue: RevenueEvent[], expenses: PlatformExpense[], from: Date, to: Date) {
+  const income = revenue.filter(r => inRange(r.date, from, to)).reduce((sum, r) => sum + r.amount, 0);
+  const spent = expenses.filter(e => inRange(e.date, from, to)).reduce((sum, e) => sum + e.amount, 0);
+  return { revenue: income, expenses: spent, net: income - spent };
+}
+
+export function createDemoInvitation(gymId: string, gymName: string, name: string, email: string, role: 'Admin' | 'Reception' | 'Trainer') {
+  const normalized = z.string().trim().email().max(255).parse(email).toLowerCase();
+  const fullName = z.string().trim().min(1).max(100).parse(name);
+  if (demoState.invitations.some(i => i.gym_id === gymId && i.email === normalized && i.role === role && invitationStatus(i.status, i.expires_at) === 'Pending')) throw new Error('An active invitation already exists for this email and role. Resend it from Invitations.');
+  const row: DemoInvitation = { id: uid(), gym_id: gymId, gym_name: gymName, full_name: fullName, email: normalized, role, status: 'Pending', created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 7 * 86400000).toISOString(), accepted_by: null, permissions: role === 'Admin' ? ['Members','Attendance','Sessions','Payments','Finance','Workout programs'] : role === 'Reception' ? ['Members','Attendance','Sessions','Payments'] : ['Members','Workout programs'] };
+  commit({ ...demoState, invitations: [row, ...demoState.invitations] });
+  return row;
+}
+export function changeDemoInvitation(gymId: string, id: string, action: 'resend' | 'cancel') {
+  const row = demoState.invitations.find(i => i.id === id && i.gym_id === gymId);
+  if (!row || !['Pending','Expired'].includes(invitationStatus(row.status, row.expires_at))) throw new Error('Invitation unavailable');
+  if (action === 'cancel' && invitationStatus(row.status, row.expires_at) !== 'Pending') throw new Error('Only pending invitations can be cancelled');
+  commit({ ...demoState, invitations: demoState.invitations.map(i => i.id === id && i.gym_id === gymId ? { ...i, ...(action === 'cancel' ? { status: 'Cancelled' } : { status: 'Pending', created_at: new Date().toISOString(), expires_at: new Date(Date.now() + 7 * 86400000).toISOString() }) } : i) });
 }
 
 const uid = () => (crypto.randomUUID ? crypto.randomUUID() : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`);
