@@ -38,6 +38,10 @@ import { Route as MemberMembershipRouteImport } from './routes/member.membership
 import { Route as MemberQrRouteImport } from './routes/member.qr'
 import { Route as MemberSettingsRouteImport } from './routes/member.settings'
 import { Route as MemberWorkoutsRouteImport } from './routes/member.workouts'
+import { Route as SuperAdminIndexRouteImport } from './routes/super-admin.index'
+import { Route as SuperAdminClientsRouteImport } from './routes/super-admin.clients'
+import { Route as SuperAdminGymsRouteImport } from './routes/super-admin.gyms'
+import { Route as SuperAdminRequestsRouteImport } from './routes/super-admin.requests'
 import { Route as GymMembersIndexRouteImport } from './routes/_gym.members.index'
 import { Route as GymMembersIdRouteImport } from './routes/_gym.members.$id'
 
@@ -185,6 +189,26 @@ const MemberWorkoutsRoute = MemberWorkoutsRouteImport.update({
   path: '/member/workouts',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SuperAdminIndexRoute = SuperAdminIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
+const SuperAdminClientsRoute = SuperAdminClientsRouteImport.update({
+  id: '/clients',
+  path: '/clients',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
+const SuperAdminGymsRoute = SuperAdminGymsRouteImport.update({
+  id: '/gyms',
+  path: '/gyms',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
+const SuperAdminRequestsRoute = SuperAdminRequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 const GymMembersIndexRoute = GymMembersIndexRouteImport.update({
   id: '/members/',
   path: '/members/',
@@ -203,7 +227,7 @@ export interface FileRoutesByFullPath {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/subscription-request': typeof SubscriptionRequestRoute
-  '/super-admin': typeof SuperAdminRoute
+  '/super-admin': typeof SuperAdminRouteWithChildren
   '/activity': typeof GymActivityRoute
   '/attendance': typeof GymAttendanceRoute
   '/dashboard': typeof GymDashboardRoute
@@ -224,7 +248,11 @@ export interface FileRoutesByFullPath {
   '/member/qr': typeof MemberQrRoute
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
+  '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/gyms': typeof SuperAdminGymsRoute
+  '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member/': typeof MemberIndexRoute
+  '/super-admin/': typeof SuperAdminIndexRoute
   '/members/$id': typeof GymMembersIdRoute
   '/members/': typeof GymMembersIndexRoute
 }
@@ -235,7 +263,6 @@ export interface FileRoutesByTo {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/subscription-request': typeof SubscriptionRequestRoute
-  '/super-admin': typeof SuperAdminRoute
   '/activity': typeof GymActivityRoute
   '/attendance': typeof GymAttendanceRoute
   '/dashboard': typeof GymDashboardRoute
@@ -256,7 +283,11 @@ export interface FileRoutesByTo {
   '/member/qr': typeof MemberQrRoute
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
+  '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/gyms': typeof SuperAdminGymsRoute
+  '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member': typeof MemberIndexRoute
+  '/super-admin': typeof SuperAdminIndexRoute
   '/members/$id': typeof GymMembersIdRoute
   '/members': typeof GymMembersIndexRoute
 }
@@ -269,7 +300,7 @@ export interface FileRoutesById {
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
   '/subscription-request': typeof SubscriptionRequestRoute
-  '/super-admin': typeof SuperAdminRoute
+  '/super-admin': typeof SuperAdminRouteWithChildren
   '/_gym/activity': typeof GymActivityRoute
   '/_gym/attendance': typeof GymAttendanceRoute
   '/_gym/dashboard': typeof GymDashboardRoute
@@ -290,7 +321,11 @@ export interface FileRoutesById {
   '/member/qr': typeof MemberQrRoute
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
+  '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/gyms': typeof SuperAdminGymsRoute
+  '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member/': typeof MemberIndexRoute
+  '/super-admin/': typeof SuperAdminIndexRoute
   '/_gym/members/$id': typeof GymMembersIdRoute
   '/_gym/members/': typeof GymMembersIndexRoute
 }
@@ -324,7 +359,11 @@ export interface FileRouteTypes {
     | '/member/qr'
     | '/member/settings'
     | '/member/workouts'
+    | '/super-admin/clients'
+    | '/super-admin/gyms'
+    | '/super-admin/requests'
     | '/member/'
+    | '/super-admin/'
     | '/members/$id'
     | '/members/'
   fileRoutesByTo: FileRoutesByTo
@@ -335,7 +374,6 @@ export interface FileRouteTypes {
     | '/register'
     | '/reset-password'
     | '/subscription-request'
-    | '/super-admin'
     | '/activity'
     | '/attendance'
     | '/dashboard'
@@ -356,7 +394,11 @@ export interface FileRouteTypes {
     | '/member/qr'
     | '/member/settings'
     | '/member/workouts'
+    | '/super-admin/clients'
+    | '/super-admin/gyms'
+    | '/super-admin/requests'
     | '/member'
+    | '/super-admin'
     | '/members/$id'
     | '/members'
   id:
@@ -389,7 +431,11 @@ export interface FileRouteTypes {
     | '/member/qr'
     | '/member/settings'
     | '/member/workouts'
+    | '/super-admin/clients'
+    | '/super-admin/gyms'
+    | '/super-admin/requests'
     | '/member/'
+    | '/super-admin/'
     | '/_gym/members/$id'
     | '/_gym/members/'
   fileRoutesById: FileRoutesById
@@ -402,7 +448,7 @@ export interface RootRouteChildren {
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
   SubscriptionRequestRoute: typeof SubscriptionRequestRoute
-  SuperAdminRoute: typeof SuperAdminRoute
+  SuperAdminRoute: typeof SuperAdminRouteWithChildren
   MemberAttendanceRoute: typeof MemberAttendanceRoute
   MemberBrowseRoute: typeof MemberBrowseRoute
   MemberJoinRoute: typeof MemberJoinRoute
@@ -618,6 +664,34 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberWorkoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/super-admin/': {
+      id: '/super-admin/'
+      path: '/'
+      fullPath: '/super-admin/'
+      preLoaderRoute: typeof SuperAdminIndexRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/clients': {
+      id: '/super-admin/clients'
+      path: '/clients'
+      fullPath: '/super-admin/clients'
+      preLoaderRoute: typeof SuperAdminClientsRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/gyms': {
+      id: '/super-admin/gyms'
+      path: '/gyms'
+      fullPath: '/super-admin/gyms'
+      preLoaderRoute: typeof SuperAdminGymsRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
+    '/super-admin/requests': {
+      id: '/super-admin/requests'
+      path: '/requests'
+      fullPath: '/super-admin/requests'
+      preLoaderRoute: typeof SuperAdminRequestsRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/_gym/members/': {
       id: '/_gym/members/'
       path: '/members'
@@ -673,6 +747,24 @@ const GymRouteChildren: GymRouteChildren = {
 
 const GymRouteWithChildren = GymRoute._addFileChildren(GymRouteChildren)
 
+interface SuperAdminRouteChildren {
+  SuperAdminClientsRoute: typeof SuperAdminClientsRoute
+  SuperAdminGymsRoute: typeof SuperAdminGymsRoute
+  SuperAdminRequestsRoute: typeof SuperAdminRequestsRoute
+  SuperAdminIndexRoute: typeof SuperAdminIndexRoute
+}
+
+const SuperAdminRouteChildren: SuperAdminRouteChildren = {
+  SuperAdminClientsRoute: SuperAdminClientsRoute,
+  SuperAdminGymsRoute: SuperAdminGymsRoute,
+  SuperAdminRequestsRoute: SuperAdminRequestsRoute,
+  SuperAdminIndexRoute: SuperAdminIndexRoute,
+}
+
+const SuperAdminRouteWithChildren = SuperAdminRoute._addFileChildren(
+  SuperAdminRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GymRoute: GymRouteWithChildren,
@@ -681,7 +773,7 @@ const rootRouteChildren: RootRouteChildren = {
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,
   SubscriptionRequestRoute: SubscriptionRequestRoute,
-  SuperAdminRoute: SuperAdminRoute,
+  SuperAdminRoute: SuperAdminRouteWithChildren,
   MemberAttendanceRoute: MemberAttendanceRoute,
   MemberBrowseRoute: MemberBrowseRoute,
   MemberJoinRoute: MemberJoinRoute,

@@ -1,11 +1,51 @@
-import {createFileRoute} from '@tanstack/react-router';
-import {useEffect,useState} from 'react';
-import {supabase} from '@/integrations/supabase/client';
-import type {Database} from '@/integrations/supabase/types';
-import {useCloud} from '@/components/CloudProvider';
-import {PageHeader,DataTable,td} from '@/components/kit';
-import {Button} from '@/components/ui/button';
-import {toast} from 'sonner';
-import {seo} from '@/lib/seo';
-export const Route=createFileRoute('/super-admin')({head:()=>seo('Administrator approvals','Review and decide IronHaus gym owner subscription requests.'),component:Admin});
-function Admin(){const c=useCloud();const [rows,setRows]=useState<Database['public']['Tables']['owner_requests']['Row'][]>([]);async function load(){const {data,error}=await supabase.from('owner_requests').select('*').order('created_at',{ascending:false});if(error)toast.error(error.message);else setRows(data??[]);}useEffect(()=>{void load();},[]);if(c.role!=='super_admin')return <div className="p-12">Administrator access required.</div>;return <div className="mx-auto max-w-5xl px-6 py-12"><PageHeader title="Subscription requests"/><DataTable head={['Gym','Plan','Requested','Status','Decision']}>{rows.map(r=><tr key={r.id}><td className={td}>{r.gym_name}</td><td className={td}>{r.plan}</td><td className={td}>{new Date(r.created_at).toLocaleDateString()}</td><td className={td}>{r.status}</td><td className={td}>{r.status==='Pending'&&<div className="flex gap-2">{[true,false].map(approve=><Button key={String(approve)} size="sm" variant={approve?'default':'destructive'} onClick={async()=>{if(!window.confirm(`${approve?'Approve':'Reject'} ${r.gym_name}?`))return;const {error}=await supabase.rpc('decide_owner_request',{request_id:r.id,approve});if(error)toast.error(error.message);else {toast.success('Decision saved');void load();}}}>{approve?'Approve':'Reject'}</Button>)}</div>}</td></tr>)}</DataTable>{!rows.length&&<p className="py-6 text-muted-foreground">No subscription requests.</p>}</div>}
+import { createFileRoute, Link, Outlet, useRouterState } from '@tanstack/react-router';
+import { useCloud } from '@/components/CloudProvider';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { LayoutDashboard, Inbox, Building2, Users, LogOut } from 'lucide-react';
+import { seo } from '@/lib/seo';
+
+export const Route = createFileRoute('/super-admin')({
+  head: () => seo('Platform administration', 'IronHaus platform super admin: gym requests, approved gyms, clients and platform metrics.'),
+  component: SuperAdminLayout,
+});
+
+const nav = [
+  { to: '/super-admin', label: 'Platform Dashboard', icon: LayoutDashboard, exact: true },
+  { to: '/super-admin/requests', label: 'Gym Requests', icon: Inbox },
+  { to: '/super-admin/gyms', label: 'Approved Gyms', icon: Building2 },
+  { to: '/super-admin/clients', label: 'Clients', icon: Users },
+] as const;
+
+function SuperAdminLayout() {
+  const c = useCloud();
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  if (c.role !== 'super_admin') return <div className="p-12">Administrator access required.</div>;
+  return (
+    <div className="mx-auto max-w-6xl px-6 py-10">
+      <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary font-display font-bold text-primary-foreground">IH</span>
+          <div>
+            <div className="font-display text-lg font-semibold">IRONHAUS Platform</div>
+            <div className="text-xs text-muted-foreground">Super Admin · fictional demo data</div>
+          </div>
+        </div>
+        <Button variant="outline" size="sm" onClick={() => void c.logout()}><LogOut className="h-4 w-4" /> Sign out</Button>
+      </div>
+      <nav className="mb-8 flex flex-wrap gap-2">
+        {nav.map((n) => {
+          const active = 'exact' in n && n.exact ? path === n.to : path.startsWith(n.to);
+          return (
+            <Link key={n.to} to={n.to}
+              className={cn('flex items-center gap-2 rounded-lg border px-4 py-2 text-sm transition-colors',
+                active ? 'border-primary/40 bg-secondary text-foreground' : 'text-muted-foreground hover:text-foreground')}>
+              <n.icon className={cn('h-4 w-4', active && 'text-primary')} />{n.label}
+            </Link>
+          );
+        })}
+      </nav>
+      <Outlet />
+    </div>
+  );
+}

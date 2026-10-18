@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
+import { matchDemoAccount, setDemoSession } from "@/lib/demo";
 import cover from "@/assets/gym-cover.jpg";
 
 export const Route = createFileRoute("/")({
@@ -26,7 +27,9 @@ function Login() {
   async function signIn(e:React.FormEvent<HTMLFormElement>) {
     e.preventDefault(); setError(''); setBusy(true);
     const d=new FormData(e.currentTarget);
-    try { const parsed=z.object({name:z.string().trim().min(1).max(100),identifier:z.string().trim().min(3).max(255),password:z.string().min(1).max(128)}).parse({name:d.get('name'),identifier:d.get('identifier'),password:d.get('password')});
+    try { const parsed=z.object({name:z.string().trim().min(1).max(100),identifier:z.string().trim().min(1).max(255),password:z.string().min(1).max(128)}).parse({name:d.get('name'),identifier:d.get('identifier'),password:d.get('password')});
+      const demo=matchDemoAccount(parsed.name,parsed.identifier,parsed.password);
+      if(demo){setDemoSession(demo);await cloud.refresh();await navigate({to:demo==='super'?'/super-admin':'/dashboard'});return;}
       if(!parsed.identifier.includes('@'))throw new Error('Phone sign-in requires an SMS provider in Cloud → Users → Auth Settings → Phone. Please use your email.');
       z.string().email().parse(parsed.identifier);
       const {error:authError}=await supabase.auth.signInWithPassword({email:parsed.identifier,password:parsed.password});
