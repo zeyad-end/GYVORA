@@ -32,8 +32,13 @@ import { Route as GymStaffRouteImport } from './routes/_gym.staff'
 import { Route as GymTrainersRouteImport } from './routes/_gym.trainers'
 import { Route as GymWorkoutsRouteImport } from './routes/_gym.workouts'
 import { Route as MemberIndexRouteImport } from './routes/member.index'
+import { Route as MemberAttendanceRouteImport } from './routes/member.attendance'
+import { Route as MemberBrowseRouteImport } from './routes/member.browse'
 import { Route as MemberJoinRouteImport } from './routes/member.join'
+import { Route as MemberMembershipRouteImport } from './routes/member.membership'
 import { Route as MemberQrRouteImport } from './routes/member.qr'
+import { Route as MemberSettingsRouteImport } from './routes/member.settings'
+import { Route as MemberWorkoutsRouteImport } from './routes/member.workouts'
 import { Route as GymMembersIndexRouteImport } from './routes/_gym.members.index'
 import { Route as GymMembersIdRouteImport } from './routes/_gym.members.$id'
 
@@ -151,14 +156,39 @@ const MemberIndexRoute = MemberIndexRouteImport.update({
   path: '/member/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MemberAttendanceRoute = MemberAttendanceRouteImport.update({
+  id: '/member/attendance',
+  path: '/member/attendance',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberBrowseRoute = MemberBrowseRouteImport.update({
+  id: '/member/browse',
+  path: '/member/browse',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MemberJoinRoute = MemberJoinRouteImport.update({
   id: '/member/join',
   path: '/member/join',
   getParentRoute: () => rootRouteImport,
 } as any)
+const MemberMembershipRoute = MemberMembershipRouteImport.update({
+  id: '/member/membership',
+  path: '/member/membership',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const MemberQrRoute = MemberQrRouteImport.update({
   id: '/member/qr',
   path: '/member/qr',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberSettingsRoute = MemberSettingsRouteImport.update({
+  id: '/member/settings',
+  path: '/member/settings',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MemberWorkoutsRoute = MemberWorkoutsRouteImport.update({
+  id: '/member/workouts',
+  path: '/member/workouts',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GymMembersIndexRoute = GymMembersIndexRouteImport.update({
@@ -194,8 +224,13 @@ export interface FileRoutesByFullPath {
   '/staff': typeof GymStaffRoute
   '/trainers': typeof GymTrainersRoute
   '/workouts': typeof GymWorkoutsRoute
+  '/member/attendance': typeof MemberAttendanceRoute
+  '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
+  '/member/membership': typeof MemberMembershipRoute
   '/member/qr': typeof MemberQrRoute
+  '/member/settings': typeof MemberSettingsRoute
+  '/member/workouts': typeof MemberWorkoutsRoute
   '/member/': typeof MemberIndexRoute
   '/members/$id': typeof GymMembersIdRoute
   '/members/': typeof GymMembersIndexRoute
@@ -222,8 +257,13 @@ export interface FileRoutesByTo {
   '/staff': typeof GymStaffRoute
   '/trainers': typeof GymTrainersRoute
   '/workouts': typeof GymWorkoutsRoute
+  '/member/attendance': typeof MemberAttendanceRoute
+  '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
+  '/member/membership': typeof MemberMembershipRoute
   '/member/qr': typeof MemberQrRoute
+  '/member/settings': typeof MemberSettingsRoute
+  '/member/workouts': typeof MemberWorkoutsRoute
   '/member': typeof MemberIndexRoute
   '/members/$id': typeof GymMembersIdRoute
   '/members': typeof GymMembersIndexRoute
@@ -252,8 +292,13 @@ export interface FileRoutesById {
   '/_gym/staff': typeof GymStaffRoute
   '/_gym/trainers': typeof GymTrainersRoute
   '/_gym/workouts': typeof GymWorkoutsRoute
+  '/member/attendance': typeof MemberAttendanceRoute
+  '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
+  '/member/membership': typeof MemberMembershipRoute
   '/member/qr': typeof MemberQrRoute
+  '/member/settings': typeof MemberSettingsRoute
+  '/member/workouts': typeof MemberWorkoutsRoute
   '/member/': typeof MemberIndexRoute
   '/_gym/members/$id': typeof GymMembersIdRoute
   '/_gym/members/': typeof GymMembersIndexRoute
@@ -282,8 +327,13 @@ export interface FileRouteTypes {
     | '/staff'
     | '/trainers'
     | '/workouts'
+    | '/member/attendance'
+    | '/member/browse'
     | '/member/join'
+    | '/member/membership'
     | '/member/qr'
+    | '/member/settings'
+    | '/member/workouts'
     | '/member/'
     | '/members/$id'
     | '/members/'
@@ -310,8 +360,13 @@ export interface FileRouteTypes {
     | '/staff'
     | '/trainers'
     | '/workouts'
+    | '/member/attendance'
+    | '/member/browse'
     | '/member/join'
+    | '/member/membership'
     | '/member/qr'
+    | '/member/settings'
+    | '/member/workouts'
     | '/member'
     | '/members/$id'
     | '/members'
@@ -339,8 +394,13 @@ export interface FileRouteTypes {
     | '/_gym/staff'
     | '/_gym/trainers'
     | '/_gym/workouts'
+    | '/member/attendance'
+    | '/member/browse'
     | '/member/join'
+    | '/member/membership'
     | '/member/qr'
+    | '/member/settings'
+    | '/member/workouts'
     | '/member/'
     | '/_gym/members/$id'
     | '/_gym/members/'
@@ -356,8 +416,13 @@ export interface RootRouteChildren {
   SubscriptionRequestRoute: typeof SubscriptionRequestRoute
   SuperAdminRoute: typeof SuperAdminRoute
   VerifyOtpRoute: typeof VerifyOtpRoute
+  MemberAttendanceRoute: typeof MemberAttendanceRoute
+  MemberBrowseRoute: typeof MemberBrowseRoute
   MemberJoinRoute: typeof MemberJoinRoute
+  MemberMembershipRoute: typeof MemberMembershipRoute
   MemberQrRoute: typeof MemberQrRoute
+  MemberSettingsRoute: typeof MemberSettingsRoute
+  MemberWorkoutsRoute: typeof MemberWorkoutsRoute
   MemberIndexRoute: typeof MemberIndexRoute
 }
 
@@ -524,6 +589,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/member/attendance': {
+      id: '/member/attendance'
+      path: '/member/attendance'
+      fullPath: '/member/attendance'
+      preLoaderRoute: typeof MemberAttendanceRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member/browse': {
+      id: '/member/browse'
+      path: '/member/browse'
+      fullPath: '/member/browse'
+      preLoaderRoute: typeof MemberBrowseRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/member/join': {
       id: '/member/join'
       path: '/member/join'
@@ -531,11 +610,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberJoinRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/member/membership': {
+      id: '/member/membership'
+      path: '/member/membership'
+      fullPath: '/member/membership'
+      preLoaderRoute: typeof MemberMembershipRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/member/qr': {
       id: '/member/qr'
       path: '/member/qr'
       fullPath: '/member/qr'
       preLoaderRoute: typeof MemberQrRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member/settings': {
+      id: '/member/settings'
+      path: '/member/settings'
+      fullPath: '/member/settings'
+      preLoaderRoute: typeof MemberSettingsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/member/workouts': {
+      id: '/member/workouts'
+      path: '/member/workouts'
+      fullPath: '/member/workouts'
+      preLoaderRoute: typeof MemberWorkoutsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_gym/members/': {
@@ -603,8 +703,13 @@ const rootRouteChildren: RootRouteChildren = {
   SubscriptionRequestRoute: SubscriptionRequestRoute,
   SuperAdminRoute: SuperAdminRoute,
   VerifyOtpRoute: VerifyOtpRoute,
+  MemberAttendanceRoute: MemberAttendanceRoute,
+  MemberBrowseRoute: MemberBrowseRoute,
   MemberJoinRoute: MemberJoinRoute,
+  MemberMembershipRoute: MemberMembershipRoute,
   MemberQrRoute: MemberQrRoute,
+  MemberSettingsRoute: MemberSettingsRoute,
+  MemberWorkoutsRoute: MemberWorkoutsRoute,
   MemberIndexRoute: MemberIndexRoute,
 }
 export const routeTree = rootRouteImport
