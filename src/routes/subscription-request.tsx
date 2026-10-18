@@ -1,0 +1,12 @@
+import {createFileRoute,Link} from '@tanstack/react-router';
+import {useState,useEffect} from 'react';
+import {useServerFn} from '@tanstack/react-start';
+import {useCloud} from '@/components/CloudProvider';
+import {supabase} from '@/integrations/supabase/client';
+import {requestSubscription} from '@/lib/cloud.functions';
+import {Button} from '@/components/ui/button';
+import {Input} from '@/components/ui/input';
+import {Field,PageHeader} from '@/components/kit';
+import {seo} from '@/lib/seo';
+export const Route=createFileRoute('/subscription-request')({head:()=>seo('Gym subscription request','Request administrator approval for your IronHaus gym subscription.'),component:Request});
+function Request(){const c=useCloud();const submit=useServerFn(requestSubscription);const [status,setStatus]=useState('');const [busy,setBusy]=useState(false);const [error,setError]=useState('');useEffect(()=>{if(c.profile)void supabase.from('owner_requests').select('status').eq('user_id',c.profile.id).maybeSingle().then(({data})=>setStatus(data?.status??''));},[c.profile?.id]);return <div className="mx-auto max-w-lg px-6 py-16"><PageHeader title="Gym subscription"/>{status?<><p role="status">{status==='Pending'?'Your subscription request has been sent successfully and is waiting for admin approval.':status==='Approved'?'Your gym subscription is approved.':'Your subscription request was rejected. Contact the administrator.'}</p>{status==='Approved'&&<Button asChild className="mt-6"><Link to="/gyms">Open your gym</Link></Button>}</>:<form className="space-y-4" onSubmit={async e=>{e.preventDefault();setBusy(true);try{const d=new FormData(e.currentTarget);await submit({data:{name:String(d.get('name')),plan:String(d.get('plan')) as 'Monthly Plan'|'3 Months Plan'|'Annual Plan'}});setStatus('Pending');}catch(e){setError(e instanceof Error?e.message:'Request failed');}finally{setBusy(false);}}}><Field label="Gym name"><Input name="name" required maxLength={100}/></Field><fieldset className="space-y-3"><legend className="mb-2 text-sm">Select a plan</legend>{['Monthly Plan','3 Months Plan','Annual Plan'].map(p=><label key={p} className="flex items-center gap-3 rounded-md border p-4"><input type="radio" required name="plan" value={p}/>{p}</label>)}</fieldset>{error&&<p role="alert" className="text-destructive">{error}</p>}<Button disabled={busy} className="w-full">{busy?'Submitting…':'Submit request'}</Button></form>}</div>}
