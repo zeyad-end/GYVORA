@@ -1,7 +1,7 @@
 # IronHaus update
-- [ ] Add owner staff deletion and single-record attendance editing.
-- [ ] Unify staff/client entry and add invitee-scoped persistent invitation notifications and associations.
-- [ ] Verify staff removal, attendance edits, invitation responses and portal separation in preview.
+- [x] Add owner staff deletion and single-record attendance editing.
+- [x] Unify staff/client entry and add invitee-scoped persistent invitation notifications and associations.
+- [x] Verify staff removal, attendance edits, invitation responses and portal separation in preview; 65 tests pass.
 - [x] Add gym-scoped session QR / Member ID lookup and persisted client selection.
 - [x] Hide Gym Owner gym switcher and persist interactive sent demo invitations.
 - [x] Add persisted platform expenses, filters and period net totals.
@@ -11,7 +11,7 @@
 - [x] Add staff invitation records, management and attendance.
 - [x] Add client attendance, subscription history, personal workouts and settings.
 - [x] Check compilation, regression tests and signed-out access; document remaining setup in DELIVERY.md.
-- [ ] Wire and verify invitation email delivery — blocked by missing owned sender domain.
+- [x] Keep invitations in the persistent prototype; real email delivery excluded by request.
 - [ ] Verify authenticated workflows — blocked by no real account yet.
 - [ ] Provision and verify super administrator approvals — blocked by missing administrator identity.
 - [x] Remove phone authentication; phone fields are contact information only.
