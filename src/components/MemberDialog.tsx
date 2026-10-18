@@ -1,3 +1,8 @@
+import { useServerFn } from "@tanstack/react-start";
+import { z } from "zod";
+import { lookupClient } from "@/lib/cloud.functions";
+import { useCloud } from "./CloudProvider";
+import { QRScanner } from "./QRScanner";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -16,10 +21,13 @@ function statusFor(expiry: string): Member["status"] {
 }
 
 export function MemberDialog({ open, onOpenChange, member }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null }) {
+  const c=useCloud();const lookup=useServerFn(lookupClient);const [scan,setScan]=useState(false);const [memberId,setMemberId]=useState("");const [clientId,setClientId]=useState<string|undefined>();const [lookupBusy,setLookupBusy]=useState(false);
+  async function findClient(value:string){const id=value.replace(/^ironhaus:member:/,"");const v=z.string().uuid().safeParse(id);if(!v.success){toast.error("Enter a valid Member ID or member QR");return;}setLookupBusy(true);try{const p=await lookup({data:{gymId:c.gymId,memberId:v.data}});up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setMemberId(p.member_id);toast.success("Client found. Confirm their details before saving.");}catch(e){toast.error(e instanceof Error?e.message:"Client not found");}finally{setLookupBusy(false);}}
   const plans = useStore((s) => s.plans);
   const trainers = useStore((s) => s.trainers);
   const [f, setF] = useState(blank());
   useEffect(() => {
+    if(open){setClientId(member?.clientId);setMemberId("");}
     if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: member.start, expiry: member.expiry, trainer: member.trainer, notes: member.notes } : blank());
   }, [open, member]);
   const up = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
@@ -28,15 +36,15 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
     e.preventDefault();
     if (f.expiry < f.start) { toast.error("End date must be after start date"); return; }
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
-    const base = { ...f, sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
+    const base = { ...f, ...(clientId?{clientId}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
       const left = f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0;
       setState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
-      toast.success("Member updated");
+      
     } else {
       const id = `M-${1040 + getState().members.length + Math.floor(Math.random() * 900)}`;
       setState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
-      toast.success(`${f.name} added · QR generated`);
+      
     }
     onOpenChange(false);
   };
@@ -45,7 +53,9 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
         <DialogHeader><DialogTitle>{member ? "Edit member" : "Add member"}</DialogTitle></DialogHeader>
+        <QRScanner open={scan} onClose={()=>setScan(false)} onScan={v=>void findClient(v)}/>
         <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
+          {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="Enter Member ID"><div className="flex gap-2"><Input maxLength={100} value={memberId} onChange={e=>setMemberId(e.target.value)}/><Button type="button" disabled={lookupBusy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="text-sm text-success">Existing client linked · {f.name}</p>}</div>}
           <Field label="Full name" className="sm:col-span-2"><Input required maxLength={80} value={f.name} onChange={(e) => up({ name: e.target.value })} /></Field>
           <Field label="Phone number"><Input required maxLength={30} value={f.phone} onChange={(e) => up({ phone: e.target.value })} /></Field>
           <Field label="Email"><Input type="email" maxLength={120} value={f.email} onChange={(e) => up({ email: e.target.value })} /></Field>
@@ -64,7 +74,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
           <Field label="Trainer" className="sm:col-span-2"><select className={selectCls} value={f.trainer} onChange={(e) => up({ trainer: e.target.value })}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
           <Field label="Notes" className="sm:col-span-2"><Textarea maxLength={500} value={f.notes} onChange={(e) => up({ notes: e.target.value })} /></Field>
           <DialogFooter className="gap-2 sm:col-span-2">
-            {member && <Button type="button" variant="destructive" className="sm:mr-auto" onClick={() => { setState((s) => ({ members: s.members.filter((m) => m.id !== member.id) })); toast.success("Member deleted"); onOpenChange(false); }}>Delete member</Button>}
+            {member && <Button type="button" variant="destructive" className="sm:mr-auto" onClick={() => { if(!window.confirm("Delete this gym subscription?"))return; setState((s) => ({ members: s.members.filter((m) => m.id !== member.id) })); toast.success("Member deleted"); onOpenChange(false); }}>Delete member</Button>}
             <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
             <Button type="submit">{member ? "Save changes" : "Save"}</Button>
           </DialogFooter>
