@@ -1,0 +1,10 @@
+import {createFileRoute} from '@tanstack/react-router';
+import {useEffect,useState} from 'react';
+import {supabase} from '@/integrations/supabase/client';
+import {useCloud} from '@/components/CloudProvider';
+import {ClientShell} from '@/components/ClientShell';
+import {seo} from '@/lib/seo';
+import {egp} from '@/lib/mock';
+import type {Member} from '@/lib/store';
+export const Route=createFileRoute('/member/membership')({head:()=>seo('My membership','Your saved membership prices, subscription dates and gym details.'),component:Membership});
+function Membership(){const c=useCloud();const [list,setList]=useState<Array<Member&{gym:string}>>([]);const [loading,setLoading]=useState(true);const [error,setError]=useState('');useEffect(()=>{if(!c.profile)return;void supabase.from('gym_records').select('*').eq('kind','members').eq('client_id',c.profile.id).then(({data,error})=>{if(error)setError(error.message);else setList((data??[]).map(x=>({...x.data as unknown as Member,gym:c.gyms.find(g=>g.id===x.gym_id)?.name??'Gym'})));setLoading(false);});},[c.profile?.id,c.gyms]);return <ClientShell title="My Membership">{error&&<p role="alert" className="text-destructive">{error}</p>}<div className="grid gap-5 sm:grid-cols-2">{list.map(m=><div key={m.id} className="panel p-6"><h2 className="text-xl font-semibold">{m.plan}</h2><p className="mt-3 text-2xl text-primary">{egp(m.planPrice??0)}</p><dl className="mt-6 space-y-3 text-sm">{[['Start Date',m.start],['Expiration Date',m.expiry],['Gym Name',m.gym],['Created by',m.createdByName??'Not recorded']].map(([label,value])=><div key={label} className="flex justify-between gap-4"><dt className="text-muted-foreground">{label}</dt><dd>{value}</dd></div>)}</dl></div>)}</div>{!list.length&&<p className="py-8 text-muted-foreground">{loading?'Loading memberships…':'No memberships linked to your account yet.'}</p>}</ClientShell>}
