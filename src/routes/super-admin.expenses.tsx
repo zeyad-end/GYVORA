@@ -229,6 +229,7 @@ function Expenses() {
               </Field>
               <Field label="Category">
                 <Input
+                  aria-label="Category"
                   required
                   maxLength={100}
                   list="expense-categories"

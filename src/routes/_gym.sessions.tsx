@@ -91,6 +91,7 @@ function Sessions() {
     <>
       <Field label="Client Name">
         <Input
+          aria-label="Client Name"
           required
           maxLength={100}
           list="session-members"
