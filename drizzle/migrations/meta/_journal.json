@@ -57,6 +57,13 @@
       "when": 1792330288791,
       "tag": "0007_remove_otp_gate",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1792348906355,
+      "tag": "0008_gym_invoice_and_plan_safety",
+      "breakpoints": true
     }
   ]
 }
