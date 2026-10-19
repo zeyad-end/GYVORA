@@ -33,6 +33,7 @@ function MemberHome() {
         </Link>
         <div className="flex gap-2"><PendingInvitations/><Button variant="outline" size="icon" aria-label="Sign out" onClick={()=>void c.logout()}><LogOut className="h-4 w-4" /></Button></div>
       </div>
+      <div className="mt-6"><AssignedWorkouts/></div>
 
       <div className="panel mt-6 p-6">
         <div className="flex items-center justify-between"><span className="eyebrow">{membership?.plan??"No membership"}</span><StatusPill status={membership?.status??"Not linked"} /></div>
