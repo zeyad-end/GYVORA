@@ -58,9 +58,14 @@ export function AssignWorkout({ open, onClose }: { open: boolean; onClose: () =>
   async function send(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;
-    if (!client) return toast.error("Select a client first");
-    if (!getDemoSession())
-      return toast.error("Sending workouts is available in the prototype accounts only");
+    if (!client) {
+      toast.error("Select a client first");
+      return;
+    }
+    if (!getDemoSession()) {
+      toast.error("Sending workouts is available in the prototype accounts only");
+      return;
+    }
     setBusy(true);
     try {
       const source = mode === "existing" ? workouts[Number(existing)] : undefined;
