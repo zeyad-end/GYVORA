@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import {useCloud} from "@/components/CloudProvider";
 import {PendingInvitations} from "@/components/PendingInvitations";
+import {AssignedWorkouts} from "@/components/AssignedWorkouts";
 import {Button} from "@/components/ui/button";
 import {useStore} from "@/lib/store";
 import {initials} from "@/lib/mock";
