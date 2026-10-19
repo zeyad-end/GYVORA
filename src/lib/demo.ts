@@ -172,7 +172,9 @@ export type DemoState = {
   sessionClients: Record<string, string>;
   staffRoles: DemoStaffRole[];
   programs: DemoProgram[];
+  assignments: DemoAssignment[];
 };
+export type DemoAssignment = { id: string; requestKey: string; gymId: string; gymName: string; senderId: string; senderName: string; recipientId: string; recipientName: string; memberId: string; sentAt: string; program: Workout; status: 'Pending' | 'Saved' | 'Deleted' };
 export type DemoStaffRole = StaffMember & { id: string; userId: string; gymId: string; gymName: string };
 export type DemoProgram = { id: string; user_id: string; definition: Workout; completion: number[]; created_at: string };
 export const demoUserId = (email: string) => `demo-user-${email.trim().toLowerCase() || 'anonymous'}`;
@@ -181,7 +183,7 @@ export const PLAN_PRICES: Record<string, number> = { Basic: 800, Premium: 2100, 
 export const PLAN_MONTHS: Record<string, number> = { Basic: 1, Premium: 3, VIP: 12 };
 
 const seed: DemoState = {
-  expenses: [], invitations: [], sessionClients: {}, staffRoles: [], programs: [],
+  expenses: [], invitations: [], sessionClients: {}, staffRoles: [], programs: [], assignments: [],
   requests: [
     { id: "req-1", gymName: "Titan Strength Club", phone: "+20 100 222 8871", email: "owner@titanstrength.com", plan: "Premium", requestDate: "2026-10-14", status: "Pending" },
     { id: "req-2", gymName: "Pulse Fitness Studio", phone: "+20 111 905 4432", email: "hello@pulsefit.com", plan: "Basic", requestDate: "2026-10-16", status: "Pending" },
@@ -455,4 +457,32 @@ export function periodRange(p: Period, custom?: { from: string; to: string }): {
 export function inRange(iso: string, from: Date, to: Date) {
   const t = new Date(iso + (iso.length === 10 ? "T12:00:00" : "")).getTime();
   return t >= from.getTime() && t <= to.getTime();
+}
+
+/** Owners, or trainers/admins of this gym, may send workouts to that gym's own members only. */
+export function sendDemoAssignment(input: { requestKey: string; gymId: string; gymName: string; memberId: string; program: Workout }) {
+  const info = getDemoSessionInfo();
+  if (!info) throw new Error('Sign in first');
+  const senderId = demoUserId(info.email);
+  const staff = demoState.staffRoles.find(r => r.gymId === input.gymId && r.userId === senderId);
+  const allowed = info.kind === 'owner' || (info.kind === 'individual' && !!staff && ['Trainer', 'Admin', 'Owner'].includes(staff.role));
+  if (!allowed) throw new Error('Only this gym\'s trainers or owner can send workouts');
+  const existing = demoState.assignments.find(a => a.requestKey === input.requestKey);
+  if (existing) return existing;
+  const member = readDemoGym(input.gymId, input.gymId === 'demo-gym').members.find(m => m.id === input.memberId);
+  if (!member) throw new Error('This client is not a member of the current gym');
+  const row: DemoAssignment = { id: uid(), requestKey: input.requestKey, gymId: input.gymId, gymName: input.gymName, senderId, senderName: staff?.name || info.name || getDemoAccount()?.name || 'Gym Owner', recipientId: member.clientId ?? demoUserId(member.email), recipientName: member.name, memberId: member.id, sentAt: new Date().toISOString(), program: structuredClone({ ...input.program, trainer: staff?.name || info.name || 'Gym Owner' }), status: 'Pending' };
+  commit({ ...demoState, assignments: [row, ...demoState.assignments] });
+  return row;
+}
+export function pendingDemoAssignments(userId: string, rows = demoState.assignments) {
+  return rows.filter(a => a.recipientId === userId && a.status === 'Pending');
+}
+/** Save copies the snapshot into the recipient's own programs; Delete only dismisses the notification. */
+export function respondDemoAssignment(id: string, save: boolean) {
+  const userId = demoUserId(getDemoSessionInfo()?.email ?? '');
+  const row = demoState.assignments.find(a => a.id === id && a.recipientId === userId);
+  if (!row || row.status !== 'Pending') throw new Error('Workout unavailable');
+  const copy: DemoProgram | null = save ? { id: uid(), user_id: userId, definition: { ...structuredClone(row.program), id: crypto.randomUUID() }, completion: [], created_at: new Date().toISOString() } : null;
+  commit({ ...demoState, assignments: demoState.assignments.map(a => a.id === id ? { ...a, status: save ? 'Saved' : 'Deleted' } : a), programs: copy ? [copy, ...demoState.programs] : demoState.programs });
 }

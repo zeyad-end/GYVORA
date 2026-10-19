@@ -1,8 +1,9 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ProgramEditor, ExerciseImage } from "@/components/ProgramEditor";
+import { AssignWorkout } from "@/components/AssignWorkout";
 import type { Workout } from "@/lib/store";
-import { Plus, Trash2, Pencil } from "lucide-react";
+import { Plus, Trash2, Pencil, Send } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ function Workouts() {
   const workouts = useStore((s) => s.workouts);
   const trainers = useStore((s) => s.trainers);
   const [open, setOpen] = useState(false);
+  const [assign, setAssign] = useState(false);
   const [name, setName] = useState("");
   const [trainer, setTrainer] = useState(trainers[0]?.name ?? "");
   const [rows, setRows] = useState([emptyRow()]);
@@ -40,6 +42,11 @@ function Workouts() {
       <PageHeader
         title="Workout programs"
         actions={
+          <div className="flex gap-2">
+          <Button variant="secondary" onClick={() => setAssign(true)}>
+            <Send className="h-4 w-4" />
+            Assign Workout
+          </Button>
           <Button
             onClick={() => {
               setEditing(null);
@@ -51,6 +58,7 @@ function Workouts() {
             <Plus className="h-4 w-4" />
             New program
           </Button>
+          </div>
         }
       />
       <div className="grid gap-6 lg:grid-cols-2">
@@ -94,6 +102,7 @@ function Workouts() {
         ))}
       </div>
 
+      <AssignWorkout open={assign} onClose={() => setAssign(false)} />
       <ProgramEditor
         open={open}
         onClose={() => setOpen(false)}

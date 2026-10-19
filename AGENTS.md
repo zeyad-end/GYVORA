@@ -11,7 +11,7 @@
 
 ## Application architecture
 - Keep gym invoice records in the existing transaction snapshots and archive deletions; retained numbered records preserve the per-gym sequence while database guards prevent duplicate or changed numbers. Trainer schedules use optional weekly rows so legacy trainer details remain compatible.
-- Keep platform expenses and gym-scoped prototype invitations in the existing demo store, and session client selections keyed by gym; this preserves local persistence without granting Cloud access or mixing platform and gym finances.
+- Keep platform expenses, gym-scoped prototype invitations and workout assignment snapshots in the existing demo store, and session client selections keyed by gym; this preserves local persistence without granting Cloud access or mixing platform and gym finances.
 - Preserve the existing TanStack routes and UI kit; extend the existing store with authenticated Cloud persistence to avoid replacing working screens.
 - Store gym records under a gym ID with permission-enforced access; keep account profiles, gym role associations, invitations and approval requests in separate tables so editable profile data never grants access.
 - Real authentication uses provider password auth without OTP; `otp_verified()` remains an authenticated-session compatibility shim so existing RLS policies stay intact.
