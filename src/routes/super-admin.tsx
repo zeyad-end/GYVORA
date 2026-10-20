@@ -4,6 +4,10 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { LayoutDashboard, Inbox, Building2, Users, LogOut, Receipt } from 'lucide-react';
 import { seo } from '@/lib/seo';
+import { useState } from 'react';
+import { Bell, UserRound } from 'lucide-react';
+import { PlatformAccount } from '@/components/PlatformAccount';
+import { PlatformAdminProvider, usePlatformAdmin } from '@/components/PlatformAdminProvider';
 
 export const Route = createFileRoute('/super-admin')({
   head: () => seo('Platform administration', 'IronHaus platform super admin: gym requests, approved gyms, clients and platform metrics.'),
@@ -19,7 +23,13 @@ const nav = [
 ] as const;
 
 function SuperAdminLayout() {
+  return <PlatformAdminProvider><SuperAdminContent /></PlatformAdminProvider>;
+}
+function SuperAdminContent() {
   const c = useCloud();
+  const [accountOpen,setAccountOpen] = useState(false);
+  const {notifications}=usePlatformAdmin();
+  const unread=notifications.filter(n=>!n.read).length;
   const path = useRouterState({ select: (s) => s.location.pathname });
   if (c.role !== 'super_admin') return <div className="p-12">Administrator access required.</div>;
   return (
@@ -32,7 +42,11 @@ function SuperAdminLayout() {
             <div className="text-xs text-muted-foreground">Super Admin · fictional demo data</div>
           </div>
         </div>
-        <Button variant="outline" size="sm" onClick={() => void c.logout()}><LogOut className="h-4 w-4" /> Sign out</Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={()=>setAccountOpen(true)}><UserRound className="h-4 w-4"/>Account</Button>
+          <Button variant="outline" size="sm" asChild><Link to="/super-admin/notifications"><Bell className="h-4 w-4"/>Notifications{unread>0&&<span aria-label={`${unread} unread notifications`} className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{unread}</span>}</Link></Button>
+          <Button variant="outline" size="sm" onClick={() => void c.logout()}><LogOut className="h-4 w-4" /> Sign out</Button>
+        </div>
       </div>
       <nav className="mb-8 flex flex-wrap gap-2">
         {nav.map((n) => {
@@ -47,6 +61,7 @@ function SuperAdminLayout() {
         })}
       </nav>
       <Outlet />
+      <PlatformAccount open={accountOpen} onOpenChange={setAccountOpen}/>
     </div>
   );
 }

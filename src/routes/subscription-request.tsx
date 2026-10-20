@@ -4,7 +4,7 @@ import { useServerFn } from '@tanstack/react-start';
 import { useCloud } from '@/components/CloudProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { requestSubscription } from '@/lib/cloud.functions';
-import { getDemoSessionInfo, getDemoAccount, updateDemoAccount } from '@/lib/demo';
+import { getDemoSessionInfo, getDemoAccount, updateDemoAccount, submitDemoGymRequest, getDemoState } from '@/lib/demo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Field, PageHeader } from '@/components/kit';
@@ -25,11 +25,11 @@ function Request() {
 
   const demo = getDemoSessionInfo();
   const demoAcc = getDemoAccount();
-  const isDemoOwner = demo?.kind === 'owner' && !!demoAcc;
+  const isDemoOwner = demo?.kind === 'owner';
 
   useEffect(() => {
     if (isDemoOwner) {
-      setStatus(demoAcc.requestPending ? 'Pending' : '');
+      setStatus(getDemoState().requests.find(r=>r.email===demo?.email&&r.submittedAt)?.status ?? (demoAcc?.requestPending ? 'Pending' : ''));
       return;
     }
     if (c.profile)
@@ -49,7 +49,8 @@ function Request() {
       const d = new FormData(e.currentTarget);
       if (isDemoOwner) {
         // Prototype: store a fictional pending request locally.
-        updateDemoAccount(demoAcc.email, { requestPending: true });
+        submitDemoGymRequest(String(d.get('name')),String(d.get('plan')));
+        if(demoAcc)updateDemoAccount(demoAcc.email, { requestPending: true });
         setStatus('Pending');
         return;
       }
@@ -64,7 +65,7 @@ function Request() {
 
   async function onSkip() {
     if (!isDemoOwner) return;
-    updateDemoAccount(demoAcc.email, { skipped: true });
+    if(demoAcc)updateDemoAccount(demoAcc.email, { skipped: true });
     await c.refresh();
     await navigate({ to: '/dashboard' });
   }
@@ -111,7 +112,7 @@ function Request() {
           </Button>
         </form>
       )}
-      {isDemoOwner && !demoAcc.skipped && (
+      {isDemoOwner && !demoAcc?.skipped && !demo?.directAccess && (
         <div className="mt-8 rounded-md border border-dashed p-4">
           <p className="text-sm text-muted-foreground">Prototype only: skip the approval wait and explore the Gym Owner dashboard with demo access. This is not a paid or approved subscription.</p>
           <Button type="button" variant="outline" className="mt-3 w-full" onClick={onSkip}>
@@ -119,7 +120,7 @@ function Request() {
           </Button>
         </div>
       )}
-      {isDemoOwner && demoAcc.skipped && (
+      {isDemoOwner && demoAcc?.skipped && (
         <p className="mt-8 text-sm text-muted-foreground">Demo access — subscription approval skipped.</p>
       )}
     </div>

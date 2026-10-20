@@ -20,3 +20,4 @@
 
 - Gym-record writes compare the exact previously read snapshot under a transaction lock before replacement; return canonical saved rows to prevent lost updates and preserve server-set subscription history.
 - Client gym joins and favorites are separate from paid memberships and staff roles; client-facing reads project only public gym details, while immutable membership snapshots retain history independently of gym associations.
+- Platform request notifications derive only from submitted requests, with per-admin read state; Cloud inserts fan out through an owner-request trigger and recipient/admin RLS, while prototype profiles use stable session keys and never update provider credentials.

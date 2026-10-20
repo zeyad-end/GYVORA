@@ -43,6 +43,7 @@ import { Route as SuperAdminIndexRouteImport } from './routes/super-admin.index'
 import { Route as SuperAdminClientsRouteImport } from './routes/super-admin.clients'
 import { Route as SuperAdminExpensesRouteImport } from './routes/super-admin.expenses'
 import { Route as SuperAdminGymsRouteImport } from './routes/super-admin.gyms'
+import { Route as SuperAdminNotificationsRouteImport } from './routes/super-admin.notifications'
 import { Route as SuperAdminRequestsRouteImport } from './routes/super-admin.requests'
 import { Route as GymMembersIndexRouteImport } from './routes/_gym.members.index'
 import { Route as GymMembersIdRouteImport } from './routes/_gym.members.$id'
@@ -217,6 +218,11 @@ const SuperAdminGymsRoute = SuperAdminGymsRouteImport.update({
   path: '/gyms',
   getParentRoute: () => SuperAdminRoute,
 } as any)
+const SuperAdminNotificationsRoute = SuperAdminNotificationsRouteImport.update({
+  id: '/notifications',
+  path: '/notifications',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 const SuperAdminRequestsRoute = SuperAdminRequestsRouteImport.update({
   id: '/requests',
   path: '/requests',
@@ -270,6 +276,7 @@ export interface FileRoutesByFullPath {
   '/super-admin/clients': typeof SuperAdminClientsRoute
   '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
+  '/super-admin/notifications': typeof SuperAdminNotificationsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member/': typeof MemberIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
@@ -308,6 +315,7 @@ export interface FileRoutesByTo {
   '/super-admin/clients': typeof SuperAdminClientsRoute
   '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
+  '/super-admin/notifications': typeof SuperAdminNotificationsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member': typeof MemberIndexRoute
   '/super-admin': typeof SuperAdminIndexRoute
@@ -349,6 +357,7 @@ export interface FileRoutesById {
   '/super-admin/clients': typeof SuperAdminClientsRoute
   '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
+  '/super-admin/notifications': typeof SuperAdminNotificationsRoute
   '/super-admin/requests': typeof SuperAdminRequestsRoute
   '/member/': typeof MemberIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
@@ -390,6 +399,7 @@ export interface FileRouteTypes {
     | '/super-admin/clients'
     | '/super-admin/expenses'
     | '/super-admin/gyms'
+    | '/super-admin/notifications'
     | '/super-admin/requests'
     | '/member/'
     | '/super-admin/'
@@ -428,6 +438,7 @@ export interface FileRouteTypes {
     | '/super-admin/clients'
     | '/super-admin/expenses'
     | '/super-admin/gyms'
+    | '/super-admin/notifications'
     | '/super-admin/requests'
     | '/member'
     | '/super-admin'
@@ -468,6 +479,7 @@ export interface FileRouteTypes {
     | '/super-admin/clients'
     | '/super-admin/expenses'
     | '/super-admin/gyms'
+    | '/super-admin/notifications'
     | '/super-admin/requests'
     | '/member/'
     | '/super-admin/'
@@ -737,6 +749,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminGymsRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/super-admin/notifications': {
+      id: '/super-admin/notifications'
+      path: '/notifications'
+      fullPath: '/super-admin/notifications'
+      preLoaderRoute: typeof SuperAdminNotificationsRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/super-admin/requests': {
       id: '/super-admin/requests'
       path: '/requests'
@@ -810,6 +829,7 @@ interface SuperAdminRouteChildren {
   SuperAdminClientsRoute: typeof SuperAdminClientsRoute
   SuperAdminExpensesRoute: typeof SuperAdminExpensesRoute
   SuperAdminGymsRoute: typeof SuperAdminGymsRoute
+  SuperAdminNotificationsRoute: typeof SuperAdminNotificationsRoute
   SuperAdminRequestsRoute: typeof SuperAdminRequestsRoute
   SuperAdminIndexRoute: typeof SuperAdminIndexRoute
 }
@@ -818,6 +838,7 @@ const SuperAdminRouteChildren: SuperAdminRouteChildren = {
   SuperAdminClientsRoute: SuperAdminClientsRoute,
   SuperAdminExpensesRoute: SuperAdminExpensesRoute,
   SuperAdminGymsRoute: SuperAdminGymsRoute,
+  SuperAdminNotificationsRoute: SuperAdminNotificationsRoute,
   SuperAdminRequestsRoute: SuperAdminRequestsRoute,
   SuperAdminIndexRoute: SuperAdminIndexRoute,
 }
