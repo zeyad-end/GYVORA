@@ -17,7 +17,9 @@ export const getPlatformNotifications = createServerFn({method:'POST'}).middlewa
   const {data:requests,error:requestError}=await context.supabase.from('owner_requests').select('*');
   if(requestError)throw new Error('Could not load gym requests.');
   const ids=[...new Set((requests??[]).map(r=>r.user_id))];
-  const {data:profiles}=ids.length ? await context.supabase.from('profiles').select('id,full_name').in('id',ids) : {data:[]};
+  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
+  const {data:profiles,error:profileError}=ids.length ? await supabaseAdmin.from('profiles').select('id,full_name').in('id',ids) : {data:[],error:null};
+  if(profileError)throw new Error('Could not load request owner names.');
   return (rows??[]).flatMap(n=>{const r=requests?.find(r=>r.id===n.request_id);return r ? [{id:n.id,requestId:r.id,gymName:r.gym_name,ownerName:profiles?.find(p=>p.id===r.user_id)?.full_name || 'Name not recorded',plan:r.plan,date:r.created_at,status:r.status,read:!!n.read_at}] : [];});
 });
 export const markPlatformNotificationsRead=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({ids:z.array(z.string().uuid()).max(1000)}).parse(input)).handler(async({data,context})=>{
