@@ -19,3 +19,4 @@
 - Demo member identities are normalized from display email; gym snapshots are keyed by gym, and accepted staff roles and personal programs live in the demo store to preserve associations without granting Cloud access.
 
 - Gym-record writes compare the exact previously read snapshot under a transaction lock before replacement; return canonical saved rows to prevent lost updates and preserve server-set subscription history.
+- Client gym joins and favorites are separate from paid memberships and staff roles; client-facing reads project only public gym details, while immutable membership snapshots retain history independently of gym associations.
