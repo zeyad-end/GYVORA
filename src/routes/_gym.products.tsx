@@ -17,7 +17,7 @@ import { DataTable, Field, PageHeader, Panel, StatusPill, td } from "@/component
 import { egp } from "@/lib/mock";
 import { saveState, stockStatus, useStore, type Product } from "@/lib/store";
 import { uploadImage, imageUrl } from "@/lib/images";
-import { productKey, saveProduct, totalSales, updateSoldQuantity } from "@/lib/product-sales";
+import { deleteProduct, productKey, saveProduct, totalSales, updateSoldQuantity } from "@/lib/product-sales";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/products")({
@@ -176,7 +176,7 @@ function Products() {
     setImg(p?.image ?? "");
     setName(p?.name ?? "");
     setPrice(String(p?.price ?? 0));
-    setQuantity(String(p?.sales ?? 1));
+    setQuantity(String(p?.qty ?? 1));
     setFormError("");
     setFormOpen(true);
   };
@@ -267,8 +267,8 @@ function Products() {
           {alerts.length} products need restocking: {alerts.map((p) => p.name).join(", ")}
         </div>
       )}
-      <Panel title="Inventory">
-        <DataTable head={["Product", "Quantity", "Price", "Sales", "Stock"]}>
+      <Panel title="Available Products">
+        <DataTable head={["Product", "Available Quantity", "Unit Price", "Stock", "Edit"]}>
           {products.map((p) => (
             <tr
               key={productKey(p)}
@@ -283,10 +283,10 @@ function Products() {
               </td>
               <td className={td}>{p.qty}</td>
               <td className={td}>{egp(p.price)}</td>
-              <td className={`${td} text-muted-foreground`}>{p.sales} sold</td>
               <td className={td}>
                 <StatusPill status={stockStatus(p.qty)} />
               </td>
+              <td className={td}><Button size="icon" variant="ghost" title="Edit product and stock" aria-label={`Edit available ${p.name}`} disabled={busy} onClick={(e) => { e.stopPropagation(); openForm(p); }}><Pencil className="h-4 w-4" /></Button></td>
             </tr>
           ))}
         </DataTable>
@@ -302,7 +302,7 @@ function Products() {
                 <Thumb p={viewing} cls="h-48 w-full" />
                 <div className="grid grid-cols-2 gap-3">
                   <div className="rounded-lg bg-surface p-3">
-                    <div className="eyebrow">Quantity</div>
+                    <div className="eyebrow">Available Quantity</div>
                     <div className="mt-1 font-display text-2xl">{viewing.qty}</div>
                   </div>
                   <div className="rounded-lg bg-surface p-3">
@@ -359,12 +359,12 @@ function Products() {
                 return;
               }
               const draft: Product = {
-                ...(editing ?? { qty: 0, min: 10 }),
-                id: editing?.id ?? crypto.randomUUID(),
+                ...(editing ?? { sales: 0, min: 10 }),
+                id: editing ? productKey(editing) : crypto.randomUUID(),
                 image: img,
                 name,
                 price: Number(price),
-                sales: Number(quantity),
+                qty: Number(quantity),
               };
               try {
                 saveProduct(products, draft, editing ? productKey(editing) : undefined);
@@ -446,7 +446,7 @@ function Products() {
                   required
                 />
               </Field>
-              <Field label="Quantity">
+              <Field label="Available Quantity">
                 <Input
                   type="number"
                   min={0}
@@ -469,7 +469,7 @@ function Products() {
                   type="button"
                   variant="destructive"
                   disabled={busy || uploading}
-                  onClick={() => setConfirmDelete(true)}
+                  onClick={() => { if (editing.sales > 0) { setFormError("This product has recorded sales and cannot be deleted. Reverse the sales first if they were entered by mistake."); return; } setConfirmDelete(true); }}
                 >
                   <Trash2 className="h-4 w-4" />
                   Delete
@@ -496,7 +496,7 @@ function Products() {
             <DialogTitle>Delete product?</DialogTitle>
           </DialogHeader>
           <p className="break-words text-sm text-muted-foreground">
-            Delete {editing?.name} and its sales record? This cannot be undone.
+            Delete {editing?.name}? This cannot be undone. Products with recorded sales cannot be deleted.
           </p>
           <DialogFooter>
             <Button variant="secondary" disabled={busy} onClick={() => setConfirmDelete(false)}>
@@ -509,7 +509,7 @@ function Products() {
                 if (!editing) return;
                 const ok = await mutate(
                   (s) => ({
-                    products: s.products.filter((p) => productKey(p) !== productKey(editing)),
+                    products: deleteProduct(s.products, productKey(editing)),
                   }),
                   "Product deleted",
                 );

@@ -2,7 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
 import { invoiceSchema, scheduleSchema } from './gym-updates';
-import { productSchema } from './product-sales';
+import { productSchema, validateProductChanges } from './product-sales';
 import { planSchema, programSchema, recurringSchema, sessionSchema, text } from './validation';
 
 const areas: Record<string,string> = {gym:'Settings', members:'Members',plans:'Members',workouts:'Workout programs',sessions:'Sessions',attendance:'Attendance',staffAttendance:'Attendance',products:'Finance',trainers:'Workout programs',recurring:'Finance',transactions:'Finance'};
@@ -13,7 +13,7 @@ const schemas: Record<string,z.ZodTypeAny> = {products:productSchema,transaction
 export const saveRecords = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
  .inputValidator(input=>z.object({gymId:z.string().uuid(),changes:z.array(z.object({kind:z.enum(['gym','members','products','trainers','plans','workouts','sessions','attendance','staffAttendance','recurring','transactions']),rows:z.array(z.record(z.unknown())).max(10000),expected:z.array(z.record(z.unknown())).max(10000)})).min(1)}).parse(input))
  .handler(async({data,context})=>{
-  for(const c of data.changes) { const area=areas[c.kind]; if(!area)throw new Error('Invalid record type'); const {data: allowed,error}=await context.supabase.rpc('gym_access',{g:data.gymId,area}); if(error||!allowed) throw new Error('You do not have permission to change this gym data.'); const schema=schemas[c.kind]; c.rows=c.rows.map(r=>schema ? schema.parse(r) : r); }
+  for(const c of data.changes) { const area=areas[c.kind]; if(!area)throw new Error('Invalid record type'); const {data: allowed,error}=await context.supabase.rpc('gym_access',{g:data.gymId,area}); if(error||!allowed) throw new Error('You do not have permission to change this gym data.'); const schema=schemas[c.kind]; c.rows=c.rows.map(r=>schema ? schema.parse(r) : r); if(c.kind==='products')validateProductChanges(c.expected.map(r=>productSchema.parse(r)),c.rows.map(r=>productSchema.parse(r))); }
   const {error}=await context.supabase.rpc('save_gym_records',{g:data.gymId,changes:data.changes as never}); if(error) throw new Error(error.message); const {data:records,error:readError}=await context.supabase.from('gym_records').select('kind,data').eq('gym_id',data.gymId);if(readError)throw new Error(readError.message);return {saved:true,records};
  });
 
