@@ -178,6 +178,19 @@ export type DemoAssignment = { id: string; requestKey: string; gymId: string; gy
 export type DemoStaffRole = StaffMember & { id: string; userId: string; gymId: string; gymName: string };
 export type DemoProgram = { id: string; user_id: string; definition: Workout; completion: number[]; created_at: string };
 export const demoUserId = (email: string) => `demo-user-${email.trim().toLowerCase() || 'anonymous'}`;
+/** Identity registry survives sign-out and is never removed when gyms are left. */
+export function demoMemberId(userId: string): string {
+  const key='ironhaus-demo-member-identities';
+  let registry: Record<string,string>={};try{registry=JSON.parse(localStorage.getItem(key)??'{}');}catch{/* retain a new registry */}
+  const existing=registry[userId];if(existing)return existing;
+  const membership=readDemoGym('demo-gym',true).members.find(m=>(m.clientId??demoUserId(m.email))===userId);
+  const candidate=membership?.memberQrId??userId;
+  const id=Object.values(registry).includes(candidate)?crypto.randomUUID():candidate;
+  registry[userId]=id;localStorage.setItem(key,JSON.stringify(registry));return id;
+}
+export type DemoMembershipHistory = {userId:string;gymId:string;gym:string;definition:State['members'][number]};
+export function readDemoMembershipHistory(userId:string):DemoMembershipHistory[]{try{return (JSON.parse(localStorage.getItem('ironhaus-demo-membership-history')??'[]') as DemoMembershipHistory[]).filter(r=>r.userId===userId);}catch{return [];}}
+export function rememberDemoMemberships(gymId:string,gym:string,members:State['members']){let rows:DemoMembershipHistory[]=[];try{rows=JSON.parse(localStorage.getItem('ironhaus-demo-membership-history')??'[]');}catch{/* empty */}for(const m of members){const userId=m.clientId??demoUserId(m.email);if(!rows.some(r=>r.userId===userId&&r.gymId===gymId&&r.definition.id===m.id&&r.definition.plan===m.plan&&r.definition.start===m.start&&r.definition.expiry===m.expiry)){rows.push({userId,gymId,gym,definition:structuredClone(m)});}}localStorage.setItem('ironhaus-demo-membership-history',JSON.stringify(rows));}
 
 export const PLAN_PRICES: Record<string, number> = { Basic: 800, Premium: 2100, VIP: 7200 };
 export const PLAN_MONTHS: Record<string, number> = { Basic: 1, Premium: 3, VIP: 12 };
@@ -314,6 +327,9 @@ export function readDemoGym(gymId: string, withSeed = false): State {
   return { ...base, transactions: base.transactions ?? (withSeed && gymId === 'demo-gym' ? structuredClone(initialState.transactions) : []), staff: [...local.filter(s => !associations.some(r => r.userId === s.userId)), ...associations] };
 }
 export function writeDemoGym(gymId: string, state: State) {
+  const previous=readDemoGym(gymId,gymId==='demo-gym');
+  rememberDemoMemberships(gymId,previous.gym.name,previous.members);
+  rememberDemoMemberships(gymId,state.gym.name,state.members);
   localStorage.setItem(`ironhaus-demo-gym:${gymId}`, JSON.stringify(state));
   if (gymId === 'demo-gym') localStorage.setItem('ironhaus-demo-gym-state', JSON.stringify(state));
 }

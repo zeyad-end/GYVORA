@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useCloud } from '@/components/CloudProvider';
-import { demoUserId, getDemoSession, getDemoState, readDemoGym } from './demo';
+import { demoUserId, getDemoSession, getDemoState, readDemoGym, rememberDemoMemberships } from './demo';
 import type { Member, Workout } from './store';
 
 export type ClientGym = { id: string; name: string; location: string; image: string; description: string };
@@ -18,7 +18,7 @@ export function demoDirectory(): ClientGym[] {
   const list = [{ id:'demo-gym',name:'IRONHAUS Performance Club' },{id:'demo-gym-north',name:'IRONHAUS North'},...getDemoState().gyms];
   return list.map(g => { const s=readDemoGym(g.id,g.id==='demo-gym');return {id:g.id,name:g.name,location:s.gym.location,image:s.gym.cover,description:s.gym.description}; });
 }
-export function demoMemberships(id: string): MembershipSnapshot[] { return demoDirectory().flatMap(g => readDemoGym(g.id,g.id==='demo-gym').members.filter(m => (m.clientId ?? demoUserId(m.email)) === id).map(m=>({...m,gym:g.name,gymId:g.id}))); }
+export function demoMemberships(id: string): MembershipSnapshot[] { return demoDirectory().flatMap(g => {const members=readDemoGym(g.id,g.id==='demo-gym').members;rememberDemoMemberships(g.id,g.name,members);return members.filter(m => (m.clientId ?? demoUserId(m.email)) === id).map(m=>({...m,gym:g.name,gymId:g.id}));}); }
 export function isCurrentMembership(m: MembershipSnapshot, date: string) { return m.start <= date && m.expiry >= date && m.status !== 'Expired'; }
 export function useClientGyms() {
   const c=useCloud(); const [directory,setDirectory]=useState<ClientGym[]>([]);const [links,setLinks]=useState<ClientLink[]>([]);const [memberships,setMemberships]=useState<MembershipSnapshot[]>([]);const [error,setError]=useState('');

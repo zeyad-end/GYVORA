@@ -20,7 +20,7 @@ export function AssignedWorkouts({ onSaved }: { onSaved?: () => void }) {
             <div>
               <p className="text-lg font-semibold">{a.program.name}</p>
               <p className="text-sm text-muted-foreground">
-                {a.gymName} · from {a.senderName} · {new Date(a.sentAt).toLocaleDateString()}
+                {a.senderName} ({a.gymName}) · {new Date(a.sentAt).toLocaleDateString()}
               </p>
             </div>
             <div className="flex gap-2">

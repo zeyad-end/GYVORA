@@ -8,7 +8,7 @@ import { gym as gymSeed } from '@/lib/mock';
 import { saveRecords, getStaff } from '@/lib/cloud.functions';
 import { Button } from './ui/button';
 import { toast } from 'sonner';
-import { getDemoSession, getDemoSessionInfo, getDemoAccount, setDemoSession, demoUserId, getDemoState, readDemoGym, writeDemoGym } from '@/lib/demo';
+import { getDemoSession, getDemoSessionInfo, getDemoAccount, setDemoSession, demoUserId, demoMemberId, getDemoState, readDemoGym, writeDemoGym } from '@/lib/demo';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 type GymRow = Database['public']['Tables']['gyms']['Row'];
