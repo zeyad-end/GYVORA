@@ -92,6 +92,13 @@
       "when": 1792494699419,
       "tag": "0012_client_joined_gym_image_access",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1792496597031,
+      "tag": "0013_platform_admin_request_notifications",
+      "breakpoints": true
     }
   ]
 }
