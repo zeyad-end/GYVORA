@@ -14,6 +14,80 @@ export type Database = {
   }
   public: {
     Tables: {
+      client_gym_links: {
+        Row: {
+          favorite: boolean
+          gym_id: string
+          joined_at: string
+          user_id: string
+        }
+        Insert: {
+          favorite?: boolean
+          gym_id: string
+          joined_at?: string
+          user_id: string
+        }
+        Update: {
+          favorite?: boolean
+          gym_id?: string
+          joined_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_gym_links_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "client_gym_links_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      client_membership_history: {
+        Row: {
+          definition: Json
+          gym_id: string
+          gym_name: string
+          id: string
+          member_record_id: string
+          recorded_at: string
+          user_id: string
+        }
+        Insert: {
+          definition: Json
+          gym_id: string
+          gym_name: string
+          id?: string
+          member_record_id: string
+          recorded_at?: string
+          user_id: string
+        }
+        Update: {
+          definition?: Json
+          gym_id?: string
+          gym_name?: string
+          id?: string
+          member_record_id?: string
+          recorded_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "client_membership_history_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_programs: {
         Row: {
           completion: number[]
@@ -374,6 +448,8 @@ export type Database = {
     }
     Functions: {
       can_read_image: { Args: { path: string }; Returns: boolean }
+      client_gym_content: { Args: { g: string }; Returns: Json }
+      client_gym_directory: { Args: never; Returns: Json }
       decide_owner_request: {
         Args: { approve: boolean; request_id: string }
         Returns: string
