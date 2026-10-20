@@ -1,4 +1,5 @@
 # IronHaus update
+- [ ] Update client QR sharing, membership history, attendance, joined/favorite gyms, gym profiles, program browsing and notifications; verify privacy and persistence.
 - [x] Add safe plan/program deletion and persistent trainer weekly schedules.
 - [x] Extend existing gym finance with persistent numbered invoices, detail/edit/delete and period reports.
 - [x] Verify all requested demo flows, including client copy preservation, and 77 regression tests; real authenticated Cloud flows remain unverified.
