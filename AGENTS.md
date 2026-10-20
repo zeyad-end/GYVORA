@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Product sales reuse gym product snapshots: stable IDs identify edits, `sales` stores quantity sold separately from inventory `qty`, and totals are derived from price and sales so they cannot drift.
 - Keep gym invoice records in the existing transaction snapshots and archive deletions; retained numbered records preserve the per-gym sequence while database guards prevent duplicate or changed numbers. Trainer schedules use optional weekly rows so legacy trainer details remain compatible.
 - Keep platform expenses, gym-scoped prototype invitations and workout assignment snapshots in the existing demo store, and session client selections keyed by gym; this preserves local persistence without granting Cloud access or mixing platform and gym finances.
 - Preserve the existing TanStack routes and UI kit; extend the existing store with authenticated Cloud persistence to avoid replacing working screens.
