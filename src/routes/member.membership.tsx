@@ -19,7 +19,7 @@ function Details({ m }: { m: MembershipSnapshot }) {
   return (
     <article className="rounded-lg border bg-card p-5">
       <h3 className="text-xl font-semibold">{m.plan}</h3>
-      <p className="mt-2 text-primary">{egp(m.planPrice ?? 0)}</p>
+      <p className="mt-2 text-primary">{m.planPrice===undefined?'Price not recorded':egp(m.planPrice)}</p>
       <dl className="mt-5 space-y-3 text-sm">
         {[
           ["Type", m.type],
