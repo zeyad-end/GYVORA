@@ -1,6 +1,13 @@
 import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
+import { reauthenticateAdminChange } from './platform-admin-auth';
+
+export const changePlatformCredentials=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({current:z.string().min(1).max(128),change:z.union([z.object({email:z.string().trim().email().max(255).transform(v=>v.toLowerCase())}).strict(),z.object({password:z.string().min(8).max(128)}).strict()])}).parse(input)).handler(async({data,context})=>{
+ const {data:allowed}=await context.supabase.rpc('is_super_admin');if(!allowed)throw new Error('Administrator access required');
+ if('email' in data.change){const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {data:existing,error}=await supabaseAdmin.from('profiles').select('id').ilike('email',data.change.email).neq('id',context.userId).limit(1);if(error)throw new Error('Could not validate the email.');if(existing?.length)throw new Error('This email is already used by another account.');}
+ await reauthenticateAdminChange(context.supabase.auth,context.userId,data.current,data.change);return true;
+});
 
 export const getPlatformNotifications = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async ({context}) => {
   const {data:allowed,error:roleError}=await context.supabase.rpc('is_super_admin');

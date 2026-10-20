@@ -7,7 +7,7 @@ import { seo } from '@/lib/seo';
 import { usePlatformAdmin } from '@/components/PlatformAdminProvider';
 
 export const Route = createFileRoute('/super-admin/requests')({
-  validateSearch: (search: Record<string,unknown>) => ({request: typeof search.request === 'string' ? search.request : undefined}),
+  validateSearch: (search: Record<string,unknown>) => ({request: typeof search['request'] === 'string' ? search['request'] : undefined}),
   head: () => seo('Gym requests', 'Review fictional pending gym subscription requests.'),
   component: Requests,
 });
