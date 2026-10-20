@@ -152,21 +152,21 @@ export function useClientGyms() {
     .filter((g) => links.some((l) => l.gymId === g.id))
     .sort(
       (a, b) =>
-        Number(links.find((l) => l.gymId === b.id)?.favorite) -
-        Number(links.find((l) => l.gymId === a.id)?.favorite),
+        Number(links.find((l) => l.gymId === b.id)?.favorite ?? false) -
+        Number(links.find((l) => l.gymId === a.id)?.favorite ?? false),
     );
   const accessible = directory.filter(
     (g) =>
       links.some((l) => l.gymId === g.id) ||
       memberships.some((m) => m.gymId === g.id) ||
-      getDemoState().staffRoles.some((r) => r.userId === c.profile?.id && r.gymId === g.id),
+      (getDemoSession() ? getDemoState().staffRoles.some((r) => r.userId === c.profile?.id && r.gymId === g.id) : c.gyms.some(r=>r.id===g.id)),
   );
   return { directory, links, joined, accessible, memberships, error, change };
 }
 export type ClientGymContent = {
   workouts: Workout[];
-  products: { name: string; price: number; image?: string }[];
-  trainers: { name: string; specialty: string; bio: string; image?: string }[];
+  products: { name: string; price: number; image?: string | undefined }[];
+  trainers: { name: string; specialty: string; bio: string; image?: string | undefined }[];
 };
 export async function clientGymContent(id: string): Promise<ClientGymContent> {
   if (getDemoSession()) {

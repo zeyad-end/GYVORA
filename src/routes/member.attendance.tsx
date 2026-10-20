@@ -4,9 +4,9 @@ import { supabase } from "@/integrations/supabase/client";
 import { useCloud } from "@/components/CloudProvider";
 import { ClientShell } from "@/components/ClientShell";
 import { DataTable, td } from "@/components/kit";
-import { getDemoSession, readDemoGym, demoUserId } from "@/lib/demo";
+import { getDemoSession, readDemoGym, demoUserId, readDemoMembershipHistory } from "@/lib/demo";
 import { seo } from "@/lib/seo";
-import { demoDirectory } from "@/lib/client-portal";
+import { demoDirectory, useClientGyms } from "@/lib/client-portal";
 import type { AttendanceEvent } from "@/lib/store";
 export const Route = createFileRoute("/member/attendance")({
   head: () => seo("My attendance", "Your chronological IronHaus gym visits and check-in times."),
@@ -14,6 +14,7 @@ export const Route = createFileRoute("/member/attendance")({
 });
 function Attendance() {
   const c = useCloud();
+  const p = useClientGyms();
   const [list, setList] = useState<Array<AttendanceEvent & { gym: string }>>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -22,9 +23,9 @@ function Attendance() {
     if (getDemoSession()) {
       const mine = demoDirectory().flatMap((g) => {
         const state = readDemoGym(g.id, g.id === "demo-gym");
-        const ids = state.members
+        const ids = [...state.members
           .filter((m) => (m.clientId ?? demoUserId(m.email)) === c.profile?.id)
-          .map((m) => m.id);
+          .map((m) => m.id),...readDemoMembershipHistory(c.profile?.id??'').filter(r=>r.gymId===g.id).map(r=>r.definition.id)];
         return state.attendance
           .filter((e) => e.memberId && ids.includes(e.memberId))
           .map((e) => ({ ...e, gym: g.name }));
@@ -46,13 +47,13 @@ function Attendance() {
             (data ?? [])
               .map((x) => ({
                 ...(x.data as unknown as AttendanceEvent),
-                gym: c.gyms.find((g) => g.id === x.gym_id)?.name ?? "Gym",
+                gym: p.directory.find((g) => g.id === x.gym_id)?.name ?? "Gym",
               }))
               .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time)),
           );
         setLoading(false);
       });
-  }, [c.profile?.id, c.gyms]);
+  }, [c.profile?.id, p.directory.length]);
   return (
     <ClientShell title="Attendance History">
       {error && (
