@@ -175,6 +175,8 @@ export function demoDestination(
 
 export type GymRequest = {
   id: string;
+  ownerName?: string;
+  submittedAt?: string;
   gymName: string;
   phone: string;
   email: string;
@@ -490,6 +492,19 @@ export function useDemoStore<T>(sel: (s: DemoState) => T): T {
 
 export function getDemoState() {
   return demoState;
+}
+
+export function submitDemoGymRequest(gymName: string, plan: string) {
+  const s = getDemoSessionInfo();
+  if (s?.kind !== 'owner') throw new Error('Gym owner account required');
+  const name = z.string().trim().min(1).max(100).parse(gymName);
+  const selected = z.enum(['Monthly Plan','3 Months Plan','Annual Plan']).parse(plan);
+  const existing = demoState.requests.find(r => r.email === s.email && r.status === 'Pending' && r.submittedAt);
+  if (existing) return existing;
+  const now = new Date().toISOString();
+  const row: GymRequest = {id:crypto.randomUUID(),gymName:name,ownerName:s.name || getDemoAccount()?.name || 'Name not recorded',email:s.email,phone:'',plan:selected,requestDate:now.slice(0,10),submittedAt:now,status:'Pending'};
+  commit({...demoState,requests:[row,...demoState.requests]});
+  return row;
 }
 
 export function selectSessionClient(gymId: string, memberId: string) {

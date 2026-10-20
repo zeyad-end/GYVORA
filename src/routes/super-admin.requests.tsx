@@ -4,13 +4,18 @@ import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import { useDemoStore, approveRequest, rejectRequest } from '@/lib/demo';
 import { seo } from '@/lib/seo';
+import { usePlatformAdmin } from '@/components/PlatformAdminProvider';
 
 export const Route = createFileRoute('/super-admin/requests')({
+  validateSearch: (search: Record<string,unknown>) => ({request: typeof search['request'] === 'string' ? search['request'] : undefined}),
   head: () => seo('Gym requests', 'Review fictional pending gym subscription requests.'),
   component: Requests,
 });
 
 function Requests() {
+  const {request}=Route.useSearch();
+  const {notifications}=usePlatformAdmin();
+  const selected=notifications.find(n=>n.requestId===request);
   const requests = useDemoStore((s) => s.requests);
   const pending = requests.filter((r) => r.status === 'Pending');
   const decided = requests.filter((r) => r.status !== 'Pending');
@@ -29,9 +34,10 @@ function Requests() {
   return (
     <div>
       <PageHeader title="Gym Requests" subtitle="Pending subscription requests · fictional demo data, no real emails or payments." />
+      {selected&&<section className="mb-6 border-y py-4" aria-label="Selected request"><h2 className="font-semibold">Review: {selected.gymName}</h2><p className="mt-2 text-sm">Owner: {selected.ownerName} · Plan: {selected.plan}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(selected.date).toLocaleString()} · {selected.status}</p></section>}
       <DataTable head={['Gym Name', 'Phone', 'Email', 'Plan', 'Request Date', 'Decision']}>
         {pending.map((r) => (
-          <tr key={r.id}>
+          <tr key={r.id} className={r.id===request?'bg-secondary':''}>
             <td className={td}>{r.gymName}</td>
             <td className={td}>{r.phone}</td>
             <td className={td}>{r.email}</td>

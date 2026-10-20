@@ -1,4 +1,6 @@
 # IronHaus update
+- [x] Add Super Admin account settings and private persistent request notifications; photo/name/email, request review without decision, unread persistence and narrow screen verified; 101 tests pass. Provider credential changes require verified current password and remain unavailable in prototype access.
+- [ ] Verify live Super Admin provider credential changes and Cloud request notifications — blocked by no provisioned real administrator identity; prototype flow verified.
 - [x] Update client QR sharing, membership history, attendance, joined/favorite gyms, gym profiles, program browsing and notifications; verify demo privacy, persistence, uploads and narrow-screen layouts; 92 tests pass.
 - [x] Include updated brief: invitation Accept/Decline and accepted Trainer role on client home; verify both notification flows and owner status readback.
 - [x] Add safe plan/program deletion and persistent trainer weekly schedules.

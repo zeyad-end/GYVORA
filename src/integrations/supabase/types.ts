@@ -291,6 +291,45 @@ export type Database = {
           },
         ]
       }
+      platform_request_notifications: {
+        Row: {
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          request_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          request_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "platform_request_notifications_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "platform_request_notifications_request_id_fkey"
+            columns: ["request_id"]
+            isOneToOne: false
+            referencedRelation: "owner_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           account_type: string

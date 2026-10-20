@@ -426,6 +426,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     path.startsWith("/member") ||
     path === "/subscription-request" ||
     path === "/super-admin" ||
+    (c.role === "super_admin" && path.startsWith("/super-admin/")) ||
     path === "/gyms"
   )
     return children;
