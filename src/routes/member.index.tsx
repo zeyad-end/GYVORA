@@ -5,7 +5,6 @@ import { ClientGymCard } from "@/components/ClientGymCard";
 import { useDemoStore } from "@/lib/demo";
 import { AssignedWorkouts } from "@/components/AssignedWorkouts";
 import { Button } from "@/components/ui/button";
-import { useStore } from "@/lib/store";
 import { initials } from "@/lib/mock";
 import {
   QrCode,
@@ -128,6 +127,7 @@ function MemberHome() {
           />
         ))}
         {!p.joined.length && <p className="text-sm text-muted-foreground">No joined gyms yet.</p>}
+        {!!c.gyms.length&&c.role!=='Client'&&<h2 className="pt-4 text-xl font-semibold">Gym Roles</h2>}
         {c.gyms
           .filter(
             (g) =>
