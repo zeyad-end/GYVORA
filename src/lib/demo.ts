@@ -496,6 +496,7 @@ export function pendingDemoAssignments(userId: string, rows = demoState.assignme
 }
 /** Save copies the snapshot into the recipient's own programs; Delete only dismisses the notification. */
 export function respondDemoAssignment(id: string, save: boolean) {
+  if(getDemoSession()!=='individual')throw new Error('Open your client account to respond');
   const userId = demoUserId(getDemoSessionInfo()?.email ?? '');
   const row = demoState.assignments.find(a => a.id === id && a.recipientId === userId);
   if (!row || row.status !== 'Pending') throw new Error('Workout unavailable');

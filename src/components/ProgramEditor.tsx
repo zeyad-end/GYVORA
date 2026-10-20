@@ -8,7 +8,7 @@ import { programSchema } from "@/lib/validation";
 import { uploadImage, imageUrl } from "@/lib/images";
 import type { Workout } from "@/lib/store";
 import { toast } from "sonner";
-export function ExerciseImage({ path }: { path?: string | undefined }) {
+export function ExerciseImage({ path, className = "h-16 w-20 rounded-md object-cover" }: { path?: string | undefined; className?: string }) {
   const [url, setUrl] = useState("");
   useEffect(() => {
     setUrl("");
@@ -18,7 +18,7 @@ export function ExerciseImage({ path }: { path?: string | undefined }) {
         .catch(() => setUrl(""));
   }, [path]);
   return url ? (
-    <img src={url} alt="Exercise" className="h-16 w-20 rounded-md object-cover" />
+    <img src={url} alt="Exercise" className={className} />
   ) : null;
 }
 const empty = () => ({ name: "", sets: 3, reps: "10", image: "" });
