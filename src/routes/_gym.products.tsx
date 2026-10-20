@@ -1,101 +1,528 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
-import { Plus, Minus, AlertTriangle, Package, Pencil, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { Plus, Minus, AlertTriangle, Package, Pencil, Trash2, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DataTable, Field, PageHeader, Panel, StatusPill, td } from "@/components/kit";
 import { egp } from "@/lib/mock";
-import { readFile, setState, stockStatus, useStore, type Product } from "@/lib/store";
+import { saveState, stockStatus, useStore, type Product } from "@/lib/store";
+import { uploadImage, imageUrl } from "@/lib/images";
+import { productKey, saveProduct, totalSales, updateSoldQuantity } from "@/lib/product-sales";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/products")({
-  head: () => seo("Products & inventory", "Track product stock, prices, sales and low-stock alerts."),
+  head: () =>
+    seo(
+      "Products & sales",
+      "Manage gym products, inventory, quantities sold and product sales totals.",
+    ),
   component: Products,
 });
 
 function Thumb({ p, cls = "h-10 w-10" }: { p: Product; cls?: string }) {
-  return p.image ? <img src={p.image} alt={p.name} className={`${cls} shrink-0 rounded-lg object-cover`} /> : <span className={`grid ${cls} shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground`}><Package className="h-4 w-4" /></span>;
+  const [url, setUrl] = useState("");
+  useEffect(() => {
+    let active = true;
+    setUrl("");
+    if (p.image) {
+      if (/^(data:image\/(png|jpeg|webp);base64,|https?:\/\/|\/)/.test(p.image)) setUrl(p.image);
+      else
+        void imageUrl(p.image)
+          .then((value) => {
+            if (active) setUrl(value);
+          })
+          .catch(() => {});
+    }
+    return () => {
+      active = false;
+    };
+  }, [p.image]);
+  return url ? (
+    <img src={url} alt={p.name} className={`${cls} shrink-0 rounded-lg object-cover`} />
+  ) : (
+    <span
+      className={`grid ${cls} shrink-0 place-items-center rounded-lg bg-secondary text-muted-foreground`}
+    >
+      <Package className="h-5 w-5" />
+    </span>
+  );
 }
-
+function SoldQuantity({
+  p,
+  disabled,
+  onChange,
+}: {
+  p: Product;
+  disabled: boolean;
+  onChange: (n: number) => Promise<boolean>;
+}) {
+  const [value, setValue] = useState(String(p.sales));
+  const [error, setError] = useState("");
+  useEffect(() => {
+    setValue(String(p.sales));
+  }, [p.sales]);
+  return (
+    <div>
+      <div className="flex items-center gap-2">
+        <Button
+          size="icon"
+          variant="secondary"
+          title="Decrease quantity sold"
+          aria-label={`Decrease quantity sold for ${p.name}`}
+          disabled={disabled || p.sales === 0}
+          onClick={() => void onChange(p.sales - 1)}
+        >
+          <Minus className="h-4 w-4" />
+        </Button>
+        <Input
+          aria-label={`Quantity sold for ${p.name}`}
+          type="number"
+          min={0}
+          step={1}
+          value={value}
+          disabled={disabled}
+          aria-invalid={!!error}
+          className="min-w-0 text-center"
+          onChange={async (e) => {
+            const raw = e.target.value;
+            setValue(raw);
+            if (!raw.trim() || !Number.isSafeInteger(Number(raw)) || Number(raw) < 0) {
+              setError("Enter a non-negative whole number");
+              return;
+            }
+            setError("");
+            if (!(await onChange(Number(raw)))) setValue(String(p.sales));
+          }}
+          onBlur={() => {
+            setValue(String(p.sales));
+            setError("");
+          }}
+        />
+        <Button
+          size="icon"
+          variant="secondary"
+          title="Increase quantity sold"
+          aria-label={`Increase quantity sold for ${p.name}`}
+          disabled={disabled}
+          onClick={() => void onChange(p.sales + 1)}
+        >
+          <Plus className="h-4 w-4" />
+        </Button>
+      </div>
+      {error && (
+        <p role="alert" className="mt-2 text-xs text-destructive">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
 function Products() {
   const products = useStore((s) => s.products);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
   const [img, setImg] = useState("");
-  const [viewName, setViewName] = useState<string | null>(null);
-  const viewing = products.find((p) => p.name === viewName) ?? null;
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("0");
+  const [quantity, setQuantity] = useState("1");
+  const [formError, setFormError] = useState("");
+  const [busy, setBusy] = useState(false);
+  const lock = useRef(false);
+  const [uploading, setUploading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [viewKey, setViewKey] = useState<string | null>(null);
+  const viewing = products.find((p) => productKey(p) === viewKey) ?? null;
   const alerts = products.filter((p) => stockStatus(p.qty) !== "In stock");
-
-  const changeQty = (p: Product, d: number) => setState((s) => ({ products: s.products.map((x) => x.name === p.name ? { ...x, qty: Math.max(0, x.qty + d) } : x) }));
-  const openForm = (p: Product | null) => { setEditing(p); setImg(p?.image ?? ""); setFormOpen(true); };
-
+  async function mutate(fn: Parameters<typeof saveState>[0], success?: string) {
+    if (lock.current) return false;
+    lock.current = true;
+    setBusy(true);
+    try {
+      await saveState(fn);
+      if (success) toast.success(success);
+      return true;
+    } catch (e) {
+      const message =
+        e instanceof z.ZodError
+          ? e.issues[0]?.message
+          : e instanceof Error
+            ? e.message
+            : "Could not save product";
+      toast.error(message ?? "Could not save product");
+      return false;
+    } finally {
+      lock.current = false;
+      setBusy(false);
+    }
+  }
+  const changeStock = (p: Product, d: number) =>
+    void mutate((s) => ({
+      products: s.products.map((x) =>
+        productKey(x) === productKey(p) ? { ...x, qty: Math.max(0, x.qty + d) } : x,
+      ),
+    }));
+  const openForm = (p: Product | null) => {
+    setEditing(p);
+    setImg(p?.image ?? "");
+    setName(p?.name ?? "");
+    setPrice(String(p?.price ?? 0));
+    setQuantity(String(p?.sales ?? 1));
+    setFormError("");
+    setFormOpen(true);
+  };
   return (
     <>
-      <PageHeader title="Products & inventory" actions={<Button onClick={() => openForm(null)}><Plus className="h-4 w-4" />Add product</Button>} />
+      <PageHeader
+        title="Products & inventory"
+        actions={
+          <Button onClick={() => openForm(null)} disabled={busy}>
+            <Plus className="h-4 w-4" />
+            Add Product
+          </Button>
+        }
+      />
+      <section className="mb-8" aria-label="Sales">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-lg font-semibold">Sales</h2>
+          {busy && (
+            <Loader2
+              aria-label="Saving product"
+              className="h-4 w-4 animate-spin text-muted-foreground"
+            />
+          )}
+        </div>
+        {products.length === 0 ? (
+          <div className="border border-dashed p-8 text-center text-muted-foreground">
+            <Package className="mx-auto mb-3 h-8 w-8" />
+            <p>No products yet</p>
+            <Button variant="secondary" className="mt-4" onClick={() => openForm(null)}>
+              <Plus className="h-4 w-4" />
+              Add Product
+            </Button>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {products.map((p) => (
+              <article
+                key={productKey(p)}
+                aria-label={`Sales for ${p.name}`}
+                className="panel min-w-0 p-4"
+              >
+                <div className="flex items-start gap-3">
+                  <Thumb p={p} cls="h-16 w-16" />
+                  <div className="min-w-0 flex-1">
+                    <h3 className="break-words font-semibold">{p.name}</h3>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      Unit Price · {egp(p.price)}
+                    </p>
+                  </div>
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="shrink-0"
+                    title="Edit product"
+                    aria-label={`Edit ${p.name}`}
+                    disabled={busy}
+                    onClick={() => openForm(p)}
+                  >
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                </div>
+                <div className="my-4 border-t pt-4">
+                  <p className="mb-2 text-sm text-muted-foreground">Quantity Sold</p>
+                  <SoldQuantity
+                    p={p}
+                    disabled={busy}
+                    onChange={(n) =>
+                      mutate((s) => ({
+                        products: updateSoldQuantity(s.products, productKey(p), n),
+                      }))
+                    }
+                  />
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="text-sm text-muted-foreground">Total Sales</span>
+                  <strong className="font-display text-xl text-primary">
+                    {egp(totalSales(p))}
+                  </strong>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
       {alerts.length > 0 && (
-        <div className="panel mb-6 flex items-center gap-3 border-warning/40 p-4 text-sm"><AlertTriangle className="h-4 w-4 shrink-0 text-warning" />{alerts.length} products need restocking: {alerts.map((p) => p.name).join(", ")}</div>
+        <div className="panel mb-6 flex items-center gap-3 border-warning/40 p-4 text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
+          {alerts.length} products need restocking: {alerts.map((p) => p.name).join(", ")}
+        </div>
       )}
-      <Panel>
+      <Panel title="Inventory">
         <DataTable head={["Product", "Quantity", "Price", "Sales", "Stock"]}>
           {products.map((p) => (
-            <tr key={p.name} onClick={() => setViewName(p.name)} className="cursor-pointer hover:bg-secondary/50">
-              <td className={td}><div className="flex items-center gap-3"><Thumb p={p} /><span className="font-medium">{p.name}</span></div></td>
-              <td className={td}>{p.qty}</td><td className={td}>{egp(p.price)}</td><td className={`${td} text-muted-foreground`}>{p.sales} sold</td>
-              <td className={td}><StatusPill status={stockStatus(p.qty)} /></td>
+            <tr
+              key={productKey(p)}
+              onClick={() => setViewKey(productKey(p))}
+              className="cursor-pointer hover:bg-secondary/50"
+            >
+              <td className={td}>
+                <div className="flex items-center gap-3">
+                  <Thumb p={p} />
+                  <span className="font-medium">{p.name}</span>
+                </div>
+              </td>
+              <td className={td}>{p.qty}</td>
+              <td className={td}>{egp(p.price)}</td>
+              <td className={`${td} text-muted-foreground`}>{p.sales} sold</td>
+              <td className={td}>
+                <StatusPill status={stockStatus(p.qty)} />
+              </td>
             </tr>
           ))}
         </DataTable>
       </Panel>
-
-      <Sheet open={!!viewing} onOpenChange={(o) => !o && setViewName(null)}>
+      <Sheet open={!!viewing} onOpenChange={(o) => !o && setViewKey(null)}>
         <SheetContent>
           {viewing && (
             <>
-              <SheetHeader><SheetTitle>{viewing.name}</SheetTitle></SheetHeader>
+              <SheetHeader>
+                <SheetTitle>{viewing.name}</SheetTitle>
+              </SheetHeader>
               <div className="mt-6 space-y-5 px-4">
                 <Thumb p={viewing} cls="h-48 w-full" />
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-lg bg-surface p-3"><div className="eyebrow">Quantity</div><div className="mt-1 font-display text-2xl">{viewing.qty}</div></div>
-                  <div className="rounded-lg bg-surface p-3"><div className="eyebrow">Price</div><div className="mt-1 font-display text-2xl">{egp(viewing.price)}</div></div>
+                  <div className="rounded-lg bg-surface p-3">
+                    <div className="eyebrow">Quantity</div>
+                    <div className="mt-1 font-display text-2xl">{viewing.qty}</div>
+                  </div>
+                  <div className="rounded-lg bg-surface p-3">
+                    <div className="eyebrow">Price</div>
+                    <div className="mt-1 font-display text-2xl">{egp(viewing.price)}</div>
+                  </div>
                 </div>
                 <StatusPill status={stockStatus(viewing.qty)} />
                 <div className="grid grid-cols-2 gap-2">
-                  <Button variant="secondary" onClick={() => changeQty(viewing, 1)}><Plus className="h-4 w-4" />Increase</Button>
-                  <Button variant="secondary" disabled={viewing.qty === 0} onClick={() => changeQty(viewing, -1)}><Minus className="h-4 w-4" />Decrease</Button>
-                  <Button onClick={() => openForm(viewing)}><Pencil className="h-4 w-4" />Edit product</Button>
-                  <Button variant="destructive" onClick={() => { setState((s) => ({ products: s.products.filter((x) => x.name !== viewing.name) })); setViewName(null); toast.success("Product deleted"); }}><Trash2 className="h-4 w-4" />Delete</Button>
+                  <Button
+                    variant="secondary"
+                    disabled={busy}
+                    onClick={() => changeStock(viewing, 1)}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Increase
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    disabled={busy || viewing.qty === 0}
+                    onClick={() => changeStock(viewing, -1)}
+                  >
+                    <Minus className="h-4 w-4" />
+                    Decrease
+                  </Button>
+                  <Button onClick={() => openForm(viewing)}>
+                    <Pencil className="h-4 w-4" />
+                    Edit product
+                  </Button>
                 </div>
               </div>
             </>
           )}
         </SheetContent>
       </Sheet>
-
-      <Dialog open={formOpen} onOpenChange={setFormOpen}>
+      <Dialog
+        open={formOpen}
+        onOpenChange={(o) => {
+          if (!busy && !uploading) setFormOpen(o);
+        }}
+      >
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>{editing ? "Edit product" : "Add product"}</DialogTitle></DialogHeader>
-          <form className="space-y-4" onSubmit={(e) => {
-            e.preventDefault();
-            const d = new FormData(e.currentTarget);
-            const next: Product = { ...(editing ?? { sales: 0, min: 10 }), image: img, name: String(d.get("name")).trim(), qty: Math.max(0, Number(d.get("qty"))), price: Math.max(0, Number(d.get("price"))) };
-            if (!editing && products.some((p) => p.name === next.name)) { toast.error("A product with this name exists"); return; }
-            setState((s) => ({ products: editing ? s.products.map((x) => x.name === editing.name ? next : x) : [...s.products, next] }));
-            if (editing && viewName === editing.name) setViewName(next.name);
-            toast.success(editing ? "Product updated" : "Product added");
-            setFormOpen(false);
-          }}>
-            <Field label="Product name"><Input name="name" required maxLength={60} defaultValue={editing?.name} /></Field>
+          <DialogHeader>
+            <DialogTitle>{editing ? "Edit product" : "Add Product"}</DialogTitle>
+          </DialogHeader>
+          <form
+            className="space-y-4"
+            noValidate
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (busy || uploading) return;
+              if (!price.trim() || !quantity.trim()) {
+                setFormError("Enter a unit price and quantity");
+                return;
+              }
+              const draft: Product = {
+                ...(editing ?? { qty: 0, min: 10 }),
+                id: editing?.id ?? crypto.randomUUID(),
+                image: img,
+                name,
+                price: Number(price),
+                sales: Number(quantity),
+              };
+              try {
+                saveProduct(products, draft, editing ? productKey(editing) : undefined);
+              } catch (error) {
+                setFormError(
+                  error instanceof z.ZodError
+                    ? (error.issues[0]?.message ?? "Check product values")
+                    : error instanceof Error
+                      ? error.message
+                      : "Check product values",
+                );
+                return;
+              }
+              const ok = await mutate(
+                (s) => ({
+                  products: saveProduct(
+                    s.products,
+                    draft,
+                    editing ? productKey(editing) : undefined,
+                  ),
+                }),
+                editing ? "Product updated" : "Product added",
+              );
+              if (ok) {
+                if (editing && viewKey === productKey(editing)) setViewKey(productKey(draft));
+                setFormOpen(false);
+              }
+            }}
+          >
+            <Field label="Product Name">
+              <Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                required
+                maxLength={60}
+                disabled={busy}
+              />
+            </Field>
+            <Field label="Product Image">
+              <Input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={busy || uploading}
+                onChange={async (e) => {
+                  const f = e.target.files?.[0];
+                  if (!f) return;
+                  setUploading(true);
+                  setFormError("");
+                  try {
+                    setImg(await uploadImage(f));
+                  } catch (error) {
+                    setFormError(error instanceof Error ? error.message : "Could not upload image");
+                  } finally {
+                    setUploading(false);
+                  }
+                }}
+              />
+            </Field>
+            {uploading && (
+              <p role="status" className="text-sm text-muted-foreground">
+                Uploading image…
+              </p>
+            )}
+            {img && (
+              <Thumb
+                p={{ name, image: img, price: 0, sales: 0, qty: 0, min: 10 }}
+                cls="h-20 w-20"
+              />
+            )}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Quantity"><Input name="qty" type="number" min={0} required defaultValue={editing?.qty ?? 0} /></Field>
-              <Field label="Price (EGP)"><Input name="price" type="number" min={0} required defaultValue={editing?.price ?? 0} /></Field>
+              <Field label="Unit Price (EGP)">
+                <Input
+                  type="number"
+                  min={0}
+                  step="any"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  disabled={busy}
+                  required
+                />
+              </Field>
+              <Field label="Quantity">
+                <Input
+                  type="number"
+                  min={0}
+                  step={1}
+                  value={quantity}
+                  onChange={(e) => setQuantity(e.target.value)}
+                  disabled={busy}
+                  required
+                />
+              </Field>
             </div>
-            <Field label="Product image"><Input type="file" accept="image/*" onChange={async (e) => { const f = e.target.files?.[0]; if (f) setImg(await readFile(f)); }} /></Field>
-            {img && <img src={img} alt="Preview" className="h-20 w-20 rounded-lg object-cover" />}
-            <DialogFooter><Button type="button" variant="secondary" onClick={() => setFormOpen(false)}>Cancel</Button><Button type="submit">Save</Button></DialogFooter>
+            {formError && (
+              <p role="alert" className="text-sm text-destructive">
+                {formError}
+              </p>
+            )}
+            <DialogFooter className="flex-wrap gap-2">
+              {editing && (
+                <Button
+                  type="button"
+                  variant="destructive"
+                  disabled={busy || uploading}
+                  onClick={() => setConfirmDelete(true)}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete
+                </Button>
+              )}
+              <Button
+                type="button"
+                variant="secondary"
+                disabled={busy || uploading}
+                onClick={() => setFormOpen(false)}
+              >
+                Cancel
+              </Button>
+              <Button type="submit" disabled={busy || uploading}>
+                {busy ? "Saving…" : "Save"}
+              </Button>
+            </DialogFooter>
           </form>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={confirmDelete} onOpenChange={(o) => !busy && setConfirmDelete(o)}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Delete product?</DialogTitle>
+          </DialogHeader>
+          <p className="break-words text-sm text-muted-foreground">
+            Delete {editing?.name} and its sales record? This cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="secondary" disabled={busy} onClick={() => setConfirmDelete(false)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={busy}
+              onClick={async () => {
+                if (!editing) return;
+                const ok = await mutate(
+                  (s) => ({
+                    products: s.products.filter((p) => productKey(p) !== productKey(editing)),
+                  }),
+                  "Product deleted",
+                );
+                if (ok) {
+                  setConfirmDelete(false);
+                  setFormOpen(false);
+                  if (viewKey === productKey(editing)) setViewKey(null);
+                }
+              }}
+            >
+              {busy ? "Deleting…" : "Delete product"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
