@@ -45,6 +45,7 @@ import { Route as SuperAdminGymsRouteImport } from './routes/super-admin.gyms'
 import { Route as SuperAdminRequestsRouteImport } from './routes/super-admin.requests'
 import { Route as GymMembersIndexRouteImport } from './routes/_gym.members.index'
 import { Route as GymMembersIdRouteImport } from './routes/_gym.members.$id'
+import { Route as MemberGymIdRouteImport } from './routes/member.gym.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -225,6 +226,11 @@ const GymMembersIdRoute = GymMembersIdRouteImport.update({
   path: '/members/$id',
   getParentRoute: () => GymRoute,
 } as any)
+const MemberGymIdRoute = MemberGymIdRouteImport.update({
+  id: '/member/gym/$id',
+  path: '/member/gym/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -261,6 +267,7 @@ export interface FileRoutesByFullPath {
   '/member/': typeof MemberIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
   '/members/$id': typeof GymMembersIdRoute
+  '/member/gym/$id': typeof MemberGymIdRoute
   '/members/': typeof GymMembersIndexRoute
 }
 export interface FileRoutesByTo {
@@ -297,6 +304,7 @@ export interface FileRoutesByTo {
   '/member': typeof MemberIndexRoute
   '/super-admin': typeof SuperAdminIndexRoute
   '/members/$id': typeof GymMembersIdRoute
+  '/member/gym/$id': typeof MemberGymIdRoute
   '/members': typeof GymMembersIndexRoute
 }
 export interface FileRoutesById {
@@ -336,6 +344,7 @@ export interface FileRoutesById {
   '/member/': typeof MemberIndexRoute
   '/super-admin/': typeof SuperAdminIndexRoute
   '/_gym/members/$id': typeof GymMembersIdRoute
+  '/member/gym/$id': typeof MemberGymIdRoute
   '/_gym/members/': typeof GymMembersIndexRoute
 }
 export interface FileRouteTypes {
@@ -375,6 +384,7 @@ export interface FileRouteTypes {
     | '/member/'
     | '/super-admin/'
     | '/members/$id'
+    | '/member/gym/$id'
     | '/members/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -411,6 +421,7 @@ export interface FileRouteTypes {
     | '/member'
     | '/super-admin'
     | '/members/$id'
+    | '/member/gym/$id'
     | '/members'
   id:
     | '__root__'
@@ -449,6 +460,7 @@ export interface FileRouteTypes {
     | '/member/'
     | '/super-admin/'
     | '/_gym/members/$id'
+    | '/member/gym/$id'
     | '/_gym/members/'
   fileRoutesById: FileRoutesById
 }
@@ -469,6 +481,7 @@ export interface RootRouteChildren {
   MemberSettingsRoute: typeof MemberSettingsRoute
   MemberWorkoutsRoute: typeof MemberWorkoutsRoute
   MemberIndexRoute: typeof MemberIndexRoute
+  MemberGymIdRoute: typeof MemberGymIdRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -725,6 +738,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GymMembersIdRouteImport
       parentRoute: typeof GymRoute
     }
+    '/member/gym/$id': {
+      id: '/member/gym/$id'
+      path: '/member/gym/$id'
+      fullPath: '/member/gym/$id'
+      preLoaderRoute: typeof MemberGymIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -803,6 +823,7 @@ const rootRouteChildren: RootRouteChildren = {
   MemberSettingsRoute: MemberSettingsRoute,
   MemberWorkoutsRoute: MemberWorkoutsRoute,
   MemberIndexRoute: MemberIndexRoute,
+  MemberGymIdRoute: MemberGymIdRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
