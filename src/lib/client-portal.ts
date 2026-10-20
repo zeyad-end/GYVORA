@@ -1,35 +1,196 @@
-import { useEffect, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { useCloud } from '@/components/CloudProvider';
-import { demoUserId, getDemoSession, getDemoState, readDemoGym, rememberDemoMemberships } from './demo';
-import type { Member, Workout } from './store';
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useCloud } from "@/components/CloudProvider";
+import {
+  demoUserId,
+  getDemoSession,
+  getDemoState,
+  readDemoGym,
+  rememberDemoMemberships,
+} from "./demo";
+import type { Member, Workout } from "./store";
 
-export type ClientGym = { id: string; name: string; location: string; image: string; description: string };
+export type ClientGym = {
+  id: string;
+  name: string;
+  location: string;
+  image: string;
+  description: string;
+};
 export type MembershipSnapshot = Member & { gym: string; gymId: string };
 export type ClientLink = { gymId: string; favorite: boolean };
 const key = (id: string) => `ironhaus-client-links:${id}`;
-export function readClientLinks(id: string): ClientLink[] { try { return JSON.parse(localStorage.getItem(key(id)) ?? '[]'); } catch { return []; } }
-export function updateClientLink(id: string, gymId: string, action: 'join'|'leave'|'favorite'): ClientLink[] {
-  const rows = readClientLinks(id); const found = rows.find(r => r.gymId === gymId);
-  const next = action === 'leave' ? rows.filter(r => r.gymId !== gymId) : found ? rows.map(r => r.gymId === gymId && action === 'favorite' ? { ...r, favorite: !r.favorite } : r) : [...rows, { gymId, favorite: false }];
-  localStorage.setItem(key(id), JSON.stringify(next)); return next;
+export function readClientLinks(id: string): ClientLink[] {
+  try {
+    return JSON.parse(localStorage.getItem(key(id)) ?? "[]");
+  } catch {
+    return [];
+  }
+}
+export function updateClientLink(
+  id: string,
+  gymId: string,
+  action: "join" | "leave" | "favorite",
+): ClientLink[] {
+  const rows = readClientLinks(id);
+  const found = rows.find((r) => r.gymId === gymId);
+  const next =
+    action === "leave"
+      ? rows.filter((r) => r.gymId !== gymId)
+      : found
+        ? rows.map((r) =>
+            r.gymId === gymId && action === "favorite" ? { ...r, favorite: !r.favorite } : r,
+          )
+        : [...rows, { gymId, favorite: false }];
+  localStorage.setItem(key(id), JSON.stringify(next));
+  return next;
 }
 export function demoDirectory(): ClientGym[] {
-  const list = [{ id:'demo-gym',name:'IRONHAUS Performance Club' },{id:'demo-gym-north',name:'IRONHAUS North'},...getDemoState().gyms];
-  return list.map(g => { const s=readDemoGym(g.id,g.id==='demo-gym');return {id:g.id,name:g.name,location:s.gym.location,image:s.gym.cover,description:s.gym.description}; });
+  const list = [
+    { id: "demo-gym", name: "IRONHAUS Performance Club" },
+    { id: "demo-gym-north", name: "IRONHAUS North" },
+    ...getDemoState().gyms,
+  ];
+  return list.map((g) => {
+    const s = readDemoGym(g.id, g.id === "demo-gym");
+    return {
+      id: g.id,
+      name: g.name,
+      location: s.gym.location,
+      image: s.gym.cover,
+      description: s.gym.description,
+    };
+  });
 }
-export function demoMemberships(id: string): MembershipSnapshot[] { return demoDirectory().flatMap(g => {const members=readDemoGym(g.id,g.id==='demo-gym').members;rememberDemoMemberships(g.id,g.name,members);return members.filter(m => (m.clientId ?? demoUserId(m.email)) === id).map(m=>({...m,gym:g.name,gymId:g.id}));}); }
-export function isCurrentMembership(m: MembershipSnapshot, date: string) { return m.start <= date && m.expiry >= date && m.status !== 'Expired'; }
+export function demoMemberships(id: string): MembershipSnapshot[] {
+  return demoDirectory().flatMap((g) => {
+    const members = readDemoGym(g.id, g.id === "demo-gym").members;
+    rememberDemoMemberships(g.id, g.name, members);
+    return members
+      .filter((m) => (m.clientId ?? demoUserId(m.email)) === id)
+      .map((m) => ({ ...m, gym: g.name, gymId: g.id }));
+  });
+}
+export function isCurrentMembership(m: MembershipSnapshot, date: string) {
+  return m.start <= date && m.expiry >= date && m.status !== "Expired";
+}
 export function useClientGyms() {
-  const c=useCloud(); const [directory,setDirectory]=useState<ClientGym[]>([]);const [links,setLinks]=useState<ClientLink[]>([]);const [memberships,setMemberships]=useState<MembershipSnapshot[]>([]);const [error,setError]=useState('');
-  useEffect(()=>{setDirectory([]);setLinks([]);setMemberships([]);if(!c.profile)return;let active=true;const id=c.profile.id;
-    if(getDemoSession()){setDirectory(demoDirectory());setLinks(readClientLinks(id));setMemberships(demoMemberships(id));return;}
-    void (async()=>{const [d,l,m]=await Promise.all([supabase.rpc('client_gym_directory'),supabase.from('client_gym_links').select('*').eq('user_id',id),supabase.from('gym_records').select('*').eq('kind','members').eq('client_id',id)]);if(!active)return;const err=d.error??l.error??m.error;if(err)setError(err.message);const gyms=(d.data??[]) as unknown as ClientGym[];setDirectory(gyms);setLinks((l.data??[]).map(x=>({gymId:x.gym_id,favorite:x.favorite})));setMemberships((m.data??[]).map(x=>({...x.data as unknown as Member,gymId:x.gym_id,gym:gyms.find(g=>g.id===x.gym_id)?.name??'Gym'})));})();return()=>{active=false;};
-  },[c.profile?.id]);
-  async function change(gymId:string,action:'join'|'leave'|'favorite'){if(!c.profile)throw new Error('Sign in first');const id=c.profile.id;if(getDemoSession()){setLinks(updateClientLink(id,gymId,action));return;}const current=links.find(l=>l.gymId===gymId);const result=action==='leave'?await supabase.from('client_gym_links').delete().eq('user_id',id).eq('gym_id',gymId):await supabase.from('client_gym_links').upsert({user_id:id,gym_id:gymId,favorite:action==='favorite'?!current?.favorite:current?.favorite??false});if(result.error)throw result.error;setLinks(action==='leave'?links.filter(l=>l.gymId!==gymId):[...links.filter(l=>l.gymId!==gymId),{gymId,favorite:action==='favorite'?!current?.favorite:current?.favorite??false}]);}
-  const joined=directory.filter(g=>links.some(l=>l.gymId===g.id)).sort((a,b)=>Number(links.find(l=>l.gymId===b.id)?.favorite)-Number(links.find(l=>l.gymId===a.id)?.favorite));
-  const accessible=directory.filter(g=>links.some(l=>l.gymId===g.id)||memberships.some(m=>m.gymId===g.id));
-  return {directory,links,joined,accessible,memberships,error,change};
+  const c = useCloud();
+  const [directory, setDirectory] = useState<ClientGym[]>([]);
+  const [links, setLinks] = useState<ClientLink[]>([]);
+  const [memberships, setMemberships] = useState<MembershipSnapshot[]>([]);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    setDirectory([]);
+    setLinks([]);
+    setMemberships([]);
+    if (!c.profile) return;
+    let active = true;
+    const id = c.profile.id;
+    if (getDemoSession()) {
+      setDirectory(demoDirectory());
+      setLinks(readClientLinks(id));
+      setMemberships(demoMemberships(id));
+      return;
+    }
+    void (async () => {
+      const [d, l, m] = await Promise.all([
+        supabase.rpc("client_gym_directory"),
+        supabase.from("client_gym_links").select("*").eq("user_id", id),
+        supabase.from("gym_records").select("*").eq("kind", "members").eq("client_id", id),
+      ]);
+      if (!active) return;
+      const err = d.error ?? l.error ?? m.error;
+      if (err) setError(err.message);
+      const gyms = (d.data ?? []) as unknown as ClientGym[];
+      setDirectory(gyms);
+      setLinks((l.data ?? []).map((x) => ({ gymId: x.gym_id, favorite: x.favorite })));
+      setMemberships(
+        (m.data ?? []).map((x) => ({
+          ...(x.data as unknown as Member),
+          gymId: x.gym_id,
+          gym: gyms.find((g) => g.id === x.gym_id)?.name ?? "Gym",
+        })),
+      );
+    })();
+    return () => {
+      active = false;
+    };
+  }, [c.profile?.id]);
+  async function change(gymId: string, action: "join" | "leave" | "favorite") {
+    if (!c.profile) throw new Error("Sign in first");
+    const id = c.profile.id;
+    if (getDemoSession()) {
+      setLinks(updateClientLink(id, gymId, action));
+      return;
+    }
+    const current = links.find((l) => l.gymId === gymId);
+    const result =
+      action === "leave"
+        ? await supabase.from("client_gym_links").delete().eq("user_id", id).eq("gym_id", gymId)
+        : await supabase
+            .from("client_gym_links")
+            .upsert({
+              user_id: id,
+              gym_id: gymId,
+              favorite: action === "favorite" ? !current?.favorite : (current?.favorite ?? false),
+            });
+    if (result.error) throw result.error;
+    setLinks(
+      action === "leave"
+        ? links.filter((l) => l.gymId !== gymId)
+        : [
+            ...links.filter((l) => l.gymId !== gymId),
+            {
+              gymId,
+              favorite: action === "favorite" ? !current?.favorite : (current?.favorite ?? false),
+            },
+          ],
+    );
+  }
+  const joined = directory
+    .filter((g) => links.some((l) => l.gymId === g.id))
+    .sort(
+      (a, b) =>
+        Number(links.find((l) => l.gymId === b.id)?.favorite) -
+        Number(links.find((l) => l.gymId === a.id)?.favorite),
+    );
+  const accessible = directory.filter(
+    (g) =>
+      links.some((l) => l.gymId === g.id) ||
+      memberships.some((m) => m.gymId === g.id) ||
+      getDemoState().staffRoles.some((r) => r.userId === c.profile?.id && r.gymId === g.id),
+  );
+  return { directory, links, joined, accessible, memberships, error, change };
 }
-export type ClientGymContent = {workouts: Workout[];products:{name:string;price:number;image?:string}[];trainers:{name:string;specialty:string;bio:string;image?:string}[]};
-export async function clientGymContent(id:string):Promise<ClientGymContent>{if(getDemoSession()){const {getDemoSessionInfo}=await import('./demo');const userId=demoUserId(getDemoSessionInfo()?.email??'');if(!readClientLinks(userId).some(l=>l.gymId===id)&&!demoMemberships(userId).some(m=>m.gymId===id)&&!getDemoState().staffRoles.some(r=>r.userId===userId&&r.gymId===id))throw new Error('Join this gym to view its client pages');const s=readDemoGym(id,id==='demo-gym');return {workouts:s.workouts,products:s.products.map(p=>({name:p.name,price:p.price,image:p.image})),trainers:s.trainers.map(t=>({name:t.name,specialty:t.specialty,bio:t.bio,image:t.image}))};}const {data,error}=await supabase.rpc('client_gym_content',{g:id});if(error)throw error;return data as unknown as ClientGymContent;}
+export type ClientGymContent = {
+  workouts: Workout[];
+  products: { name: string; price: number; image?: string }[];
+  trainers: { name: string; specialty: string; bio: string; image?: string }[];
+};
+export async function clientGymContent(id: string): Promise<ClientGymContent> {
+  if (getDemoSession()) {
+    const { getDemoSessionInfo } = await import("./demo");
+    const userId = demoUserId(getDemoSessionInfo()?.email ?? "");
+    if (
+      !readClientLinks(userId).some((l) => l.gymId === id) &&
+      !demoMemberships(userId).some((m) => m.gymId === id) &&
+      !getDemoState().staffRoles.some((r) => r.userId === userId && r.gymId === id)
+    )
+      throw new Error("Join this gym to view its client pages");
+    const s = readDemoGym(id, id === "demo-gym");
+    return {
+      workouts: s.workouts,
+      products: s.products.map((p) => ({ name: p.name, price: p.price, image: p.image })),
+      trainers: s.trainers.map((t) => ({
+        name: t.name,
+        specialty: t.specialty,
+        bio: t.bio,
+        image: t.image,
+      })),
+    };
+  }
+  const { data, error } = await supabase.rpc("client_gym_content", { g: id });
+  if (error) throw error;
+  return data as unknown as ClientGymContent;
+}

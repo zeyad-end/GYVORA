@@ -1,12 +1,129 @@
-import {createFileRoute} from '@tanstack/react-router';
-import {useEffect,useState} from 'react';
-import {supabase} from '@/integrations/supabase/client';
-import {useCloud} from '@/components/CloudProvider';
-import {ClientShell} from '@/components/ClientShell';
-import {getDemoSession,readDemoMembershipHistory} from '@/lib/demo';
-import {useClientGyms,isCurrentMembership,type MembershipSnapshot} from '@/lib/client-portal';
-import {seo} from '@/lib/seo';
-import {egp} from '@/lib/mock';
-export const Route=createFileRoute('/member/membership')({head:()=>seo('My membership','Your current Limited or Unlimited membership and retained membership history.'),component:Membership});
-function Details({m}:{m:MembershipSnapshot}){return <article className="rounded-lg border bg-card p-5"><h3 className="text-xl font-semibold">{m.plan}</h3><p className="mt-2 text-primary">{egp(m.planPrice??0)}</p><dl className="mt-5 space-y-3 text-sm">{[['Type',m.type],['Gym',m.gym],['Start date',m.start],['Expiration date',m.expiry],['Sessions',m.type==='Unlimited'?'Unlimited':`${Math.max(0,m.sessionsTotal-m.sessionsLeft)} used out of ${m.sessionsTotal}`]].map(([label,value])=><div key={label} className="flex justify-between gap-4"><dt className="text-muted-foreground">{label}</dt><dd className="text-right">{value}</dd></div>)}</dl></article>;}
-function Membership(){const c=useCloud();const p=useClientGyms();const [history,setHistory]=useState<MembershipSnapshot[]>([]);const [error,setError]=useState('');useEffect(()=>{setHistory([]);if(!c.profile)return;if(getDemoSession()){setHistory(readDemoMembershipHistory(c.profile.id).map(r=>({...r.definition,gym:r.gym,gymId:r.gymId})));return;}let active=true;void supabase.from('client_membership_history').select('*').eq('user_id',c.profile.id).order('recorded_at',{ascending:false}).then(({data,error})=>{if(!active)return;if(error)setError(error.message);else setHistory((data??[]).map(x=>({...x.definition as unknown as MembershipSnapshot,gym:x.gym_name,gymId:x.gym_id})));});return()=>{active=false;};},[c.profile?.id,p.memberships.length]);const today=new Date().toLocaleDateString('en-CA');const current=p.memberships.filter(m=>isCurrentMembership(m,today));const past=history.filter(m=>!current.some(x=>x.gymId===m.gymId&&x.id===m.id&&x.plan===m.plan&&x.start===m.start&&x.expiry===m.expiry)).filter((m,i,rows)=>rows.findIndex(x=>x.gymId===m.gymId&&x.id===m.id&&x.plan===m.plan&&x.start===m.start&&x.expiry===m.expiry)===i);return <ClientShell title="My Membership">{(error||p.error)&&<p role="alert">{error||p.error}</p>}<h2 className="mb-4 text-xl font-semibold">Current Membership</h2><div className="grid gap-5 sm:grid-cols-2">{current.map(m=><Details key={m.gymId+m.id} m={m}/>)}</div>{!current.length&&<p className="text-muted-foreground">No active membership.</p>}<h2 className="mb-4 mt-10 text-xl font-semibold">Membership History</h2><div className="grid gap-5 sm:grid-cols-2">{past.map((m,i)=><Details key={i} m={m}/>)}</div>{!past.length&&<p className="text-muted-foreground">No previous memberships recorded.</p>}</ClientShell>;}
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useCloud } from "@/components/CloudProvider";
+import { ClientShell } from "@/components/ClientShell";
+import { getDemoSession, readDemoMembershipHistory } from "@/lib/demo";
+import { useClientGyms, isCurrentMembership, type MembershipSnapshot } from "@/lib/client-portal";
+import { seo } from "@/lib/seo";
+import { egp } from "@/lib/mock";
+export const Route = createFileRoute("/member/membership")({
+  head: () =>
+    seo(
+      "My membership",
+      "Your current Limited or Unlimited membership and retained membership history.",
+    ),
+  component: Membership,
+});
+function Details({ m }: { m: MembershipSnapshot }) {
+  return (
+    <article className="rounded-lg border bg-card p-5">
+      <h3 className="text-xl font-semibold">{m.plan}</h3>
+      <p className="mt-2 text-primary">{egp(m.planPrice ?? 0)}</p>
+      <dl className="mt-5 space-y-3 text-sm">
+        {[
+          ["Type", m.type],
+          ["Gym", m.gym],
+          ["Start date", m.start],
+          ["Expiration date", m.expiry],
+          [
+            "Sessions",
+            m.type === "Unlimited"
+              ? "Unlimited"
+              : `${Math.max(0, m.sessionsTotal - m.sessionsLeft)} used out of ${m.sessionsTotal}`,
+          ],
+        ].map(([label, value]) => (
+          <div key={label} className="flex justify-between gap-4">
+            <dt className="text-muted-foreground">{label}</dt>
+            <dd className="text-right">{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </article>
+  );
+}
+function Membership() {
+  const c = useCloud();
+  const p = useClientGyms();
+  const [history, setHistory] = useState<MembershipSnapshot[]>([]);
+  const [error, setError] = useState("");
+  useEffect(() => {
+    setHistory([]);
+    if (!c.profile) return;
+    if (getDemoSession()) {
+      setHistory(
+        readDemoMembershipHistory(c.profile.id).map((r) => ({
+          ...r.definition,
+          gym: r.gym,
+          gymId: r.gymId,
+        })),
+      );
+      return;
+    }
+    let active = true;
+    void supabase
+      .from("client_membership_history")
+      .select("*")
+      .eq("user_id", c.profile.id)
+      .order("recorded_at", { ascending: false })
+      .then(({ data, error }) => {
+        if (!active) return;
+        if (error) setError(error.message);
+        else
+          setHistory(
+            (data ?? []).map((x) => ({
+              ...(x.definition as unknown as MembershipSnapshot),
+              gym: x.gym_name,
+              gymId: x.gym_id,
+            })),
+          );
+      });
+    return () => {
+      active = false;
+    };
+  }, [c.profile?.id, p.memberships.length]);
+  const today = new Date().toLocaleDateString("en-CA");
+  const current = p.memberships.filter((m) => isCurrentMembership(m, today));
+  const past = history
+    .filter(
+      (m) =>
+        !current.some(
+          (x) =>
+            x.gymId === m.gymId &&
+            x.id === m.id &&
+            x.plan === m.plan &&
+            x.start === m.start &&
+            x.expiry === m.expiry,
+        ),
+    )
+    .filter(
+      (m, i, rows) =>
+        rows.findIndex(
+          (x) =>
+            x.gymId === m.gymId &&
+            x.id === m.id &&
+            x.plan === m.plan &&
+            x.start === m.start &&
+            x.expiry === m.expiry,
+        ) === i,
+    );
+  return (
+    <ClientShell title="My Membership">
+      {(error || p.error) && <p role="alert">{error || p.error}</p>}
+      <h2 className="mb-4 text-xl font-semibold">Current Membership</h2>
+      <div className="grid gap-5 sm:grid-cols-2">
+        {current.map((m) => (
+          <Details key={m.gymId + m.id} m={m} />
+        ))}
+      </div>
+      {!current.length && <p className="text-muted-foreground">No active membership.</p>}
+      <h2 className="mb-4 mt-10 text-xl font-semibold">Membership History</h2>
+      <div className="grid gap-5 sm:grid-cols-2">
+        {past.map((m, i) => (
+          <Details key={i} m={m} />
+        ))}
+      </div>
+      {!past.length && <p className="text-muted-foreground">No previous memberships recorded.</p>}
+    </ClientShell>
+  );
+}

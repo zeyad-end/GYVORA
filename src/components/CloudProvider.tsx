@@ -1,35 +1,459 @@
-import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from 'react';
-import { useServerFn } from '@tanstack/react-start';
-import { useRouter, useRouterState, Link } from '@tanstack/react-router';
-import { supabase } from '@/integrations/supabase/client';
-import type { Database } from '@/integrations/supabase/types';
-import { bindPersistence, hydrateState, getState, type State } from '@/lib/store';
-import { gym as gymSeed } from '@/lib/mock';
-import { saveRecords, getStaff } from '@/lib/cloud.functions';
-import { Button } from './ui/button';
-import { toast } from 'sonner';
-import { getDemoSession, getDemoSessionInfo, getDemoAccount, setDemoSession, demoUserId, demoMemberId, getDemoState, readDemoGym, writeDemoGym } from '@/lib/demo';
+import { createContext, useContext, useEffect, useState, useRef, type ReactNode } from "react";
+import { useServerFn } from "@tanstack/react-start";
+import { useRouter, useRouterState, Link } from "@tanstack/react-router";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import { bindPersistence, hydrateState, getState, type State } from "@/lib/store";
+import { gym as gymSeed } from "@/lib/mock";
+import { saveRecords, getStaff } from "@/lib/cloud.functions";
+import { Button } from "./ui/button";
+import { toast } from "sonner";
+import {
+  getDemoSession,
+  getDemoSessionInfo,
+  getDemoAccount,
+  setDemoSession,
+  demoUserId,
+  demoMemberId,
+  getDemoState,
+  readDemoGym,
+  writeDemoGym,
+} from "@/lib/demo";
 
-type Profile = Database['public']['Tables']['profiles']['Row'];
-type GymRow = Database['public']['Tables']['gyms']['Row'];
-type Context = { profile: Profile|null; gyms: GymRow[]; gymId: string; role: string; permissions: string[]; verified: boolean; loading: boolean; refresh: ()=>Promise<void>; selectGym:(id:string)=>Promise<void>; logout:()=>Promise<void> };
-const CloudContext=createContext<Context>({profile:null,gyms:[],gymId:'',role:'',permissions:[],verified:false,loading:true,refresh:async()=>{},selectGym:async()=>{},logout:async()=>{}});
-export const useCloud=()=>useContext(CloudContext);
-export function CloudProvider({children}:{children:ReactNode}) {
- const generation=useRef(0);const router=useRouter(); const save=useServerFn(saveRecords); const staffFetch=useServerFn(getStaff);
- const [profile,setProfile]=useState<Profile|null>(null);const [gyms,setGyms]=useState<GymRow[]>([]);const [gymId,setGymId]=useState('');const [role,setRole]=useState('');const [permissions,setPermissions]=useState<string[]>([]);const [verified,setVerified]=useState(false);const [loading,setLoading]=useState(true);
- async function loadGym(id:string) {if(!gyms.some(g=>g.id===id))throw new Error('Gym access required');if(getDemoSession()){bindPersistence(undefined);const owner=getDemoSession()==='owner';const association=getDemoState().staffRoles.find(r=>r.gymId===id&&r.userId===profile?.id);setGymId(id);setRole(owner?'Owner':association?.role??'Client');setPermissions(owner?[]:association?.permissions??[]);hydrateState(readDemoGym(id,owner));if(owner)bindPersistence(async changes=>{const next={...getState(),...changes};writeDemoGym(id,next);hydrateState(next);});return;}const current=++generation.current;setGymId('');bindPersistence(undefined);const {data:rows,error}=await supabase.from('gym_records').select('*').eq('gym_id',id);if(error)throw error; const {data:r}=await supabase.from('user_roles').select('*').eq('gym_id',id).eq('user_id',profile?.id??'').maybeSingle();setRole(r?.role??'');setPermissions(r?.permissions??[]);
-  const base:State={gym:{...gymSeed,name:gyms.find(g=>g.id===id)?.name??'IronHaus',logo:'',cover:'',gallery:[],hoursByDay:[]},members:[],plans:[],products:[],trainers:[],workouts:[],staff:[],sessions:[],attendance:[],staffAttendance:[],recurring:[],transactions:[]};
-  for(const row of rows??[]) { if(row.kind==='gym')base.gym=row.data as unknown as State['gym'];else if(row.kind in base && row.kind!=='staff') { const key=row.kind as Exclude<keyof State,'gym'>; (base[key] as unknown[]).push(row.data); } }
-  if(r?.role!=='Client') {try {base.staff=await staffFetch({data:{gymId:id}});}catch{base.staff=[];} }
-  if(current!==generation.current)return;hydrateState(base);setGymId(id);
-  let savedRows=rows??[];
-  bindPersistence(async(changes)=>{try { const formatted=Object.entries(changes).filter(([k])=>k!=='staff').map(([kind,value])=>({kind,expected:savedRows.filter(r=>r.kind===kind).map(r=>r.data),rows:(kind==='gym'?[value]:value as unknown[]).map((v,i)=>{const obj=v as Record<string,unknown>;return {...obj,id:obj['id']??(kind==='gym'?'profile':obj['name']??String(i))};})})); const result=await save({data:{gymId:id,changes:formatted as Array<{kind:'gym'|'members'|'products'|'trainers'|'plans'|'workouts'|'sessions'|'attendance'|'staffAttendance'|'recurring'|'transactions';rows:Record<string,unknown>[];expected:Record<string,unknown>[]}> }});savedRows=result.records as typeof savedRows;const next={...getState(),...changes};for(const kind of Object.keys(changes)){const current=result.records?.filter(r=>r.kind===kind).map(r=>r.data)??[];if(kind==='gym'){const first=current[0];if(first)next.gym=first as unknown as State['gym'];}else if(kind in next){(next as unknown as Record<string,unknown>)[kind]=current;}}if(current===generation.current)hydrateState(next);toast.success('Changes saved'); }catch(e){toast.error(e instanceof Error?e.message:'Could not save changes');throw e;} });
- }
- async function refresh(){ setLoading(true);const info=getDemoSessionInfo();const demo=info?.kind??null;if(demo&&info){generation.current++;bindPersistence(undefined);const acc=info.email?getDemoAccount():null;const id=demoUserId(info.email);const associations=getDemoState().staffRoles.filter(r=>r.userId===id);const p={id,member_id:demoMemberId(id),full_name:info.name||acc?.name||(demo==='super'?'zeyad salama':demo==='individual'?'Demo Member':'zeyad salama1'),email:info.email||acc?.email||'',phone:'',photo:'',account_type:demo==='individual'?'client':'owner'} as Profile;setProfile(p);setVerified(true);const memberGyms=associations.map(r=>({id:r.gymId,name:r.gymName,owner_id:'',created_at:''}));setGyms(demo==='owner'?[{id:'demo-gym',name:'IRONHAUS Performance Club',owner_id:id,created_at:''},{id:'demo-gym-north',name:'IRONHAUS North',owner_id:id,created_at:''}]:demo==='individual'?memberGyms:[]);setRole(demo==='super'?'super_admin':demo==='individual'?associations[0]?.role??'Client':'Owner');setPermissions(demo==='individual'?associations[0]?.permissions??[]:[]);const active=demo==='owner'?'demo-gym':memberGyms[0]?.id??'';setGymId(active);const base=readDemoGym(active,demo==='owner');if(demo==='individual'){hydrateState({...base,members:base.members.filter(m=>m.clientId===id),attendance:base.attendance.filter(e=>base.members.some(m=>m.clientId===id&&m.id===e.memberId)),staff:[],staffAttendance:[]});}else hydrateState(base);if(demo==='owner')bindPersistence(async changes=>{const next={...getState(),...changes};writeDemoGym(active,next);hydrateState(next);});setLoading(false);return;}try {const {data:{user}}=await supabase.auth.getUser();if(!user){generation.current++;setRole('');setPermissions([]);setProfile(null);setVerified(false);setGyms([]);setGymId('');bindPersistence(undefined);return;}const {data:p,error}=await supabase.from('profiles').select('*').eq('id',user.id).single();if(error)throw error;setProfile(p);setVerified(true);{const {data:g}=await supabase.from('gyms').select('*');setGyms(g??[]); const {data:admin}=await supabase.from('user_roles').select('role').eq('user_id',user.id).eq('role','super_admin').maybeSingle();if(admin)setRole('super_admin');}}catch(e){toast.error(e instanceof Error?e.message:'Could not load your account');}finally{setLoading(false);} }
- useEffect(()=>{void refresh();const {data:{subscription}}=supabase.auth.onAuthStateChange(event=>{if(!['SIGNED_IN','SIGNED_OUT','USER_UPDATED'].includes(event))return;queueMicrotask(()=>{void refresh();void router.invalidate();});});return()=>{subscription.unsubscribe();bindPersistence(undefined);};},[]);
- useEffect(()=>{if(profile&&verified&&gyms.length===1&&!getDemoSession())void loadGym(gyms[0]?.id??'').catch(e=>toast.error(String(e)));},[profile?.id,verified,gyms]);
- async function logout(){const demo=getDemoSession();setDemoSession(null);bindPersistence(undefined);setGymId('');if(demo){generation.current++;setProfile(null);setGyms([]);setRole('');setPermissions([]);setVerified(false);setLoading(false);}else{await supabase.auth.signOut();await refresh();}await router.navigate({to:'/'});}
- return <CloudContext.Provider value={{profile,gyms,gymId,role,permissions,verified,loading,refresh,selectGym:loadGym,logout}}>{children}</CloudContext.Provider>;
+type Profile = Database["public"]["Tables"]["profiles"]["Row"];
+type GymRow = Database["public"]["Tables"]["gyms"]["Row"];
+type Context = {
+  profile: Profile | null;
+  gyms: GymRow[];
+  gymId: string;
+  role: string;
+  permissions: string[];
+  verified: boolean;
+  loading: boolean;
+  refresh: () => Promise<void>;
+  selectGym: (id: string) => Promise<void>;
+  logout: () => Promise<void>;
+};
+const CloudContext = createContext<Context>({
+  profile: null,
+  gyms: [],
+  gymId: "",
+  role: "",
+  permissions: [],
+  verified: false,
+  loading: true,
+  refresh: async () => {},
+  selectGym: async () => {},
+  logout: async () => {},
+});
+export const useCloud = () => useContext(CloudContext);
+export function CloudProvider({ children }: { children: ReactNode }) {
+  const generation = useRef(0);
+  const router = useRouter();
+  const save = useServerFn(saveRecords);
+  const staffFetch = useServerFn(getStaff);
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [gyms, setGyms] = useState<GymRow[]>([]);
+  const [gymId, setGymId] = useState("");
+  const [role, setRole] = useState("");
+  const [permissions, setPermissions] = useState<string[]>([]);
+  const [verified, setVerified] = useState(false);
+  const [loading, setLoading] = useState(true);
+  async function loadGym(id: string) {
+    if (!gyms.some((g) => g.id === id)) throw new Error("Gym access required");
+    if (getDemoSession()) {
+      bindPersistence(undefined);
+      const owner = getDemoSession() === "owner";
+      const association = getDemoState().staffRoles.find(
+        (r) => r.gymId === id && r.userId === profile?.id,
+      );
+      setGymId(id);
+      setRole(owner ? "Owner" : (association?.role ?? "Client"));
+      setPermissions(owner ? [] : (association?.permissions ?? []));
+      hydrateState(readDemoGym(id, owner));
+      if (owner)
+        bindPersistence(async (changes) => {
+          const next = { ...getState(), ...changes };
+          writeDemoGym(id, next);
+          hydrateState(next);
+        });
+      return;
+    }
+    const current = ++generation.current;
+    setGymId("");
+    bindPersistence(undefined);
+    const { data: rows, error } = await supabase.from("gym_records").select("*").eq("gym_id", id);
+    if (error) throw error;
+    const { data: r } = await supabase
+      .from("user_roles")
+      .select("*")
+      .eq("gym_id", id)
+      .eq("user_id", profile?.id ?? "")
+      .maybeSingle();
+    setRole(r?.role ?? "");
+    setPermissions(r?.permissions ?? []);
+    const base: State = {
+      gym: {
+        ...gymSeed,
+        name: gyms.find((g) => g.id === id)?.name ?? "IronHaus",
+        logo: "",
+        cover: "",
+        gallery: [],
+        hoursByDay: [],
+      },
+      members: [],
+      plans: [],
+      products: [],
+      trainers: [],
+      workouts: [],
+      staff: [],
+      sessions: [],
+      attendance: [],
+      staffAttendance: [],
+      recurring: [],
+      transactions: [],
+    };
+    for (const row of rows ?? []) {
+      if (row.kind === "gym") base.gym = row.data as unknown as State["gym"];
+      else if (row.kind in base && row.kind !== "staff") {
+        const key = row.kind as Exclude<keyof State, "gym">;
+        (base[key] as unknown[]).push(row.data);
+      }
+    }
+    if (r?.role !== "Client") {
+      try {
+        base.staff = await staffFetch({ data: { gymId: id } });
+      } catch {
+        base.staff = [];
+      }
+    }
+    if (current !== generation.current) return;
+    hydrateState(base);
+    setGymId(id);
+    let savedRows = rows ?? [];
+    bindPersistence(async (changes) => {
+      try {
+        const formatted = Object.entries(changes)
+          .filter(([k]) => k !== "staff")
+          .map(([kind, value]) => ({
+            kind,
+            expected: savedRows.filter((r) => r.kind === kind).map((r) => r.data),
+            rows: (kind === "gym" ? [value] : (value as unknown[])).map((v, i) => {
+              const obj = v as Record<string, unknown>;
+              return {
+                ...obj,
+                id: obj["id"] ?? (kind === "gym" ? "profile" : (obj["name"] ?? String(i))),
+              };
+            }),
+          }));
+        const result = await save({
+          data: {
+            gymId: id,
+            changes: formatted as Array<{
+              kind:
+                | "gym"
+                | "members"
+                | "products"
+                | "trainers"
+                | "plans"
+                | "workouts"
+                | "sessions"
+                | "attendance"
+                | "staffAttendance"
+                | "recurring"
+                | "transactions";
+              rows: Record<string, unknown>[];
+              expected: Record<string, unknown>[];
+            }>,
+          },
+        });
+        savedRows = result.records as typeof savedRows;
+        const next = { ...getState(), ...changes };
+        for (const kind of Object.keys(changes)) {
+          const current = result.records?.filter((r) => r.kind === kind).map((r) => r.data) ?? [];
+          if (kind === "gym") {
+            const first = current[0];
+            if (first) next.gym = first as unknown as State["gym"];
+          } else if (kind in next) {
+            (next as unknown as Record<string, unknown>)[kind] = current;
+          }
+        }
+        if (current === generation.current) hydrateState(next);
+        toast.success("Changes saved");
+      } catch (e) {
+        toast.error(e instanceof Error ? e.message : "Could not save changes");
+        throw e;
+      }
+    });
+  }
+  async function refresh() {
+    setLoading(true);
+    const info = getDemoSessionInfo();
+    const demo = info?.kind ?? null;
+    if (demo && info) {
+      generation.current++;
+      bindPersistence(undefined);
+      const acc = info.email ? getDemoAccount() : null;
+      const id = demoUserId(info.email);
+      const associations = getDemoState().staffRoles.filter((r) => r.userId === id);
+      const p = {
+        id,
+        member_id: demoMemberId(id),
+        full_name:
+          info.name ||
+          acc?.name ||
+          (demo === "super"
+            ? "zeyad salama"
+            : demo === "individual"
+              ? "Demo Member"
+              : "zeyad salama1"),
+        email: info.email || acc?.email || "",
+        phone: "",
+        photo: "",
+        account_type: demo === "individual" ? "client" : "owner",
+      } as Profile;
+      setProfile(p);
+      setVerified(true);
+      const memberGyms = associations.map((r) => ({
+        id: r.gymId,
+        name: r.gymName,
+        owner_id: "",
+        created_at: "",
+      }));
+      setGyms(
+        demo === "owner"
+          ? [
+              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "" },
+              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "" },
+            ]
+          : demo === "individual"
+            ? memberGyms
+            : [],
+      );
+      setRole(
+        demo === "super"
+          ? "super_admin"
+          : demo === "individual"
+            ? (associations[0]?.role ?? "Client")
+            : "Owner",
+      );
+      setPermissions(demo === "individual" ? (associations[0]?.permissions ?? []) : []);
+      const active = demo === "owner" ? "demo-gym" : (memberGyms[0]?.id ?? "");
+      setGymId(active);
+      const base = readDemoGym(active, demo === "owner");
+      if (demo === "individual") {
+        hydrateState({
+          ...base,
+          members: base.members.filter((m) => m.clientId === id),
+          attendance: base.attendance.filter((e) =>
+            base.members.some((m) => m.clientId === id && m.id === e.memberId),
+          ),
+          staff: [],
+          staffAttendance: [],
+        });
+      } else hydrateState(base);
+      if (demo === "owner")
+        bindPersistence(async (changes) => {
+          const next = { ...getState(), ...changes };
+          writeDemoGym(active, next);
+          hydrateState(next);
+        });
+      setLoading(false);
+      return;
+    }
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        generation.current++;
+        setRole("");
+        setPermissions([]);
+        setProfile(null);
+        setVerified(false);
+        setGyms([]);
+        setGymId("");
+        bindPersistence(undefined);
+        return;
+      }
+      const { data: p, error } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("id", user.id)
+        .single();
+      if (error) throw error;
+      setProfile(p);
+      setVerified(true);
+      {
+        const { data: g } = await supabase.from("gyms").select("*");
+        setGyms(g ?? []);
+        const { data: admin } = await supabase
+          .from("user_roles")
+          .select("role")
+          .eq("user_id", user.id)
+          .eq("role", "super_admin")
+          .maybeSingle();
+        if (admin) setRole("super_admin");
+      }
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : "Could not load your account");
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    void refresh();
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event) => {
+      if (!["SIGNED_IN", "SIGNED_OUT", "USER_UPDATED"].includes(event)) return;
+      queueMicrotask(() => {
+        void refresh();
+        void router.invalidate();
+      });
+    });
+    return () => {
+      subscription.unsubscribe();
+      bindPersistence(undefined);
+    };
+  }, []);
+  useEffect(() => {
+    if (profile && verified && gyms.length === 1 && !getDemoSession())
+      void loadGym(gyms[0]?.id ?? "").catch((e) => toast.error(String(e)));
+  }, [profile?.id, verified, gyms]);
+  async function logout() {
+    const demo = getDemoSession();
+    setDemoSession(null);
+    bindPersistence(undefined);
+    setGymId("");
+    if (demo) {
+      generation.current++;
+      setProfile(null);
+      setGyms([]);
+      setRole("");
+      setPermissions([]);
+      setVerified(false);
+      setLoading(false);
+    } else {
+      await supabase.auth.signOut();
+      await refresh();
+    }
+    await router.navigate({ to: "/" });
+  }
+  return (
+    <CloudContext.Provider
+      value={{
+        profile,
+        gyms,
+        gymId,
+        role,
+        permissions,
+        verified,
+        loading,
+        refresh,
+        selectGym: loadGym,
+        logout,
+      }}
+    >
+      {children}
+    </CloudContext.Provider>
+  );
 }
-export function AccessBoundary({children}:{children:ReactNode}) {const c=useCloud();const path=useRouterState({select:s=>s.location.pathname});const publicPaths=['/','/register','/auth','/reset-password'];if(publicPaths.includes(path))return children;if(c.loading)return <div className="p-12 text-muted-foreground">Loading your account…</div>;const demo=getDemoSession();if(demo==='super'){if(path.startsWith('/super-admin'))return children;return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Platform admin area</h1><Button asChild className="mt-6"><Link to="/super-admin">Open dashboard</Link></Button></div>;}if(demo==='individual'){if(path.startsWith('/member')||path==='/gyms')return children;return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Member area</h1><Button asChild className="mt-6"><Link to="/member">My account</Link></Button></div>;}if(demo==='owner'){if(path.startsWith('/super-admin'))return <div className="p-12">Administrator access required.</div>;const acc=getDemoAccount();if(acc&&!acc.skipped&&path!=='/subscription-request'&&!path.startsWith('/member')&&path!=='/gyms')return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Subscription approval pending</h1><p className="mt-2 text-muted-foreground">Your request is waiting for admin approval — or skip to enter with demo access.</p><Button asChild className="mt-6"><Link to="/subscription-request">View subscription</Link></Button></div>;return children;}if(c.loading)return <div className="p-12 text-muted-foreground">Loading your account…</div>;if(!c.profile)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Sign in to IronHaus</h1><Button asChild className="mt-6"><Link to="/">Sign in</Link></Button></div>;if(path.startsWith('/member')||path==='/subscription-request'||path==='/super-admin'||path==='/gyms')return children;if(!c.gymId)return <div className="p-10"><h1 className="text-2xl">Select your gym</h1><Button asChild className="mt-6"><Link to={c.profile.account_type==='owner'&&c.gyms.length===0?'/subscription-request':'/gyms'}>Continue</Link></Button></div>;if(c.role==='Client')return <div className="p-10"><h1 className="text-2xl">Gym staff access required</h1><Button asChild className="mt-6"><Link to="/member">My account</Link></Button></div>;return children;}
+export function AccessBoundary({ children }: { children: ReactNode }) {
+  const c = useCloud();
+  const path = useRouterState({ select: (s) => s.location.pathname });
+  const publicPaths = ["/", "/register", "/auth", "/reset-password"];
+  if (publicPaths.includes(path)) return children;
+  if (c.loading) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
+  const demo = getDemoSession();
+  if (demo === "super") {
+    if (path.startsWith("/super-admin")) return children;
+    return (
+      <div className="mx-auto max-w-md p-10">
+        <h1 className="text-2xl">Platform admin area</h1>
+        <Button asChild className="mt-6">
+          <Link to="/super-admin">Open dashboard</Link>
+        </Button>
+      </div>
+    );
+  }
+  if (demo === "individual") {
+    if (path.startsWith("/member") || path === "/gyms") return children;
+    return (
+      <div className="mx-auto max-w-md p-10">
+        <h1 className="text-2xl">Member area</h1>
+        <Button asChild className="mt-6">
+          <Link to="/member">My account</Link>
+        </Button>
+      </div>
+    );
+  }
+  if (demo === "owner") {
+    if (path.startsWith("/super-admin"))
+      return <div className="p-12">Administrator access required.</div>;
+    const acc = getDemoAccount();
+    if (
+      acc &&
+      !acc.skipped &&
+      path !== "/subscription-request" &&
+      !path.startsWith("/member") &&
+      path !== "/gyms"
+    )
+      return (
+        <div className="mx-auto max-w-md p-10">
+          <h1 className="text-2xl">Subscription approval pending</h1>
+          <p className="mt-2 text-muted-foreground">
+            Your request is waiting for admin approval — or skip to enter with demo access.
+          </p>
+          <Button asChild className="mt-6">
+            <Link to="/subscription-request">View subscription</Link>
+          </Button>
+        </div>
+      );
+    return children;
+  }
+  if (c.loading) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
+  if (!c.profile)
+    return (
+      <div className="mx-auto max-w-md p-10">
+        <h1 className="text-2xl">Sign in to IronHaus</h1>
+        <Button asChild className="mt-6">
+          <Link to="/">Sign in</Link>
+        </Button>
+      </div>
+    );
+  if (
+    path.startsWith("/member") ||
+    path === "/subscription-request" ||
+    path === "/super-admin" ||
+    path === "/gyms"
+  )
+    return children;
+  if (!c.gymId)
+    return (
+      <div className="p-10">
+        <h1 className="text-2xl">Select your gym</h1>
+        <Button asChild className="mt-6">
+          <Link
+            to={
+              c.profile.account_type === "owner" && c.gyms.length === 0
+                ? "/subscription-request"
+                : "/gyms"
+            }
+          >
+            Continue
+          </Link>
+        </Button>
+      </div>
+    );
+  if (c.role === "Client")
+    return (
+      <div className="p-10">
+        <h1 className="text-2xl">Gym staff access required</h1>
+        <Button asChild className="mt-6">
+          <Link to="/member">My account</Link>
+        </Button>
+      </div>
+    );
+  return children;
+}
