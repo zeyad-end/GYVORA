@@ -17,7 +17,13 @@ import { DataTable, Field, PageHeader, Panel, StatusPill, td } from "@/component
 import { egp } from "@/lib/mock";
 import { saveState, stockStatus, useStore, type Product } from "@/lib/store";
 import { uploadImage, imageUrl } from "@/lib/images";
-import { deleteProduct, productKey, saveProduct, totalSales, updateSoldQuantity } from "@/lib/product-sales";
+import {
+  deleteProduct,
+  productKey,
+  saveProduct,
+  totalSales,
+  updateSoldQuantity,
+} from "@/lib/product-sales";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/products")({
@@ -191,6 +197,50 @@ function Products() {
           </Button>
         }
       />
+      {alerts.length > 0 && (
+        <div className="panel mb-6 flex items-center gap-3 border-warning/40 p-4 text-sm">
+          <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
+          {alerts.length} products need restocking: {alerts.map((p) => p.name).join(", ")}
+        </div>
+      )}
+      <Panel title="Available Products" className="mb-8">
+        <DataTable head={["Product", "Available Quantity", "Unit Price", "Stock", "Edit"]}>
+          {products.map((p) => (
+            <tr
+              key={productKey(p)}
+              onClick={() => setViewKey(productKey(p))}
+              className="cursor-pointer hover:bg-secondary/50"
+            >
+              <td className={td}>
+                <div className="flex items-center gap-3">
+                  <Thumb p={p} />
+                  <span className="font-medium">{p.name}</span>
+                </div>
+              </td>
+              <td className={td}>{p.qty}</td>
+              <td className={td}>{egp(p.price)}</td>
+              <td className={td}>
+                <StatusPill status={stockStatus(p.qty)} />
+              </td>
+              <td className={td}>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  title="Edit product and stock"
+                  aria-label={`Edit available ${p.name}`}
+                  disabled={busy}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    openForm(p);
+                  }}
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              </td>
+            </tr>
+          ))}
+        </DataTable>
+      </Panel>
       <section className="mb-8" aria-label="Sales">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-semibold">Sales</h2>
@@ -261,36 +311,6 @@ function Products() {
           </div>
         )}
       </section>
-      {alerts.length > 0 && (
-        <div className="panel mb-6 flex items-center gap-3 border-warning/40 p-4 text-sm">
-          <AlertTriangle className="h-4 w-4 shrink-0 text-warning" />
-          {alerts.length} products need restocking: {alerts.map((p) => p.name).join(", ")}
-        </div>
-      )}
-      <Panel title="Available Products">
-        <DataTable head={["Product", "Available Quantity", "Unit Price", "Stock", "Edit"]}>
-          {products.map((p) => (
-            <tr
-              key={productKey(p)}
-              onClick={() => setViewKey(productKey(p))}
-              className="cursor-pointer hover:bg-secondary/50"
-            >
-              <td className={td}>
-                <div className="flex items-center gap-3">
-                  <Thumb p={p} />
-                  <span className="font-medium">{p.name}</span>
-                </div>
-              </td>
-              <td className={td}>{p.qty}</td>
-              <td className={td}>{egp(p.price)}</td>
-              <td className={td}>
-                <StatusPill status={stockStatus(p.qty)} />
-              </td>
-              <td className={td}><Button size="icon" variant="ghost" title="Edit product and stock" aria-label={`Edit available ${p.name}`} disabled={busy} onClick={(e) => { e.stopPropagation(); openForm(p); }}><Pencil className="h-4 w-4" /></Button></td>
-            </tr>
-          ))}
-        </DataTable>
-      </Panel>
       <Sheet open={!!viewing} onOpenChange={(o) => !o && setViewKey(null)}>
         <SheetContent>
           {viewing && (
@@ -469,7 +489,15 @@ function Products() {
                   type="button"
                   variant="destructive"
                   disabled={busy || uploading}
-                  onClick={() => { if (editing.sales > 0) { setFormError("This product has recorded sales and cannot be deleted. Reverse the sales first if they were entered by mistake."); return; } setConfirmDelete(true); }}
+                  onClick={() => {
+                    if (editing.sales > 0) {
+                      setFormError(
+                        "This product has recorded sales and cannot be deleted. Reverse the sales first if they were entered by mistake.",
+                      );
+                      return;
+                    }
+                    setConfirmDelete(true);
+                  }}
                 >
                   <Trash2 className="h-4 w-4" />
                   Delete
@@ -496,7 +524,8 @@ function Products() {
             <DialogTitle>Delete product?</DialogTitle>
           </DialogHeader>
           <p className="break-words text-sm text-muted-foreground">
-            Delete {editing?.name}? This cannot be undone. Products with recorded sales cannot be deleted.
+            Delete {editing?.name}? This cannot be undone. Products with recorded sales cannot be
+            deleted.
           </p>
           <DialogFooter>
             <Button variant="secondary" disabled={busy} onClick={() => setConfirmDelete(false)}>

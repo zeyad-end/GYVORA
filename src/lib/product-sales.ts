@@ -44,20 +44,29 @@ export function updateSoldQuantity(rows: Product[], key: string, quantity: numbe
   const existing = rows.find((p) => productKey(p) === key);
   if (!existing) throw new Error("Product no longer exists");
   const difference = sales - existing.sales;
-  if (difference > existing.qty) throw new Error(`Not enough stock. Only ${existing.qty} units available.`);
-  return rows.map((p) => (productKey(p) === key ? productSchema.parse({ ...p, sales, qty: p.qty - difference }) : p));
+  if (difference > existing.qty)
+    throw new Error(`Not enough stock. Only ${existing.qty} units available.`);
+  return rows.map((p) =>
+    productKey(p) === key ? productSchema.parse({ ...p, sales, qty: p.qty - difference }) : p,
+  );
 }
 export function deleteProduct(rows: Product[], key: string) {
   const existing = rows.find((p) => productKey(p) === key);
   if (!existing) throw new Error("Product no longer exists");
-  if (existing.sales > 0) throw new Error("This product has recorded sales and cannot be deleted. Reverse the sales first if they were entered by mistake.");
+  if (existing.sales > 0)
+    throw new Error(
+      "This product has recorded sales and cannot be deleted. Reverse the sales first if they were entered by mistake.",
+    );
   return rows.filter((p) => productKey(p) !== key);
 }
 /** Validate snapshot transitions as well as fields before the locked Cloud write. */
 export function validateProductChanges(previous: Product[], next: Product[]) {
   for (const old of previous) {
     const current = next.find((p) => productKey(p) === productKey(old));
-    if (!current) { deleteProduct(previous, productKey(old)); continue; }
+    if (!current) {
+      deleteProduct(previous, productKey(old));
+      continue;
+    }
     const difference = current.sales - old.sales;
     if (difference !== 0 && (difference > old.qty || current.qty !== old.qty - difference))
       throw new Error("Sales must adjust available stock by only the change in quantity sold.");
