@@ -1,5 +1,6 @@
 # IronHaus update
-- [ ] Update client QR sharing, membership history, attendance, joined/favorite gyms, gym profiles, program browsing and notifications; verify privacy and persistence.
+- [x] Update client QR sharing, membership history, attendance, joined/favorite gyms, gym profiles, program browsing and notifications; verify demo privacy, persistence, uploads and narrow-screen layouts; 92 tests pass.
+- [x] Include updated brief: invitation Accept/Decline and accepted Trainer role on client home; verify both notification flows and owner status readback.
 - [x] Add safe plan/program deletion and persistent trainer weekly schedules.
 - [x] Extend existing gym finance with persistent numbered invoices, detail/edit/delete and period reports.
 - [x] Verify all requested demo flows, including client copy preservation, and 77 regression tests; real authenticated Cloud flows remain unverified.
@@ -16,7 +17,7 @@
 - [x] Add client attendance, subscription history, personal workouts and settings.
 - [x] Check compilation, regression tests and signed-out access; document remaining setup in DELIVERY.md.
 - [x] Keep invitations in the persistent prototype; real email delivery excluded by request.
-- [ ] Verify authenticated workflows — blocked by no real account yet.
+- [ ] Verify populated real-account gym workflows — signed-in client pages checked, but no real gyms or memberships exist; workout assignments remain prototype-only.
 - [ ] Provision and verify super administrator approvals — blocked by missing administrator identity.
 - [x] Remove phone authentication; phone fields are contact information only.
 

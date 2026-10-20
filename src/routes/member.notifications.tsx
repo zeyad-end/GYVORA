@@ -1,0 +1,106 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { useEffect, useState } from "react";
+import { ClientShell } from "@/components/ClientShell";
+import { AssignedWorkouts } from "@/components/AssignedWorkouts";
+import { useCloud } from "@/components/CloudProvider";
+import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import type { Database } from "@/integrations/supabase/types";
+import {
+  getDemoSession,
+  useDemoStore,
+  pendingDemoInvitations,
+  respondDemoInvitation,
+  pendingDemoAssignments,
+} from "@/lib/demo";
+import { seo } from "@/lib/seo";
+import { toast } from "sonner";
+export const Route = createFileRoute("/member/notifications")({
+  head: () =>
+    seo(
+      "Client notifications",
+      "Your trainer invitations and workout assignments with Save, Delete, Accept and Decline actions.",
+    ),
+  component: Notifications,
+});
+function Notifications() {
+  const c = useCloud();
+  const all = useDemoStore((s) => s.invitations);
+  const assignments = useDemoStore((s) => s.assignments);
+  const [cloudRows, setCloudRows] = useState<
+    Database["public"]["Tables"]["staff_invitations"]["Row"][]
+  >([]);
+  const [busy, setBusy] = useState("");
+  const demo = getDemoSession();
+  const rows = demo ? pendingDemoInvitations(c.profile?.email ?? "", all) : cloudRows;
+  async function load() {
+    if (demo || !c.profile) return;
+    const { data, error } = await supabase
+      .from("staff_invitations")
+      .select("*")
+      .eq("email", c.profile.email.toLowerCase())
+      .eq("status", "Pending")
+      .gt("expires_at", new Date().toISOString());
+    if (error) toast.error(error.message);
+    else setCloudRows(data ?? []);
+  }
+  useEffect(() => {
+    setCloudRows([]);
+    void load();
+  }, [c.profile?.id]);
+  return (
+    <ClientShell title="Notifications">
+      <AssignedWorkouts />
+      <div className="space-y-5">
+        {rows.map((i) => (
+          <section key={i.id} className="border-b pb-5">
+            <h2 className="text-lg font-semibold">
+              {"gym_name" in i
+                ? String(i.gym_name ?? "Gym")
+                : (c.gyms.find((g) => g.id === i.gym_id)?.name ?? "Gym")}
+            </h2>
+            <p className="mt-2">Invited as {i.role}</p>
+            <p className="text-sm text-muted-foreground">
+              {i.full_name} · {new Date(i.created_at).toLocaleDateString()} · Expires{" "}
+              {new Date(i.expires_at).toLocaleDateString()}
+            </p>
+            <div className="mt-4 flex gap-2">
+              {[true, false].map((accept) => (
+                <Button
+                  key={String(accept)}
+                  disabled={busy === i.id}
+                  variant={accept ? "default" : "outline"}
+                  onClick={async () => {
+                    setBusy(i.id);
+                    try {
+                      if (demo) respondDemoInvitation(i.id, accept);
+                      else {
+                        const { error } = await supabase.rpc("respond_invitation", {
+                          invitation_id: i.id,
+                          accept,
+                        });
+                        if (error) throw error;
+                      }
+                      await load();
+                      await c.refresh();
+                      toast.success(accept ? "Invitation accepted" : "Invitation declined");
+                    } catch (e) {
+                      toast.error(String(e));
+                    } finally {
+                      setBusy("");
+                    }
+                  }}
+                >
+                  {accept ? "Accept" : "Decline"}
+                </Button>
+              ))}
+            </div>
+          </section>
+        ))}
+      </div>
+      {!rows.length && !pendingDemoAssignments(c.profile?.id ?? "", assignments).length && (
+        <p className="text-muted-foreground">No pending notifications.</p>
+      )}
+    </ClientShell>
+  );
+}
