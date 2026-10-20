@@ -16,7 +16,7 @@ export type Member = (typeof membersSeed)[number] & {
   planPrice?: number;
   createdByName?: string;
 };
-export type Product = (typeof productsSeed)[number];
+export type Product = (typeof productsSeed)[number] & { id?: string };
 export type TrainerDay = { day: string; available: boolean; start: string; end: string };
 export type Trainer = (typeof trainersSeed)[number] & { schedule?: TrainerDay[] };
 export type Invoice = {
