@@ -1,53 +1,72 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Upload, Plus } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Upload } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { PageHeader, Panel } from "@/components/kit";
-import { gym } from "@/lib/mock";
+import { CURRENCIES, defaultPreferences, readFile, saveState, useStore, type Currency, type GymPreferences } from "@/lib/store";
 import { seo } from "@/lib/seo";
 
 export const Route = createFileRoute("/_gym/settings")({
-  head: () => seo("Settings", "Gym information, branding, currency, language, notifications and branches."),
+  head: () => seo("Settings", "Gym information, branding, currency, language and notification preferences."),
   component: Settings,
 });
 
 const sel = "h-10 w-full rounded-md border bg-surface px-3 text-sm";
+const notices = ["Membership expiring reminders", "Daily revenue summary", "Low stock alerts", "New member sign-ups"];
 
 function Settings() {
+  const saved = useStore((s) => s.gym);
+  const [form, setForm] = useState({ name: saved.name, phone: saved.phone, location: saved.location, logo: saved.logo });
+  const [prefs, setPrefs] = useState<GymPreferences>({ ...defaultPreferences, ...saved.preferences });
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  useEffect(() => { setForm({ name: saved.name, phone: saved.phone, location: saved.location, logo: saved.logo }); setPrefs({ ...defaultPreferences, ...saved.preferences }); }, [saved]);
+  const up = (p: Partial<typeof form>) => setForm((f) => ({ ...f, ...p }));
+
+  async function save() {
+    const name = form.name.trim(), phone = form.phone.trim(), location = form.location.trim();
+    if (!name || !phone || !location) { setError("Gym name, phone and address are required."); return; }
+    setBusy(true); setError("");
+    try {
+      await saveState((s) => ({ gym: { ...s.gym, name, phone, location, logo: form.logo, preferences: prefs } }));
+      toast.success("Settings saved");
+    } catch (e) { const m = e instanceof Error ? e.message : "Could not save settings"; setError(m); toast.error(m); }
+    finally { setBusy(false); }
+  }
+
   return (
     <>
-      <PageHeader title="Settings" actions={<Button>Save changes</Button>} />
+      <PageHeader title="Settings" actions={<Button disabled={busy} onClick={save}>{busy ? "Saving…" : "Save changes"}</Button>} />
+      {error && <p role="alert" className="mb-4 text-sm text-destructive">{error}</p>}
       <div className="grid gap-6 lg:grid-cols-2">
         <Panel title="Gym information">
           <div className="space-y-4">
-            <div className="space-y-2"><Label>Gym name</Label><Input defaultValue={gym.name} className="bg-surface" /></div>
-            <div className="space-y-2"><Label>Phone</Label><Input defaultValue={gym.phone} className="bg-surface" /></div>
-            <div className="space-y-2"><Label>Address</Label><Input defaultValue={gym.location} className="bg-surface" /></div>
+            <div className="space-y-2"><Label htmlFor="g-name">Gym name</Label><Input id="g-name" required maxLength={80} value={form.name} onChange={(e) => up({ name: e.target.value })} className="bg-surface" /></div>
+            <div className="space-y-2"><Label htmlFor="g-phone">Phone</Label><Input id="g-phone" required maxLength={30} value={form.phone} onChange={(e) => up({ phone: e.target.value })} className="bg-surface" /></div>
+            <div className="space-y-2"><Label htmlFor="g-addr">Address</Label><Input id="g-addr" required maxLength={160} value={form.location} onChange={(e) => up({ location: e.target.value })} className="bg-surface" /></div>
           </div>
         </Panel>
         <Panel title="Logo & regional">
           <div className="flex items-center gap-4">
-            <span className="grid h-16 w-16 place-items-center rounded-2xl bg-primary font-display text-xl font-bold text-primary-foreground">IH</span>
-            <Button variant="secondary"><Upload className="h-4 w-4" />Upload logo</Button>
+            {form.logo ? <img src={form.logo} alt="Gym logo" className="h-16 w-16 rounded-2xl object-cover" /> : <span className="grid h-16 w-16 place-items-center rounded-2xl bg-primary font-display text-xl font-bold text-primary-foreground">IH</span>}
+            <Button variant="secondary" asChild><label className="cursor-pointer"><Upload className="h-4 w-4" />Upload logo<input type="file" accept="image/*" className="sr-only" aria-label="Upload logo" onChange={async (e) => { const f = e.target.files?.[0]; if (f) up({ logo: await readFile(f) }); }} /></label></Button>
           </div>
           <div className="mt-5 grid grid-cols-2 gap-3">
-            <div className="space-y-2"><Label>Currency</Label><select className={sel}><option>EGP</option><option>USD</option><option>SAR</option><option>AED</option></select></div>
-            <div className="space-y-2"><Label>Language</Label><select className={sel}><option>English</option><option>العربية</option></select></div>
+            <div className="space-y-2"><Label htmlFor="g-cur">Currency</Label><select id="g-cur" className={sel} value={prefs.currency} onChange={(e) => setPrefs({ ...prefs, currency: e.target.value as Currency })}>{CURRENCIES.map((c) => <option key={c}>{c}</option>)}</select></div>
+            <div className="space-y-2"><Label htmlFor="g-lang">Language</Label><select id="g-lang" className={sel} value={prefs.language} onChange={(e) => setPrefs({ ...prefs, language: e.target.value as GymPreferences["language"] })}><option>English</option><option>العربية</option></select></div>
           </div>
+          <p className="mt-3 text-xs text-muted-foreground">Currency changes the displayed label only; saved amounts are not converted.</p>
         </Panel>
-        <Panel title="Notifications">
+        <Panel title="Notifications" className="lg:col-span-2">
           <div className="space-y-4">
-            {["Membership expiring reminders", "Daily revenue summary", "Low stock alerts", "New member sign-ups"].map((n, i) => (
-              <div key={n} className="flex items-center justify-between text-sm"><span>{n}</span><Switch defaultChecked={i !== 3} /></div>
+            {notices.map((n, i) => (
+              <div key={n} className="flex items-center justify-between text-sm"><span>{n}</span><Switch aria-label={n} checked={prefs.notifications[n] ?? i !== 3} onCheckedChange={(v) => setPrefs({ ...prefs, notifications: { ...prefs.notifications, [n]: v } })} /></div>
             ))}
           </div>
-        </Panel>
-        <Panel title="Branches" action={<Button size="sm" variant="secondary"><Plus className="h-4 w-4" />Add branch</Button>}>
-          <ul className="space-y-2 text-sm">
-            {[["Garden City", "Main · 482 members"], ["New Cairo", "Opening Dec 2026"]].map(([b, s]) => <li key={b} className="flex justify-between rounded-lg bg-surface p-3"><span className="font-medium">{b}</span><span className="text-muted-foreground">{s}</span></li>)}
-          </ul>
         </Panel>
       </div>
     </>
