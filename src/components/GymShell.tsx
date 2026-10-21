@@ -9,6 +9,9 @@ import { useCloud } from "./CloudProvider";
 import { useStore } from "@/lib/store";
 import { initials } from "@/lib/mock";
 import { Button } from "./ui/button";
+import { GymAccount } from './GymAccount';
+import { GymNotifications } from './GymNotifications';
+import { ExerciseImage } from './ProgramEditor';
 
 const nav = [
   { to: "/gym", label: "Gym Profile", icon: Building2 },
@@ -30,14 +33,15 @@ const nav = [
 export function GymShell({ children }: { children: ReactNode }) {
   const c=useCloud(); const gym=useStore(s=>s.gym);
   const [open, setOpen] = useState(false);
+  const [account, setAccount] = useState(false);
   const path = useRouterState({ select: (s) => s.location.pathname });
 
   const sidebar = (
     <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
       <div className="flex items-center gap-3 px-5 py-6">
-        <span className="grid h-9 w-9 place-items-center rounded-lg bg-primary font-display text-sm font-bold text-primary-foreground">IH</span>
+        {gym.logo ? <img src={gym.logo} alt={`${gym.name} logo`} className="h-9 w-9 shrink-0 rounded-lg object-cover"/> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary font-display text-sm font-bold text-primary-foreground">{initials(gym.name)}</span>}
         <div className="min-w-0">
-          <div className="truncate font-display text-sm font-semibold text-sidebar-accent-foreground">IRONHAUS</div>
+          <div title={gym.name} className="truncate font-display text-sm font-semibold text-sidebar-accent-foreground">{gym.name}</div>
           <div className="text-[11px] text-muted-foreground">Gym OS · {gym.code}</div>
         </div>
       </div>
@@ -64,6 +68,7 @@ export function GymShell({ children }: { children: ReactNode }) {
 
   return (
     <div className="flex min-h-screen">
+      <GymAccount open={account} onOpenChange={setAccount}/>
       <div className="sticky top-0 hidden h-screen lg:block">{sidebar}</div>
       {open && (
         <div className="fixed inset-0 z-50 flex lg:hidden">
@@ -78,13 +83,12 @@ export function GymShell({ children }: { children: ReactNode }) {
             <Search className="h-4 w-4 shrink-0" />
             <input placeholder="Search members, transactions…" className="w-full min-w-0 bg-transparent outline-none placeholder:text-muted-foreground" />
           </div>
-          <button aria-label="Notifications" className="relative grid h-9 w-9 shrink-0 place-items-center rounded-lg border bg-card">
-            <Bell className="h-4 w-4" /><span className="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-primary" />
-          </button>
-          {c.role !== 'Owner' && <Button asChild size="sm" variant="outline"><Link to="/gyms">Switch gym</Link></Button>}<div className="hidden items-center gap-2 sm:flex">
-            <span className="grid h-9 w-9 place-items-center rounded-full bg-accent font-display text-xs font-semibold text-primary">{initials(c.profile?.full_name??"")}</span>
-            <div className="text-xs"><div className="font-semibold">{c.profile?.full_name}</div><div className="text-muted-foreground">{c.role}</div></div>
-          </div>
+          <GymNotifications/>
+          {c.role !== 'Owner' && <Button asChild size="sm" variant="outline"><Link to="/gyms">Switch gym</Link></Button>}
+          <Button variant="ghost" aria-label="Account Settings" className="h-auto max-w-52 shrink-0 gap-2 px-1 sm:px-2" onClick={() => setAccount(true)}>
+            {c.profile?.photo ? <ExerciseImage path={c.profile.photo} className="h-9 w-9 shrink-0 rounded-full object-cover"/> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent font-display text-xs font-semibold text-primary">{initials(c.profile?.full_name??"")}</span>}
+            <span className="hidden min-w-0 text-left text-xs sm:block"><span className="block truncate font-semibold">{c.profile?.full_name}</span><span className="block text-muted-foreground">{c.role}</span></span>
+          </Button>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8">{children}</main>
       </div>
