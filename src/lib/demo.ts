@@ -5,7 +5,7 @@ import { invitationStatus } from "./validation";
 import { initialState, type State, type StaffMember, type Workout } from "./store";
 import { gymEvents } from './gym-events';
 import { appendGymEvents } from './gym-notifications-demo';
-import { billingMonths, gymPrices, savePrices, type subscriptionPriceSchema } from './platform-subscriptions';
+import { billingMonths, gymPrices, savePrices, platformPlanSchema, defaultPlatformPlans, gymDatesSchema, planDefaults, type PlatformPlan, type subscriptionPriceSchema } from './platform-subscriptions';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -203,6 +203,10 @@ export type ApprovedGym = {
   monthlyPrice?: number;
   annualPrice?: number;
   annualPriceManual?: boolean;
+  planId?: string;
+  billingType?: 'Monthly' | 'Annual';
+  durationDays?: number;
+  notes?: string;
 };
 
 export type DemoClient = { id: string; name: string; phone: string; photo: string; gyms: string[] };
@@ -225,6 +229,7 @@ export const expenseSchema = z.object({
 export type PlatformExpense = z.infer<typeof expenseSchema>;
 
 export type DemoState = {
+  platformPlans?: PlatformPlan[];
   platformBranding?: { name: string; logo: string };
   requests: GymRequest[];
   gyms: ApprovedGym[];
@@ -508,6 +513,21 @@ export function savePlatformBranding(input: { name: string; logo: string }) {
   if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');
   const row = z.object({ name: z.string().trim().min(1).max(100), logo: z.string().max(8000) }).parse(input);
   commit({ ...demoState, platformBranding: row });
+}
+
+export function savePlatformPlan(input: PlatformPlan) {
+  if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');
+  const row=platformPlanSchema.parse(input);
+  const plans=demoState.platformPlans??defaultPlatformPlans;
+  commit({...demoState,platformPlans:plans.some(p=>p.id===row.id)?plans.map(p=>p.id===row.id?row:p):[...plans,row]});
+}
+export function deletePlatformPlan(id: string) {
+  if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');
+  const plans=demoState.platformPlans??defaultPlatformPlans;
+  const plan=plans.find(p=>p.id===id);
+  if (!plan) throw new Error('Plan no longer exists');
+  if (demoState.gyms.some(g=>g.planId===id||(!g.planId&&g.plan===plan.name))) throw new Error('This plan is assigned to a gym. Change its subscription before deleting the plan.');
+  commit({...demoState,platformPlans:plans.filter(p=>p.id!==id)});
 }
 
 export function submitDemoGymRequest(gymName: string, plan: string) {
@@ -802,6 +822,7 @@ export function approveRequest(id: string) {
   const req = demoState.requests.find((r) => r.id === id);
   if (!req || req.status !== "Pending") return;
   const start = today();
+  const offeredPlan=(demoState.platformPlans??defaultPlatformPlans).find(p=>p.name===req.plan);
   const gym: ApprovedGym = {
     id: uid(),
     name: req.gymName,
@@ -812,6 +833,7 @@ export function approveRequest(id: string) {
     end: addMonths(start, billingMonths(req.plan)),
     status: "Active",
     ...gymPrices({ plan: req.plan }),
+    ...(offeredPlan?planDefaults(offeredPlan,start):{}),
   };
   commit({
     ...demoState,
@@ -831,19 +853,28 @@ export function rejectRequest(id: string) {
   });
 }
 
-export function editGym(id: string, patch: { name: string; plan: string } & Partial<z.infer<typeof subscriptionPriceSchema>>) {
+export function editGym(id: string, patch: { name: string; plan: string; start?: string; end?: string; notes?: string; planId?: string; applyPlan?: boolean } & Partial<z.infer<typeof subscriptionPriceSchema>>) {
   const current = demoState.gyms.find(g => g.id === id);
   if (!current) throw new Error('Gym no longer exists');
-  const prices = savePrices({ ...gymPrices(current), ...patch });
+  const name=z.string().trim().min(1).max(100).parse(patch.name);
+  const selected=patch.applyPlan?(demoState.platformPlans??defaultPlatformPlans).find(p=>p.id===patch.planId):undefined;
+  if(patch.applyPlan&&patch.planId&&!selected)throw new Error('Plan no longer exists');
+  const start=patch.start??current.start;
+  const defaults=selected?planDefaults(selected,start):{};
+  const prices = savePrices({ ...gymPrices(current), ...defaults, ...patch });
+  const dates=gymDatesSchema.parse({start,end:patch.end??('end' in defaults?defaults.end:patch.plan===current.plan?current.end:addMonths(start,billingMonths(patch.plan))),notes:patch.notes??current.notes??''});
+  const legacyReset=patch.applyPlan&&!selected?{planId:undefined,billingType:undefined,durationDays:undefined}:{};
   commit({
     ...demoState,
     gyms: demoState.gyms.map((g) =>
       g.id === id
         ? {
             ...g,
-            name: patch.name,
+            ...defaults,
+            ...legacyReset,
+            name,
             plan: patch.plan,
-            end: patch.plan === g.plan ? g.end : addMonths(g.start, billingMonths(patch.plan)),
+            ...dates,
             ...prices,
           }
         : g,
