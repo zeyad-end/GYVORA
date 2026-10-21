@@ -20,12 +20,13 @@ describe("destination-based prototype login", () => {
     expect(getDemoSessionInfo()?.kind).toBe("super");
   });
 
-  it("ignores an existing account role and pending subscription", () => {
+  it("routes a registered Gym Account by its request status, other destinations stay direct", () => {
     registerDemoAccount("Previous owner", "ab", "old", "gym");
     expect(enterPrototype({ destination: "individual", name: "New client", email: "ab" }, false)).toBe("/member");
     expect(getDemoAccount()).toBeNull();
-    expect(enterPrototype({ destination: "gym", name: "Owner", email: "ab" }, false)).toBe("/dashboard");
-    expect(getDemoAccount()).toBeNull();
+    expect(enterPrototype({ destination: "gym", name: "Owner", email: "ab" }, false)).toBe("/subscription-request");
+    expect(getDemoAccount()?.email).toBe("ab");
+    expect(enterPrototype({ destination: "gym", name: "Owner", email: "new@x" }, false)).toBe("/dashboard");
   });
 
   it("remembers only destination and display details", () => {
