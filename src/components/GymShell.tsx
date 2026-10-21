@@ -41,7 +41,7 @@ export function GymShell({ children }: { children: ReactNode }) {
       <div className="flex items-center gap-3 px-5 py-6">
         {gym.logo ? <img src={gym.logo} alt={`${gym.name} logo`} className="h-9 w-9 shrink-0 rounded-lg object-cover"/> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary font-display text-sm font-bold text-primary-foreground">{initials(gym.name)}</span>}
         <div className="min-w-0">
-          <div title={gym.name} className="truncate font-display text-sm font-semibold text-sidebar-accent-foreground">{gym.name}</div>
+          <div className="break-words font-display text-sm font-semibold text-sidebar-accent-foreground">{gym.name}</div>
           <div className="text-[11px] text-muted-foreground">Gym OS · {gym.code}</div>
         </div>
       </div>
@@ -85,7 +85,7 @@ export function GymShell({ children }: { children: ReactNode }) {
           </div>
           <GymNotifications/>
           {c.role !== 'Owner' && <Button asChild size="sm" variant="outline"><Link to="/gyms">Switch gym</Link></Button>}
-          <Button variant="ghost" aria-label="Account Settings" className="h-auto max-w-52 shrink-0 gap-2 px-1 sm:px-2" onClick={() => setAccount(true)}>
+          <Button variant="ghost" aria-label="Account Settings" disabled={c.role !== 'Owner'} className="h-auto max-w-52 shrink-0 gap-2 px-1 sm:px-2" onClick={() => setAccount(true)}>
             {c.profile?.photo ? <ExerciseImage path={c.profile.photo} className="h-9 w-9 shrink-0 rounded-full object-cover"/> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-accent font-display text-xs font-semibold text-primary">{initials(c.profile?.full_name??"")}</span>}
             <span className="hidden min-w-0 text-left text-xs sm:block"><span className="block truncate font-semibold">{c.profile?.full_name}</span><span className="block text-muted-foreground">{c.role}</span></span>
           </Button>
