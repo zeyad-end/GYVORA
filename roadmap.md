@@ -1,5 +1,5 @@
 # IronHaus update
-- [ ] Verify the uploaded Products examples: 100 starting stock, sales/reversals, stock-only edits, direct-sale deltas, insufficient-stock blocking and refresh persistence.
+- [x] Verify the uploaded Products examples: preview confirmed 100/0/0, selling 2 gives 98/2, reversing 1 gives 99/1, stock-only edits, direct-sale deltas, insufficient-stock blocking, navigation and refresh persistence; 13 product tests pass. Existing logic already satisfies the brief; no page redesign or logic replacement needed. Real gym checks remain blocked by no populated gym owner.
 - [x] Synchronize gym sidebar branding; add owner account settings and account-type registration fields; preview name/logo/photo/contact saves, phone-only owner registration, refresh and later sign-in verified.
 - [x] Connect dashboard expenses to Finance; preview add/edit/delete totals verified; attendance/session date filters, sequential row numbers and totals verified.
 - [x] Add private persistent gym event notifications; preview attendance/session/expense/sale/invitation events, unread/read/dismiss persistence, record preservation and narrow dialogs verified; 125 tests pass.
