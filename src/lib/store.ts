@@ -105,6 +105,7 @@ export type Gym = typeof gymSeed & {
   cover: string;
   gallery: string[];
   hoursByDay: DayHours[];
+  preferences?: GymPreferences;
 };
 
 export type State = {
@@ -215,3 +216,15 @@ export const readFile = (f: File) =>
     r.onload = () => res(String(r.result));
     r.readAsDataURL(f);
   });
+
+export const CURRENCIES = ["EGP", "USD", "SAR", "AED"] as const;
+export type Currency = (typeof CURRENCIES)[number];
+export type GymPreferences = { currency: Currency; language: "English" | "العربية"; notifications: Record<string, boolean> };
+export const defaultPreferences: GymPreferences = { currency: "EGP", language: "English", notifications: {} };
+/** Display-only currency label from the saved gym settings; amounts are never converted. */
+export function currencyOf(g: Partial<Gym> | undefined = state.gym): Currency {
+  const c = (g as { preferences?: Partial<GymPreferences> } | undefined)?.preferences?.currency;
+  return c && (CURRENCIES as readonly string[]).includes(c) ? c : "EGP";
+}
+export const money = (n: number, c: Currency = currencyOf()) => `${c} ${Math.abs(n).toLocaleString("en-US")}`;
+export function useCurrency() { return useStore((s) => currencyOf(s.gym)); }
