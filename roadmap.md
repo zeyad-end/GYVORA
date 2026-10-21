@@ -42,3 +42,6 @@
 - [x] Finance: Cash Register period selector with income, paid expenses, net profit; daily expense summary with date picker
 - [x] Trainer-to-client workout assignments (send existing/new program, client Save/Delete notifications) verified in preview; 84 tests pass.
 - [x] Settings uses shared gym profile; Branches removed; global display currency
+- [x] Gym Account demo registration without phone; Monthly/Annual request with Send/Cancel, Done/Skip; WhatsApp contact setting; Google/Apple/X buttons
+- [ ] X (Twitter) sign-in — not supported by the sign-in service
+- [ ] Linking social providers to an existing signed-in account — needs identity linking enabled

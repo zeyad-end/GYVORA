@@ -12,6 +12,7 @@ import { seo } from "@/lib/seo";
 import { type DemoAccountType } from "@/lib/demo";
 import { enterPrototype, getPrototypePreference, savePrototypePreference } from "@/lib/prototype-login";
 import cover from "@/assets/gym-cover.jpg";
+import { SocialSignIn } from "@/components/SocialSignIn";
 
 export const Route = createFileRoute("/")({
   head: () => seo("Demo login", "Enter the IRONHAUS local prototype as a Gym Account, Client / Individual, or Platform Super Admin."),
@@ -94,6 +95,7 @@ function Login() {
             <div className="flex items-center gap-2"><Checkbox id="demo-remember" checked={remember} onCheckedChange={value => setRemember(value === true)} /><Label htmlFor="demo-remember" className="text-sm font-normal">Remember Me</Label></div>
             <Button type="submit" className="h-11 w-full">Login</Button>
           </form>
+          <SocialSignIn />
         </div>
       </div>
     </div>
