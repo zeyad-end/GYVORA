@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, PageHeader } from "@/components/kit";
-import { saveState, useStore } from "@/lib/store";
+import { currencyOf, saveState, useStore } from "@/lib/store";
 import { deletePlan } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
 
