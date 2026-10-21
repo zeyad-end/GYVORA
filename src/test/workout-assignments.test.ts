@@ -16,6 +16,15 @@ describe("workout assignments", () => {
     expect(a.recipientId).toBe(m.clientId ?? demoUserId(m.email));
     expect(() => sendDemoAssignment({ requestKey: "k2", gymId: "demo-gym", gymName: "x", memberId: "M-9999", program })).toThrow();
   });
+  it("persists the chosen trainer attribution in the notification and independent client copy", () => {
+    const m = readDemoGym("demo-gym", true).members[0];
+    if (!m) throw new Error("Missing member fixture");
+    const a = sendDemoAssignment({ requestKey: "attribution", gymId: "demo-gym", gymName: "IRONHAUS", memberId: m.id, program: { ...program, trainer: "Coach Manual" } });
+    expect(getDemoState().assignments.find((row) => row.id === a.id)?.program.trainer).toBe("Coach Manual");
+    setDemoSession("individual", m.email);
+    respondDemoAssignment(a.id, true);
+    expect(getDemoState().programs[0]?.definition.trainer).toBe("Coach Manual");
+  });
   it("only the recipient sees it; save makes an independent copy, delete saves nothing", () => {
     const m = readDemoGym("demo-gym", true).members[1]!;
     const a = sendDemoAssignment({ requestKey: "k3", gymId: "demo-gym", gymName: "IRONHAUS", memberId: m.id, program });

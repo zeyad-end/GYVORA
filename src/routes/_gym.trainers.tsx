@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Phone, Plus } from "lucide-react";
+import { Phone, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { readFile, saveState, useStore, type Trainer } from "@/lib/store";
 import { TrainerSchedule } from "@/components/TrainerSchedule";
 import { defaultSchedule, scheduleSchema } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
+import { trainerProfileSchema, updateTrainerProfile, deleteTrainerProfile } from "@/lib/trainer-profiles";
 
 export const Route = createFileRoute("/_gym/trainers")({
   head: () => seo("Trainers", "Your coaching team, their members, schedules and programs."),
@@ -42,6 +43,9 @@ function Trainers() {
   const [selId, setSelId] = useState(trainers[0]?.id ?? "");
   const sel = trainers.find((t) => t.id === selId) ?? trainers[0];
   const [open, setOpen] = useState(false);
+  const [editing, setEditing] = useState<Trainer | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [img, setImg] = useState("");
   const [schedule, setSchedule] = useState(defaultSchedule);
   const [scheduleId, setScheduleId] = useState<string | null>(null);
@@ -55,6 +59,7 @@ function Trainers() {
           <Button
             onClick={() => {
               setImg("");
+              setEditing(null);
               setSchedule(defaultSchedule());
               setOpen(true);
             }}
@@ -67,11 +72,12 @@ function Trainers() {
       <div className="grid gap-6 lg:grid-cols-3">
         <div className="space-y-3">
           {trainers.map((t) => (
+            <div key={t.id} className={`panel flex items-center gap-1 pr-2 ${sel?.id === t.id ? "border-primary/50" : ""}`}>
             <Button
               variant="ghost"
               key={t.id}
               onClick={() => setSelId(t.id)}
-              className={`panel flex h-auto w-full justify-start items-center gap-4 p-4 text-left ${sel?.id === t.id ? "border-primary/50" : ""}`}
+              className="flex h-auto min-w-0 flex-1 justify-start items-center gap-4 whitespace-normal p-4 text-left"
             >
               <TrainerAvatar t={t} />
               <div className="min-w-0">
@@ -83,23 +89,16 @@ function Trainers() {
                 </div>
               </div>
             </Button>
+            <Button size="icon" variant="ghost" className="shrink-0" aria-label={`Edit ${t.name}`} title={`Edit ${t.name}`}
+              onClick={() => { setEditing(t); setImg(t.image); setOpen(true); }}>
+              <Pencil className="h-4 w-4" />
+            </Button>
+            </div>
           ))}
+          {!trainers.length && <p className="text-sm text-muted-foreground">No trainers</p>}
         </div>
         {sel && (
           <div className="space-y-6 lg:col-span-2">
-            <Panel title={`${sel.name} · Assigned members`}>
-              <div className="flex flex-wrap gap-2">
-                {members
-                  .filter((m) => m.trainer === sel.name)
-                  .concat(members.slice(0, 4))
-                  .slice(0, 7)
-                  .map((m) => (
-                    <span key={m.id} className="rounded-full bg-secondary px-3 py-1.5 text-xs">
-                      {m.name}
-                    </span>
-                  ))}
-              </div>
-            </Panel>
             <Panel
               title="Weekly schedule"
               action={
@@ -156,21 +155,28 @@ function Trainers() {
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-h-[90vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Add trainer</DialogTitle>
+            <DialogTitle>{editing ? "Edit trainer" : "Add trainer"}</DialogTitle>
           </DialogHeader>
           <form
+            key={editing?.id ?? "new"}
             className="space-y-4"
             onSubmit={async (e) => {
               e.preventDefault();
+              if (busy || uploading) return;
               const d = new FormData(e.currentTarget);
+              setBusy(true);
               try {
+                const profile = trainerProfileSchema.parse({ name: String(d.get("name")), specialty: String(d.get("specialty")), phone: String(d.get("phone")), image: img });
+                if (editing) {
+                  await saveState((s) => ({ trainers: updateTrainerProfile(s.trainers, editing.id, profile) }));
+                  toast.success("Trainer saved");
+                  setOpen(false);
+                  return;
+                }
                 const validated = scheduleSchema.parse(schedule);
                 const t: Trainer = {
                   id: crypto.randomUUID(),
-                  image: img,
-                  name: String(d.get("name")).trim(),
-                  specialty: String(d.get("specialty")).trim(),
-                  phone: String(d.get("phone")).trim(),
+                  ...profile,
                   bio: "",
                   members: 0,
                   schedule: validated,
@@ -180,36 +186,57 @@ function Trainers() {
                 toast.success("Trainer added");
                 setOpen(false);
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Could not save trainer");
+                toast.error(error && typeof error === "object" && "issues" in error ? "Enter a valid name, specialty and phone number" : error instanceof Error ? error.message : "Could not save trainer");
+              } finally {
+                setBusy(false);
               }
             }}
           >
             <Field label="Trainer name">
-              <Input name="name" required maxLength={60} />
+              <Input aria-label="Trainer name" name="name" required maxLength={60} defaultValue={editing?.name ?? ""} />
             </Field>
             <Field label="Specialty">
-              <Input name="specialty" required maxLength={60} />
+              <Input aria-label="Specialty" name="specialty" required maxLength={60} defaultValue={editing?.specialty ?? ""} />
             </Field>
             <Field label="Phone number">
-              <Input name="phone" required maxLength={30} />
+              <Input aria-label="Phone number" name="phone" required maxLength={30} defaultValue={editing?.phone ?? ""} />
             </Field>
             <Field label="Profile image">
               <Input
                 type="file"
-                accept="image/*"
+                aria-label="Profile image"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={uploading || busy}
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
-                  if (f) setImg(await readFile(f));
+                  if (!f) return;
+                  setUploading(true);
+                  try {
+                    if (!["image/jpeg", "image/png", "image/webp"].includes(f.type) || f.size > 5 * 1024 * 1024) throw new Error("Choose a JPG, PNG or WebP image under 5 MB");
+                    setImg(await readFile(f));
+                  } catch (error) {
+                    toast.error(error instanceof Error ? error.message : "Could not load image");
+                  } finally { setUploading(false); }
                 }}
               />
             </Field>
             {img && <img src={img} alt="Preview" className="h-16 w-16 rounded-full object-cover" />}
-            <TrainerSchedule value={schedule} onChange={setSchedule} />
+            {!editing && <TrainerSchedule value={schedule} onChange={setSchedule} />}
             <DialogFooter>
+              {editing && <Button type="button" variant="destructive" disabled={busy || uploading} onClick={async () => {
+                if (!window.confirm(`Delete ${editing.name} from this gym's trainer list?`)) return;
+                setBusy(true);
+                try {
+                  await saveState((s) => ({ trainers: deleteTrainerProfile(s.trainers, editing.id) }));
+                  toast.success("Trainer deleted");
+                  setOpen(false);
+                } catch (error) { toast.error(error instanceof Error ? error.message : "Could not delete trainer"); }
+                finally { setBusy(false); }
+              }}><Trash2 className="h-4 w-4" />Delete trainer</Button>}
               <Button type="button" variant="secondary" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button type="submit">Save</Button>
+              <Button type="submit" disabled={busy || uploading}>{busy ? "Saving…" : "Save"}</Button>
             </DialogFooter>
           </form>
         </DialogContent>
