@@ -6,7 +6,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "
 import { Field } from "./kit";
 import { programSchema } from "@/lib/validation";
 import { uploadImage, imageUrl } from "@/lib/images";
-import type { Workout } from "@/lib/store";
+import type { Trainer, Workout } from "@/lib/store";
+import { TrainerField } from "./TrainerField";
 import { toast } from "sonner";
 export function ExerciseImage({
   path,
@@ -32,20 +33,24 @@ export function ProgramEditor({
   program,
   onSave,
   onDelete,
+  trainers,
 }: {
   open: boolean;
   onClose: () => void;
   program?: Workout | null;
   onSave: (p: Workout) => Promise<void> | void;
   onDelete?: () => Promise<void> | void;
+  trainers?: Trainer[];
 }) {
   const [name, setName] = useState("");
+  const [trainer, setTrainer] = useState("");
   const [rows, setRows] = useState<Workout["exercises"]>([empty()]);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   useEffect(() => {
     if (open) {
       setName(program?.name ?? "");
+      setTrainer(program?.trainer ?? "");
       setRows(program?.exercises.map((e) => ({ ...e })) ?? [empty()]);
     }
   }, [open, program]);
@@ -69,7 +74,7 @@ export function ProgramEditor({
               const p = programSchema.parse({
                 id: program?.id ?? crypto.randomUUID(),
                 name,
-                trainer: program?.trainer ?? "",
+                trainer: trainers ? trainer.trim() : program?.trainer ?? "",
                 notes: program?.notes ?? "",
                 exercises: rows,
               });
@@ -90,6 +95,7 @@ export function ProgramEditor({
               onChange={(e) => setName(e.target.value)}
             />
           </Field>
+          {trainers && <TrainerField trainers={trainers} value={trainer} onChange={setTrainer} />}
           {rows.map((r, i) => (
             <div key={i} className="space-y-3 border-b pb-4">
               <div className="grid gap-3 sm:grid-cols-[1fr_5rem_5rem_auto]">

@@ -1,0 +1,20 @@
+import { z } from "zod";
+import type { Trainer } from "./store";
+
+export const trainerProfileSchema = z.object({
+  name: z.string().trim().min(1, "Enter a trainer name").max(60),
+  specialty: z.string().trim().min(1, "Enter a specialty").max(60),
+  phone: z.string().trim().min(1, "Enter a phone number").max(30),
+  image: z.string().max(8_000_000),
+});
+
+export function updateTrainerProfile(rows: Trainer[], id: string, input: unknown): Trainer[] {
+  const profile = trainerProfileSchema.parse(input);
+  if (!rows.some((t) => t.id === id)) throw new Error("Trainer no longer exists in this gym");
+  return rows.map((t) => t.id === id ? { ...t, ...profile } : t);
+}
+
+export function deleteTrainerProfile(rows: Trainer[], id: string): Trainer[] {
+  if (!rows.some((t) => t.id === id)) throw new Error("Trainer no longer exists in this gym");
+  return rows.filter((t) => t.id !== id);
+}

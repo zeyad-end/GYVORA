@@ -80,6 +80,7 @@ function Workouts() {
               </Button>
             }
           >
+            {w.trainer && <p className="mb-4 text-sm text-muted-foreground">Trainer · {w.trainer}</p>}
             <DataTable head={["Exercise", "Sets", "Reps", "Image"]}>
               {w.exercises.map((e, i) => (
                 <tr key={i}>
@@ -107,6 +108,7 @@ function Workouts() {
         open={open}
         onClose={() => setOpen(false)}
         program={editing}
+        trainers={trainers}
         onSave={async (p) => {
           await saveState((s) => ({
             workouts: editing ? s.workouts.map((w) => (w === editing ? p : w)) : [...s.workouts, p],
