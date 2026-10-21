@@ -15,7 +15,7 @@ describe("gym program notes", () => {
     fireEvent.change(inputs[2] as HTMLElement, { target: { value: "Squat" } });
     fireEvent.change(screen.getByLabelText("Trainer name"), { target: { value: "Coach Rana" } });
     fireEvent.change(screen.getByLabelText("Trainer Notes"), { target: { value: "Rest 90 seconds.\nKeep your back neutral." } });
-    fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Save$/ }));
     await waitFor(() => expect(save).toHaveBeenCalledOnce());
     expect(save.mock.calls[0]?.[0]).toMatchObject({ name: "Strength", trainer: "Coach Rana", notes: "Rest 90 seconds.\nKeep your back neutral.", exercises: [{ name: "Squat", sets: 3, reps: "10" }] });
   });
@@ -26,7 +26,7 @@ describe("gym program notes", () => {
     render(<ProgramEditor open onClose={() => {}} onSave={save} program={program} trainers={[]} />);
     expect(screen.getByLabelText("Trainer Notes")).toHaveValue("Old notes");
     fireEvent.change(screen.getByLabelText("Trainer Notes"), { target: { value: "Updated instructions" } });
-    fireEvent.click(screen.getByRole("button", { name: "Save", exact: true }));
+    fireEvent.click(screen.getByRole("button", { name: /^Save$/ }));
     await waitFor(() => expect(save).toHaveBeenCalledWith({ ...program, notes: "Updated instructions" }));
     expect(program.notes).toBe("Old notes");
   });
