@@ -42,8 +42,8 @@ import { rejectRequest } from "@/lib/demo";
 describe("rejected gym requests", () => {
   it("keep a skipped account out of the dashboard after rejection", () => {
     localStorage.clear();
-    const acc = registerDemoAccount({ type: "gym", name: "Rej Gym", email: "rej@example.com", password: "x" } as never);
-    setDemoSession("owner", { name: "Rej Gym", email: "rej@example.com" } as never);
+    const acc = registerDemoAccount("Rej Gym", "rej@example.com", "password1", "gym");
+    setDemoSession("owner", "rej@example.com");
     submitDemoGymRequest("Rej Gym", "Monthly Plan");
     updateDemoAccount("rej@example.com", { skipped: true });
     const id = getDemoState().requests.find(r => r.email === "rej@example.com")!.id;
