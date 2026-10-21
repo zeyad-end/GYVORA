@@ -212,7 +212,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
             : demo === "individual"
               ? "Demo Member"
               : "zeyad salama1"),
-        email: (info.email || acc?.email || '').includes('@') ? (info.email || acc?.email || '') : '',
+        email: demo === 'owner' && !(info.email || acc?.email || '').includes('@') ? '' : (info.email || acc?.email || ''),
         phone: acc?.phone || '',
         photo: "",
         account_type: demo === "individual" ? "client" : "owner",
