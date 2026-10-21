@@ -174,7 +174,9 @@ export function demoDestination(
 ): "/super-admin" | "/member" | "/dashboard" | "/subscription-request" {
   if (acc.type === "dashboard") return "/super-admin";
   if (acc.type === "individual") return "/member";
-  return acc.skipped || ("email" in acc && demoRequestStatus(String(acc.email)) === "Approved") ? "/dashboard" : "/subscription-request";
+  const status = "email" in acc ? demoRequestStatus(String(acc.email)) : null;
+  if (status === "Rejected") return "/subscription-request";
+  return acc.skipped || status === "Approved" ? "/dashboard" : "/subscription-request";
 }
 
 /* ---------------- Demo platform data (Super Admin) ---------------- */
@@ -523,7 +525,9 @@ export function demoRequestStatus(email: string): GymRequest["status"] | null {
 }
 /** Owner may enter the dashboard after Skip (demo access) or Super Admin approval. */
 export function demoOwnerHasAccess(acc: Pick<DemoAccount, "email" | "skipped">) {
-  return acc.skipped || demoRequestStatus(acc.email) === "Approved";
+  const status = demoRequestStatus(acc.email);
+  if (status === "Rejected") return false;
+  return acc.skipped || status === "Approved";
 }
 export function savePlatformWhatsapp(input: string) {
   if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');

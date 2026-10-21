@@ -17,6 +17,8 @@ import {
   getDemoSessionInfo,
   getDemoAccount,
   demoOwnerHasAccess,
+  demoRequestStatus,
+  useDemoStore,
   setDemoSession,
   demoUserId,
   demoMemberId,
@@ -369,6 +371,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
 export function AccessBoundary({ children }: { children: ReactNode }) {
   const c = useCloud();
   const path = useRouterState({ select: (s) => s.location.pathname });
+  useDemoStore((s) => s.requests); // re-check gym access when request decisions load or change
   const publicPaths = ["/", "/register", "/auth", "/reset-password"];
   if (publicPaths.includes(path)) return children;
   if (c.loading) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
@@ -408,9 +411,9 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     )
       return (
         <div className="mx-auto max-w-md p-10">
-          <h1 className="text-2xl">Subscription approval pending</h1>
+          <h1 className="text-2xl">{demoRequestStatus(acc.email) === "Rejected" ? "Subscription request rejected" : "Subscription approval pending"}</h1>
           <p className="mt-2 text-muted-foreground">
-            Your request is waiting for admin approval — or skip to enter with demo access.
+            {demoRequestStatus(acc.email) === "Rejected" ? "Your request was rejected, so the Gym Owner dashboard is unavailable. Contact the administrator." : "Your request is waiting for admin approval — or skip to enter with demo access."}
           </p>
           <Button asChild className="mt-6">
             <Link to="/subscription-request">View subscription</Link>

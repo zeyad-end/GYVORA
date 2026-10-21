@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { PageHeader, DataTable, td, StatusPill } from '@/components/kit';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
@@ -17,6 +17,8 @@ function Requests() {
   const {notifications}=usePlatformAdmin();
   const selected=notifications.find(n=>n.requestId===request);
   const requests = useDemoStore((s) => s.requests);
+  const navigate = useNavigate();
+  const reviewing = requests.find((r) => r.id === request);
   const pending = requests.filter((r) => r.status === 'Pending');
   const decided = requests.filter((r) => r.status !== 'Pending');
 
@@ -33,18 +35,19 @@ function Requests() {
 
   return (
     <div>
-      <PageHeader title="Gym Requests" subtitle={`Pending gym requests: ${pending.length} · fictional demo data, no real emails or payments.`} />
-      {selected&&<section className="mb-6 border-y py-4" aria-label="Selected request"><h2 className="font-semibold">Review: {selected.gymName}</h2><p className="mt-2 text-sm">Owner: {selected.ownerName} · Plan: {selected.plan}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(selected.date).toLocaleString()} · {selected.status}</p></section>}
-      <DataTable head={['Gym Name', 'Phone', 'Email', 'Plan', 'Request Date', 'Decision']}>
+      <PageHeader title="Gym Requests" subtitle={`Pending: ${pending.length} · Approved: ${decided.filter(r=>r.status==='Approved').length} · Rejected: ${decided.filter(r=>r.status==='Rejected').length} · prototype data, no payments.`} />
+      {reviewing&&<section className="mb-6 border-y py-4" aria-label="Request review"><h2 className="font-semibold">Review: {reviewing.gymName}</h2><p className="mt-2 text-sm">Owner: {reviewing.ownerName} · Plan: {reviewing.plan} · Contact: {reviewing.email || '—'}{reviewing.phone ? ` · ${reviewing.phone}` : ''}</p><p className="mt-1 text-sm text-muted-foreground">Submitted {reviewing.submittedAt ? new Date(reviewing.submittedAt).toLocaleString() : reviewing.requestDate} · Status: {reviewing.status}{reviewing.decidedAt ? ` · Decided ${reviewing.decidedAt}` : ''}</p>{reviewing.status==='Pending'&&<div className="mt-3 flex gap-2"><Button size="sm" onClick={() => decide(reviewing.id, reviewing.gymName, true)}>Approve</Button><Button size="sm" variant="destructive" onClick={() => decide(reviewing.id, reviewing.gymName, false)}>Reject</Button></div>}</section>}
+      {!reviewing&&selected&&<section className="mb-6 border-y py-4" aria-label="Selected request"><h2 className="font-semibold">Review: {selected.gymName}</h2><p className="mt-2 text-sm">Owner: {selected.ownerName} · Plan: {selected.plan}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(selected.date).toLocaleString()} · {selected.status}</p></section>}
+      <DataTable head={['Gym Name', 'Plan', 'Submitted', 'Contact', 'Decision']}>
         {pending.map((r) => (
           <tr key={r.id} className={r.id===request?'bg-secondary':''}>
             <td className={td}>{r.gymName}</td>
-            <td className={td}>{r.phone}</td>
-            <td className={td}>{r.email}</td>
             <td className={td}>{r.plan}</td>
             <td className={td}>{r.requestDate}</td>
+            <td className={td}>{r.email || r.phone || '—'}</td>
             <td className={td}>
               <div className="flex gap-2">
+                <Button size="sm" variant="outline" onClick={() => navigate({ to: '/super-admin/requests', search: { request: r.id } })}>Review</Button>
                 <Button size="sm" onClick={() => decide(r.id, r.gymName, true)}>Approve</Button>
                 <Button size="sm" variant="destructive" onClick={() => decide(r.id, r.gymName, false)}>Reject</Button>
               </div>
@@ -56,12 +59,13 @@ function Requests() {
       {decided.length > 0 && (
         <>
           <h3 className="mb-3 mt-10 text-sm font-semibold">Decided</h3>
-          <DataTable head={['Gym Name', 'Plan', 'Request Date', 'Status']}>
+          <DataTable head={['Gym Name', 'Plan', 'Request Date', 'Decision Date', 'Status']}>
             {decided.map((r) => (
               <tr key={r.id}>
                 <td className={td}>{r.gymName}</td>
                 <td className={td}>{r.plan}</td>
                 <td className={td}>{r.requestDate}</td>
+                <td className={td}>{r.decidedAt ?? '—'}</td>
                 <td className={td}><StatusPill status={r.status === 'Approved' ? 'Active' : 'Expired'} /></td>
               </tr>
             ))}

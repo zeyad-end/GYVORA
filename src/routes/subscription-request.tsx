@@ -103,7 +103,7 @@ function Request() {
           {status === 'Pending' && isDemoOwner && !demoAcc?.skipped && (
             <Button type="button" variant="outline" onClick={onSkip}>Skip — enter with prototype demo access</Button>
           )}
-          {isDemoOwner && demoAcc?.skipped && status !== 'Approved' && (
+          {isDemoOwner && demoAcc?.skipped && status === 'Pending' && (
             <p className="text-sm text-muted-foreground">Prototype demo access is on. Your request remains Pending — this is not an approved or paid subscription. <Link to="/dashboard" className="text-primary">Open dashboard</Link></p>
           )}
         </div>
