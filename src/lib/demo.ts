@@ -5,6 +5,7 @@ import { invitationStatus } from "./validation";
 import { initialState, type State, type StaffMember, type Workout } from "./store";
 import { gymEvents } from './gym-events';
 import { appendGymEvents } from './gym-notifications-demo';
+import { billingMonths, gymPrices, savePrices, type subscriptionPriceSchema } from './platform-subscriptions';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -199,6 +200,9 @@ export type ApprovedGym = {
   start: string;
   end: string;
   status: "Active" | "Frozen";
+  monthlyPrice?: number;
+  annualPrice?: number;
+  annualPriceManual?: boolean;
 };
 
 export type DemoClient = { id: string; name: string; phone: string; photo: string; gyms: string[] };
@@ -221,6 +225,7 @@ export const expenseSchema = z.object({
 export type PlatformExpense = z.infer<typeof expenseSchema>;
 
 export type DemoState = {
+  platformBranding?: { name: string; logo: string };
   requests: GymRequest[];
   gyms: ApprovedGym[];
   clients: DemoClient[];
@@ -497,6 +502,12 @@ export function useDemoStore<T>(sel: (s: DemoState) => T): T {
 
 export function getDemoState() {
   return demoState;
+}
+
+export function savePlatformBranding(input: { name: string; logo: string }) {
+  if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');
+  const row = z.object({ name: z.string().trim().min(1).max(100), logo: z.string().max(8000) }).parse(input);
+  commit({ ...demoState, platformBranding: row });
 }
 
 export function submitDemoGymRequest(gymName: string, plan: string) {
@@ -798,8 +809,9 @@ export function approveRequest(id: string) {
     email: req.email,
     plan: req.plan,
     start,
-    end: addMonths(start, PLAN_MONTHS[req.plan] ?? 1),
+    end: addMonths(start, billingMonths(req.plan)),
     status: "Active",
+    ...gymPrices({ plan: req.plan }),
   };
   commit({
     ...demoState,
@@ -819,7 +831,10 @@ export function rejectRequest(id: string) {
   });
 }
 
-export function editGym(id: string, patch: { name: string; plan: string }) {
+export function editGym(id: string, patch: { name: string; plan: string } & Partial<z.infer<typeof subscriptionPriceSchema>>) {
+  const current = demoState.gyms.find(g => g.id === id);
+  if (!current) throw new Error('Gym no longer exists');
+  const prices = savePrices({ ...gymPrices(current), ...patch });
   commit({
     ...demoState,
     gyms: demoState.gyms.map((g) =>
@@ -828,7 +843,8 @@ export function editGym(id: string, patch: { name: string; plan: string }) {
             ...g,
             name: patch.name,
             plan: patch.plan,
-            end: addMonths(g.start, PLAN_MONTHS[patch.plan] ?? 1),
+            end: patch.plan === g.plan ? g.end : addMonths(g.start, billingMonths(patch.plan)),
+            ...prices,
           }
         : g,
     ),

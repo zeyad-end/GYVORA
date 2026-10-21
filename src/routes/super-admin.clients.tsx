@@ -38,7 +38,7 @@ function Clients() {
 
   return (
     <div>
-      <PageHeader title="Clients" subtitle="Fictional client accounts · a client can belong to multiple gyms." />
+      <PageHeader title="Clients" subtitle={`Total client accounts: ${clients.length} · fictional demo data.`} />
       <DataTable head={['Client', 'Phone', 'Gyms', 'Actions']}>
         {clients.map((c) => (
           <tr key={c.id}>

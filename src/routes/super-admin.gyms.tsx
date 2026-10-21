@@ -6,6 +6,9 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { useDemoStore, editGym, setGymStatus, deleteGym, PLAN_PRICES, type ApprovedGym } from '@/lib/demo';
 import { seo } from '@/lib/seo';
+import { gymPrices } from '@/lib/platform-subscriptions';
+import { egp } from '@/lib/mock';
+import { Checkbox } from '@/components/ui/checkbox';
 
 export const Route = createFileRoute('/super-admin/gyms')({
   head: () => seo('Approved gyms', 'Manage fictional approved gyms and their subscriptions.'),
@@ -17,11 +20,18 @@ function Gyms() {
   const [editing, setEditing] = useState<ApprovedGym | null>(null);
   const [name, setName] = useState('');
   const [plan, setPlan] = useState('Basic');
+  const [monthly, setMonthly] = useState('0');
+  const [annual, setAnnual] = useState('0');
+  const [manual, setManual] = useState(false);
 
   function openEdit(g: ApprovedGym) {
     setEditing(g);
     setName(g.name);
     setPlan(g.plan);
+    const prices = gymPrices(g);
+    setMonthly(String(prices.monthlyPrice));
+    setAnnual(String(prices.annualPrice));
+    setManual(prices.annualPriceManual);
   }
 
   function saveEdit() {
@@ -30,21 +40,25 @@ function Gyms() {
       toast.error('Gym name is required');
       return;
     }
-    editGym(editing.id, { name: name.trim(), plan });
+    try { editGym(editing.id, { name: name.trim(), plan, monthlyPrice: monthly === '' ? NaN : Number(monthly), annualPrice: annual === '' ? NaN : Number(annual), annualPriceManual: manual }); }
+    catch { toast.error('Enter valid non-negative subscription prices.'); return; }
     toast.success('Gym updated (demo).');
     setEditing(null);
   }
 
   return (
     <div>
-      <PageHeader title="Approved Gyms" subtitle="Active and frozen subscriptions · fictional demo data." />
-      <DataTable head={['Gym Name', 'Phone', 'Email', 'Plan', 'Start', 'End', 'Status', 'Actions']}>
-        {gyms.map((g) => (
+      <PageHeader title="Approved Gyms" subtitle={`Total approved gyms: ${gyms.length} · fictional demo data.`} />
+      <DataTable head={['#', 'Gym Name', 'Phone', 'Email', 'Plan', 'Monthly price', 'Annual price', 'Start', 'End', 'Status', 'Actions']}>
+        {gyms.map((g, index) => (
           <tr key={g.id}>
+            <td className={td}>{index + 1}</td>
             <td className={td}>{g.name}</td>
             <td className={td}>{g.phone}</td>
             <td className={td}>{g.email}</td>
             <td className={td}>{g.plan}</td>
+            <td className={td}>{egp(gymPrices(g).monthlyPrice)}</td>
+            <td className={td}>{egp(gymPrices(g).annualPrice)}</td>
             <td className={td}>{g.start}</td>
             <td className={td}>{g.end}</td>
             <td className={td}><StatusPill status={g.status === 'Active' ? 'Active' : 'Expired'} /></td>
@@ -75,6 +89,9 @@ function Gyms() {
                   {Object.keys(PLAN_PRICES).map((p) => <option key={p} value={p}>{p}</option>)}
                 </select>
               </Field>
+              <Field label="Monthly subscription price (EGP)"><Input type="number" min="0" step="0.01" value={monthly} onChange={e=>{setMonthly(e.target.value);if(!manual)setAnnual(String(Number(e.target.value)*12));}} /></Field>
+              <Field label="Annual subscription price (EGP)"><Input type="number" min="0" step="0.01" value={annual} onChange={e=>{setAnnual(e.target.value);setManual(true);}} /></Field>
+              <label className="flex items-center gap-2 text-sm"><Checkbox checked={!manual} onCheckedChange={checked=>{setManual(!checked);if(checked)setAnnual(String(Number(monthly)*12));}}/>Calculate annual price automatically (monthly × 12)</label>
               <p className="text-xs text-muted-foreground">Changing the plan recalculates the subscription end date from the start date.</p>
             </div>
             <div className="mt-6 flex justify-end gap-2">

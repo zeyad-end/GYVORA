@@ -33,7 +33,7 @@ function Requests() {
 
   return (
     <div>
-      <PageHeader title="Gym Requests" subtitle="Pending subscription requests · fictional demo data, no real emails or payments." />
+      <PageHeader title="Gym Requests" subtitle={`Pending gym requests: ${pending.length} · fictional demo data, no real emails or payments.`} />
       {selected&&<section className="mb-6 border-y py-4" aria-label="Selected request"><h2 className="font-semibold">Review: {selected.gymName}</h2><p className="mt-2 text-sm">Owner: {selected.ownerName} · Plan: {selected.plan}</p><p className="mt-1 text-sm text-muted-foreground">{new Date(selected.date).toLocaleString()} · {selected.status}</p></section>}
       <DataTable head={['Gym Name', 'Phone', 'Email', 'Plan', 'Request Date', 'Decision']}>
         {pending.map((r) => (
