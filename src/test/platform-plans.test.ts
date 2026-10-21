@@ -10,7 +10,7 @@ describe('Super Admin catalog and saved agreements',()=>{
   it('accepts Monthly and Annual billing only',()=>expect(()=>platformPlanSchema.parse({...plan,billingType:'Weekly'})).toThrow());
   it('sets the end date to selected start plus duration in days',()=>expect(planEndDate('2026-10-21',30)).toBe('2026-11-20'));
   it('defaults monthly and annual prices on explicit assignment',()=>expect(planDefaults(plan,'2026-10-21')).toMatchObject({monthlyPrice:250,annualPrice:3000,end:'2026-11-20',billingType:'Monthly'}));
-  it('uses the annual plan price once, not plus monthly',()=>{const g={...getDemoState().gyms[0],...planDefaults({...plan,billingType:'Annual',price:2400,durationDays:365},'2026-01-01'),start:'2026-01-01',status:'Active' as const};expect(projectedSubscriptions([g],new Date(2026,0,1),new Date(2027,0,1)).map(r=>r.amount)).toEqual([2400]);});
+  it('uses the annual plan price once, not plus monthly',()=>{const base=getDemoState().gyms[0];if(!base)throw new Error('Gym fixture required');const g={...base,...planDefaults({...plan,billingType:'Annual',price:2400,durationDays:365},'2026-01-01'),start:'2026-01-01',status:'Active' as const};expect(projectedSubscriptions([g],new Date(2026,0,1),new Date(2027,0,1)).map(r=>r.amount)).toEqual([2400]);});
   it('keeps negotiated prices dates and notes when the catalog is edited and blocks in-use deletion',()=>{
     savePlatformPlan(plan);const gym=getDemoState().gyms[0];if(!gym)throw new Error('Gym fixture required');
     editGym(gym.id,{name:gym.name,plan:plan.name,planId:plan.id,applyPlan:true,start:'2026-10-21',end:'2026-12-15',monthlyPrice:200,annualPrice:2100,annualPriceManual:true,notes:'Only this gym'});

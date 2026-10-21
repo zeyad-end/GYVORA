@@ -203,9 +203,9 @@ export type ApprovedGym = {
   monthlyPrice?: number;
   annualPrice?: number;
   annualPriceManual?: boolean;
-  planId?: string;
-  billingType?: 'Monthly' | 'Annual';
-  durationDays?: number;
+  planId?: string | undefined;
+  billingType?: 'Monthly' | 'Annual' | undefined;
+  durationDays?: number | undefined;
   notes?: string;
 };
 
@@ -853,7 +853,7 @@ export function rejectRequest(id: string) {
   });
 }
 
-export function editGym(id: string, patch: { name: string; plan: string; start?: string; end?: string; notes?: string; planId?: string; applyPlan?: boolean } & Partial<z.infer<typeof subscriptionPriceSchema>>) {
+export function editGym(id: string, patch: { name: string; plan: string; start?: string; end?: string; notes?: string; planId?: string | undefined; applyPlan?: boolean } & Partial<z.infer<typeof subscriptionPriceSchema>>) {
   const current = demoState.gyms.find(g => g.id === id);
   if (!current) throw new Error('Gym no longer exists');
   const name=z.string().trim().min(1).max(100).parse(patch.name);
