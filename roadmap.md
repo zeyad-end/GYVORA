@@ -35,3 +35,4 @@
 - [x] Finance: recurring frequency sections with Mark as Paid (records paid expense once, advances next payment)
 - [x] Finance: Cash Register period selector with income, paid expenses, net profit; daily expense summary with date picker
 - [x] Trainer-to-client workout assignments (send existing/new program, client Save/Delete notifications) verified in preview; 84 tests pass.
+- [x] Settings uses shared gym profile; Branches removed; global display currency
