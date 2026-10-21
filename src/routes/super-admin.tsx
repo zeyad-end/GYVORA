@@ -8,6 +8,10 @@ import { useState } from 'react';
 import { Bell, UserRound } from 'lucide-react';
 import { PlatformAccount } from '@/components/PlatformAccount';
 import { PlatformAdminProvider, usePlatformAdmin } from '@/components/PlatformAdminProvider';
+import { Settings } from 'lucide-react';
+import { PlatformSettings } from '@/components/PlatformSettings';
+import { ExerciseImage } from '@/components/ProgramEditor';
+import { useDemoStore } from '@/lib/demo';
 
 export const Route = createFileRoute('/super-admin')({
   head: () => seo('Platform administration', 'IronHaus platform super admin: gym requests, approved gyms, clients and platform metrics.'),
@@ -28,6 +32,8 @@ function SuperAdminLayout() {
 function SuperAdminContent() {
   const c = useCloud();
   const [accountOpen,setAccountOpen] = useState(false);
+  const [settingsOpen,setSettingsOpen] = useState(false);
+  const branding=useDemoStore(s=>s.platformBranding);
   const {notifications}=usePlatformAdmin();
   const unread=notifications.filter(n=>!n.read).length;
   const path = useRouterState({ select: (s) => s.location.pathname });
@@ -36,13 +42,14 @@ function SuperAdminContent() {
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary font-display font-bold text-primary-foreground">IH</span>
-          <div>
-            <div className="font-display text-lg font-semibold">IRONHAUS Platform</div>
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary font-display font-bold text-primary-foreground">{branding?.logo?<ExerciseImage path={branding.logo} className="h-10 w-10 rounded-lg object-contain"/>:'IH'}</span>
+          <div className="min-w-0">
+            <div className="break-words font-display text-lg font-semibold">{branding?.name??'IRONHAUS Platform'}</div>
             <div className="text-xs text-muted-foreground">Super Admin · fictional demo data</div>
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={()=>setSettingsOpen(true)} aria-label="Platform Settings" title="Platform Settings"><Settings className="h-4 w-4"/></Button>
           <Button variant="outline" size="sm" onClick={()=>setAccountOpen(true)}><UserRound className="h-4 w-4"/>Account</Button>
           <Button variant="outline" size="sm" asChild><Link to="/super-admin/notifications"><Bell className="h-4 w-4"/>Notifications{unread>0&&<span aria-label={`${unread} unread notifications`} className="rounded-full bg-primary px-1.5 text-xs text-primary-foreground">{unread}</span>}</Link></Button>
           <Button variant="outline" size="sm" onClick={() => void c.logout()}><LogOut className="h-4 w-4" /> Sign out</Button>
@@ -62,6 +69,7 @@ function SuperAdminContent() {
       </nav>
       <Outlet />
       <PlatformAccount open={accountOpen} onOpenChange={setAccountOpen}/>
+      <PlatformSettings open={settingsOpen} onOpenChange={setSettingsOpen}/>
     </div>
   );
 }

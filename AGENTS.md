@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Super Admin subscription prices and branding extend the existing prototype snapshots; projected billing events are derived from active gym prices and anchored billing dates, never treated as payment receipts. Provider identity status reads authenticated identities without substituting social sign-in for account linking or fabricating demo connections.
 - Trainer profile mutations merge only validated profile fields into the current gym snapshot by trainer ID; program/assignment attribution is a saved name snapshot, not an account association, so schedule changes and later renames cannot rewrite historical creators.
 - Gym event history is appended from demo snapshot differences and Cloud record/invitation triggers; owner-only notification reads and per-user read/dismiss state stay separate from underlying gym records so notification actions cannot alter them.
 - Owner personal settings use account-scoped demo profile overrides or authenticated provider updates, while gym branding reads only the saved gym snapshot; shared calendar-date filtering keeps attendance, sessions and Finance-based dashboard expenses consistent.
