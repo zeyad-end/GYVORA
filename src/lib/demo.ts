@@ -170,11 +170,11 @@ export function sessionKindFor(type: DemoAccountType): DemoSessionKind {
 
 /** Where a registered demo account lands after sign-in. */
 export function demoDestination(
-  acc: Pick<DemoAccount, "type" | "skipped">,
+  acc: Pick<DemoAccount, "type" | "skipped"> & { email?: string },
 ): "/super-admin" | "/member" | "/dashboard" | "/subscription-request" {
   if (acc.type === "dashboard") return "/super-admin";
   if (acc.type === "individual") return "/member";
-  return acc.skipped ? "/dashboard" : "/subscription-request";
+  return acc.skipped || ("email" in acc && demoRequestStatus(String(acc.email)) === "Approved") ? "/dashboard" : "/subscription-request";
 }
 
 /* ---------------- Demo platform data (Super Admin) ---------------- */
@@ -189,6 +189,7 @@ export type GymRequest = {
   plan: string;
   requestDate: string;
   status: "Pending" | "Approved" | "Rejected";
+  decidedAt?: string;
 };
 
 export type ApprovedGym = {
@@ -231,6 +232,7 @@ export type PlatformExpense = z.infer<typeof expenseSchema>;
 export type DemoState = {
   platformPlans?: PlatformPlan[];
   platformBranding?: { name: string; logo: string };
+  platformWhatsapp?: string;
   requests: GymRequest[];
   gyms: ApprovedGym[];
   clients: DemoClient[];
@@ -515,6 +517,24 @@ export function savePlatformBranding(input: { name: string; logo: string }) {
   commit({ ...demoState, platformBranding: row });
 }
 
+/** Latest submitted request status for a demo account (Skip never changes it). */
+export function demoRequestStatus(email: string): GymRequest["status"] | null {
+  return demoState.requests.find(r => r.email === email && r.submittedAt)?.status ?? null;
+}
+/** Owner may enter the dashboard after Skip (demo access) or Super Admin approval. */
+export function demoOwnerHasAccess(acc: Pick<DemoAccount, "email" | "skipped">) {
+  return acc.skipped || demoRequestStatus(acc.email) === "Approved";
+}
+export function savePlatformWhatsapp(input: string) {
+  if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');
+  const v = input.trim();
+  if (v && !/^\+?[0-9 ()-]{6,20}$/.test(v)) throw new Error('Enter a WhatsApp number with country code, digits only.');
+  commit({ ...demoState, platformWhatsapp: v });
+}
+export function whatsappLink(number: string, text: string) {
+  return `https://wa.me/${number.replace(/[^0-9]/g, '')}?text=${encodeURIComponent(text)}`;
+}
+
 export function savePlatformPlan(input: PlatformPlan) {
   if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');
   const row=platformPlanSchema.parse(input);
@@ -538,7 +558,7 @@ export function submitDemoGymRequest(gymName: string, plan: string) {
   const existing = demoState.requests.find(r => r.email === s.email && r.status === 'Pending' && r.submittedAt);
   if (existing) return existing;
   const now = new Date().toISOString();
-  const row: GymRequest = {id:crypto.randomUUID(),gymName:name,ownerName:s.name || getDemoAccount()?.name || 'Name not recorded',email:s.email,phone:'',plan:selected,requestDate:now.slice(0,10),submittedAt:now,status:'Pending'};
+  const row: GymRequest = {id:crypto.randomUUID(),gymName:name,ownerName:s.name || getDemoAccount()?.name || 'Name not recorded',email:s.email,phone:getDemoAccount()?.phone ?? '',plan:selected,requestDate:now.slice(0,10),submittedAt:now,status:'Pending'};
   commit({...demoState,requests:[row,...demoState.requests]});
   return row;
 }
@@ -837,7 +857,7 @@ export function approveRequest(id: string) {
   };
   commit({
     ...demoState,
-    requests: demoState.requests.map((r) => (r.id === id ? { ...r, status: "Approved" } : r)),
+    requests: demoState.requests.map((r) => (r.id === id ? { ...r, status: "Approved", decidedAt: start } : r)),
     gyms: [gym, ...demoState.gyms],
     revenue: [
       { id: uid(), date: start, amount: PLAN_PRICES[req.plan] ?? 0, gymName: req.gymName },
@@ -849,7 +869,7 @@ export function approveRequest(id: string) {
 export function rejectRequest(id: string) {
   commit({
     ...demoState,
-    requests: demoState.requests.map((r) => (r.id === id ? { ...r, status: "Rejected" } : r)),
+    requests: demoState.requests.map((r) => (r.id === id && r.status === "Pending" ? { ...r, status: "Rejected", decidedAt: today() } : r)),
   });
 }
 

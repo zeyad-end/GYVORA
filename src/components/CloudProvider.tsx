@@ -400,7 +400,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     const acc = getDemoAccount();
     if (
       acc &&
-      !acc.skipped &&
+      !demoOwnerHasAccess(acc) &&
       path !== "/subscription-request" &&
       !path.startsWith("/member") &&
       path !== "/gyms"
