@@ -1,4 +1,7 @@
 # IronHaus update
+- [ ] Synchronize gym sidebar branding; add owner account settings and account-type registration fields.
+- [ ] Connect dashboard expenses to Finance; add attendance/session date filters, row numbers and totals.
+- [ ] Add private persistent gym event notifications and verify requested preview flows.
 - [x] Correct Products stock/sales separation, stock-limited delta sales, stock-only edits and deletion protection; prototype preview verified add 10/0, sale 9/1, reversal 10/0, delta edits, limits, refresh and protected deletion; 111 tests pass. Real-gym verification remains unavailable without populated real gym data.
 - [x] Extend only Products with sales cards, validated sold quantities, image persistence, edit/delete confirmation; prototype add/upload/quantity/edit/delete/refresh and narrow layout verified, 106 tests pass. Populated real-gym verification remains blocked by no real gym data.
 - [x] Add Super Admin account settings and private persistent request notifications; photo/name/email, request review without decision, unread persistence and narrow screen verified; 101 tests pass. Provider credential changes require verified current password and remain unavailable in prototype access.
