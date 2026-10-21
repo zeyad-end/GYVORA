@@ -963,7 +963,7 @@ export function sendDemoAssignment(input: {
     sentAt: new Date().toISOString(),
     program: structuredClone({
       ...input.program,
-      trainer: staff?.name || info.name || "Gym Owner",
+      trainer: input.program.trainer.trim() || staff?.name || info.name || "Gym Owner",
     }),
     status: "Pending",
   };

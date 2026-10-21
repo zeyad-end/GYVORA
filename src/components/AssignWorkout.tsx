@@ -6,6 +6,7 @@ import { Input } from "./ui/input";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
 import { Field, selectCls } from "./kit";
 import { QRScanner } from "./QRScanner";
+import { TrainerField } from "./TrainerField";
 import { ExerciseImage } from "./ProgramEditor";
 import { useCloud } from "./CloudProvider";
 import { useStore, type Member, type Workout } from "@/lib/store";
@@ -20,6 +21,8 @@ export function AssignWorkout({ open, onClose }: { open: boolean; onClose: () =>
   const c = useCloud();
   const members = useStore((s) => s.members);
   const workouts = useStore((s) => s.workouts);
+  const trainers = useStore((s) => s.trainers);
+  const [trainer, setTrainer] = useState("");
   const gymName = useStore((s) => s.gym.name);
   const [client, setClient] = useState<Member | null>(null);
   const [query, setQuery] = useState("");
@@ -41,6 +44,7 @@ export function AssignWorkout({ open, onClose }: { open: boolean; onClose: () =>
     setMode("existing");
     setExisting("");
     setName("");
+    setTrainer("");
     setRows([emptyRow()]);
     setRequestKey(crypto.randomUUID());
   }, [open]);
@@ -72,8 +76,8 @@ export function AssignWorkout({ open, onClose }: { open: boolean; onClose: () =>
       if (mode === "existing" && !source) throw new Error("Choose a program to send");
       const program = programSchema.parse(
         source
-          ? { ...source, id: crypto.randomUUID() }
-          : { id: crypto.randomUUID(), name, trainer: "", notes: "", exercises: rows },
+           ? { ...source, id: crypto.randomUUID(), trainer: trainer.trim() }
+           : { id: crypto.randomUUID(), name, trainer: trainer.trim(), notes: "", exercises: rows },
       );
       sendDemoAssignment({ requestKey, gymId: c.gymId, gymName, memberId: client.id, program });
       toast.success(`Workout sent to ${client.name}`);
@@ -153,7 +157,10 @@ export function AssignWorkout({ open, onClose }: { open: boolean; onClose: () =>
               </div>
               {mode === "existing" ? (
                 <Field label="Gym program">
-                  <select aria-label="Gym program" className={selectCls} value={existing} onChange={(e) => setExisting(e.target.value)}>
+                  <select aria-label="Gym program" className={selectCls} value={existing} onChange={(e) => {
+                    setExisting(e.target.value);
+                    setTrainer(e.target.value ? workouts[Number(e.target.value)]?.trainer ?? "" : "");
+                  }}>
                     <option value="">Select a program…</option>
                     {workouts.map((w, i) => (
                       <option key={i} value={i}>
@@ -219,6 +226,7 @@ export function AssignWorkout({ open, onClose }: { open: boolean; onClose: () =>
                 </>
               )}
             </div>
+            <TrainerField trainers={trainers} value={trainer} onChange={setTrainer} />
             <DialogFooter>
               <Button type="button" variant="outline" onClick={onClose}>
                 Cancel
