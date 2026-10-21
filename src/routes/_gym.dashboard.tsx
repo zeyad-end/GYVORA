@@ -5,6 +5,10 @@ import { Button } from "@/components/ui/button";
 import { Panel, PageHeader, StatCard } from "@/components/kit";
 import { activity, attendanceSeries, revenueSeries } from "@/lib/mock";
 import { seo } from "@/lib/seo";
+import { useStore } from '@/lib/store';
+import { dailySummary } from '@/lib/gym-updates';
+import { localDate } from '@/lib/gym-period';
+import { egp } from '@/lib/mock';
 
 export const Route = createFileRoute("/_gym/dashboard")({
   head: () => seo("Dashboard", "Live overview of members, check-ins, revenue and expenses."),
@@ -15,9 +19,12 @@ const axis = { stroke: "var(--muted-foreground)", fontSize: 11, tickLine: false,
 const tip = { contentStyle: { background: "var(--popover)", border: "1px solid var(--border)", borderRadius: 10, fontSize: 12 } };
 
 function Dashboard() {
+  const transactions = useStore(s => s.transactions);
+  const gym = useStore(s => s.gym);
+  const expenses = dailySummary(transactions, localDate());
   return (
     <>
-      <PageHeader title="Dashboard" subtitle="Wednesday, October 7 · IRONHAUS Garden City" />
+      <PageHeader title="Dashboard" subtitle={`${new Date().toLocaleDateString('en-GB', { weekday: 'long', month: 'long', day: 'numeric' })} · ${gym.name}`} />
       <div className="mb-6 flex flex-wrap gap-2">
         <Button asChild><Link to="/members"><UserPlus className="h-4 w-4" />Add Member</Link></Button>
         <Button asChild variant="secondary"><Link to="/sessions"><CalendarPlus className="h-4 w-4" />Register Session</Link></Button>
@@ -31,7 +38,7 @@ function Dashboard() {
         <StatCard label="Expired" value="91" icon={UserX} delta="12 expiring this week" tone="bad" />
         <StatCard label="Today's check-ins" value="164" icon={ScanLine} delta="+9% vs last Wed" tone="good" />
         <StatCard label="Today's revenue" value="EGP 18,420" icon={TrendingUp} delta="+12% vs avg" tone="good" />
-        <StatCard label="Today's expenses" value="EGP 3,200" icon={TrendingDown} delta="Maintenance" />
+        <StatCard label="Today's expenses" value={egp(expenses.total)} icon={TrendingDown} delta={`${expenses.count} paid expense invoices`} />
         <StatCard label="Net profit" value="EGP 15,220" icon={PiggyBank} tone="good" delta="Today" />
         <StatCard label="Cash balance" value="EGP 286,900" icon={Banknote} delta="All accounts" />
       </div>

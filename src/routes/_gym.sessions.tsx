@@ -15,7 +15,9 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { DataTable, Field, PageHeader, Panel, selectCls, td } from "@/components/kit";
-import { useStore, setState, consumeSession, type Session } from "@/lib/store";
+import { useStore, saveState, consumeSession, type Session } from "@/lib/store";
+import { GymPeriodFilter } from '@/components/GymPeriodFilter';
+import { filterGymPeriod, gymRange, localDate, type GymPeriod } from '@/lib/gym-period';
 import { sessionSchema } from "@/lib/validation";
 import { egp } from "@/lib/mock";
 import { toast } from "sonner";
@@ -29,7 +31,7 @@ const blank = (): Session => ({
   name: "",
   trainer: "",
   price: 150,
-  date: new Date().toISOString().slice(0, 10),
+  date: localDate(),
   type: "Personal Training",
   method: "Cash",
 });
@@ -37,6 +39,10 @@ function Sessions() {
   const members = useStore((s) => s.members);
   const trainers = useStore((s) => s.trainers);
   const sessions = useStore((s) => s.sessions);
+  const [period, setPeriod] = useState<GymPeriod>('today');
+  const [custom, setCustom] = useState({ from: localDate(), to: localDate() });
+  const filtered = filterGymPeriod(sessions, gymRange(period, new Date(), custom));
+  const [busy, setBusy] = useState(false);
   const [f, setF] = useState<Session>(blank);
   const [editing, setEditing] = useState<Session | null>(null);
   const c = useCloud();
@@ -56,7 +62,7 @@ function Sessions() {
     members.find((m) => m.id === (editing ? f.memberId : selected)) ??
     members.find((m) => m.name.toLowerCase() === f.name.trim().toLowerCase());
   const up = (p: Partial<Session>) => setF((x) => ({ ...x, ...p }));
-  function save(e: React.FormEvent) {
+  async function save(e: React.FormEvent) {
     e.preventDefault();
     const parsed = sessionSchema.safeParse({ ...f, memberId: match?.id });
     if (!parsed.success) {
@@ -67,7 +73,9 @@ function Sessions() {
       toast.error(`${match.name} has no sessions left`);
       return;
     }
-    setState((s) => ({
+    setBusy(true);
+    try {
+    await saveState((s) => ({
       sessions: editing
         ? s.sessions.map((x) => (x.id === editing.id ? parsed.data : x))
         : [parsed.data, ...s.sessions],
@@ -77,6 +85,9 @@ function Sessions() {
     }));
     setEditing(null);
     setF(blank());
+    toast.success('Session saved');
+    } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not save session'); }
+    finally { setBusy(false); }
   }
   function lookup(value: string) {
     const member = findSessionClient(members, value);
@@ -199,15 +210,18 @@ function Sessions() {
         <Panel title="Register session" className="lg:col-span-2">
           <form className="space-y-4" onSubmit={save}>
             {!editing && fields}
-            <Button type="submit" disabled={Boolean(editing)} className="w-full">
-              Save session
+            <Button type="submit" disabled={Boolean(editing) || busy} className="w-full">
+              {busy ? 'Saving…' : 'Save session'}
             </Button>
           </form>
         </Panel>
         <Panel title="Sessions" className="lg:col-span-3">
-          <DataTable head={["Client", "Trainer", "Date", "Price", "Actions"]}>
-            {sessions.map((s) => (
+          <GymPeriodFilter period={period} onPeriod={setPeriod} custom={custom} onCustom={setCustom}/>
+          <p className="mb-3 text-sm text-muted-foreground">Total sessions: {filtered.length}</p>
+          <DataTable head={["#", "Client", "Trainer", "Date", "Price", "Actions"]}>
+            {filtered.map((s, index) => (
               <tr key={s.id}>
+                <td className={td}>{index + 1}</td>
                 <td className={td}>{s.name}</td>
                 <td className={td}>{s.trainer}</td>
                 <td className={td}>{s.date}</td>
@@ -227,8 +241,8 @@ function Sessions() {
               </tr>
             ))}
           </DataTable>
-          {!sessions.length && (
-            <p className="py-6 text-sm text-muted-foreground">No sessions recorded.</p>
+          {!filtered.length && (
+            <p className="py-6 text-sm text-muted-foreground">No sessions in this period.</p>
           )}
         </Panel>
       </div>
@@ -251,11 +265,17 @@ function Sessions() {
               <Button
                 type="button"
                 variant="destructive"
-                onClick={() => {
+                disabled={busy}
+                onClick={async () => {
                   if (!editing || !window.confirm("Delete this session?")) return;
-                  setState((s) => ({ sessions: s.sessions.filter((x) => x.id !== editing.id) }));
+                  setBusy(true);
+                  try {
+                  await saveState((s) => ({ sessions: s.sessions.filter((x) => x.id !== editing.id) }));
                   setEditing(null);
                   setF(blank());
+                  toast.success('Session cancelled');
+                  } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not cancel session'); }
+                  finally { setBusy(false); }
                 }}
               >
                 Delete
@@ -270,7 +290,7 @@ function Sessions() {
               >
                 Cancel
               </Button>
-              <Button>Save</Button>
+              <Button disabled={busy}>{busy ? 'Saving…' : 'Save'}</Button>
             </DialogFooter>
           </form>
         </DialogContent>

@@ -12,6 +12,8 @@ import { lookupClient } from "@/lib/cloud.functions";
 import { useCloud } from "@/components/CloudProvider";
 import { getDemoSession, demoUserId, demoMemberId } from "@/lib/demo";
 import { recordClientVisit } from "@/lib/client-attendance";
+import { GymPeriodFilter } from '@/components/GymPeriodFilter';
+import { filterGymPeriod, gymRange, localDate, type GymPeriod } from '@/lib/gym-period';
 export const Route = createFileRoute("/_gym/attendance")({
   head: () => seo("Attendance", "Record real member visits with manual and QR check-in."),
   component: Attendance,
@@ -21,9 +23,12 @@ function Attendance() {
   const lookup = useServerFn(lookupClient);
   const members = useStore((s) => s.members);
   const list = useStore((s) => s.attendance);
+  const staffList = useStore(s => s.staffAttendance);
+  const [period, setPeriod] = useState<GymPeriod>('today');
+  const [custom, setCustom] = useState({ from: localDate(), to: localDate() });
+  const filtered = filterGymPeriod([...list, ...staffList], gymRange(period, new Date(), custom)).sort((a,b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
   const [q, setQ] = useState("");
   const [scan, setScan] = useState(false);
-  const today = new Date().toISOString().slice(0, 10);
   async function check(m: Member, method: "QR" | "Manual") {
     if (new Date(m.expiry + "T23:59:59").getTime() < Date.now()) {
       toast.error("Membership has expired");
@@ -70,12 +75,13 @@ function Attendance() {
           </ul>
         )}
       </Panel>
-      <Panel title="Today's attendance" className="mt-6">
-        <DataTable head={["Member", "Date", "Time", "Method"]}>
-          {list
-            .filter((x) => x.date === today)
-            .map((x) => (
+      <Panel title={period === 'today' ? "Today's attendance" : 'Attendance'} className="mt-6">
+        <GymPeriodFilter period={period} onPeriod={setPeriod} custom={custom} onCustom={setCustom}/>
+        <p className="mb-3 text-sm text-muted-foreground">Total attendance: {filtered.length}</p>
+        <DataTable head={["#", "Member / Employee", "Date", "Time", "Method"]}>
+          {filtered.map((x, index) => (
               <tr key={x.id}>
+                <td className={td}>{index + 1}</td>
                 <td className={td}>{x.name}</td>
                 <td className={td}>{x.date}</td>
                 <td className={td}>{x.time}</td>
@@ -83,8 +89,8 @@ function Attendance() {
               </tr>
             ))}
         </DataTable>
-        {!list.some((x) => x.date === today) && (
-          <p className="py-6 text-sm text-muted-foreground">No check-ins today.</p>
+        {!filtered.length && (
+          <p className="py-6 text-sm text-muted-foreground">No check-ins in this period.</p>
         )}
       </Panel>
       <QRScanner
