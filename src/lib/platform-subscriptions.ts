@@ -1,6 +1,29 @@
-import { addMonths, format, parseISO } from 'date-fns';
+import { addDays, addMonths, format, parseISO } from 'date-fns';
 import { z } from 'zod';
 import type { ApprovedGym, RevenueEvent } from './demo';
+
+export const platformPlanSchema = z.object({
+  id: z.string().min(1), name: z.string().trim().min(1).max(100),
+  billingType: z.enum(['Monthly', 'Annual']),
+  price: z.number().finite().positive().max(100000000),
+  durationDays: z.number().int().positive().max(36500),
+});
+export type PlatformPlan = z.infer<typeof platformPlanSchema>;
+export const defaultPlatformPlans: PlatformPlan[] = [
+  { id: 'platform-monthly', name: 'Monthly Plan', billingType: 'Monthly', price: 800, durationDays: 30 },
+  { id: 'platform-annual', name: 'Annual Plan', billingType: 'Annual', price: 7200, durationDays: 365 },
+];
+export const gymDatesSchema = z.object({start:z.string().date(),end:z.string().date(),notes:z.string().trim().max(4000)}).refine(d=>d.end>=d.start,{message:'Subscription end date must not be before the start date.'});
+export function planEndDate(start: string, durationDays: number) {
+  z.string().date().parse(start);
+  z.number().int().positive().max(36500).parse(durationDays);
+  return format(addDays(parseISO(start), durationDays), 'yyyy-MM-dd');
+}
+export function planDefaults(plan: PlatformPlan, start: string) {
+  const row=platformPlanSchema.parse(plan);
+  const monthlyPrice=row.billingType==='Monthly'?row.price:row.price/12;
+  return {plan:row.name,planId:row.id,billingType:row.billingType,durationDays:row.durationDays,monthlyPrice,annualPrice:row.billingType==='Annual'?row.price:row.price*12,annualPriceManual:row.billingType==='Annual',end:planEndDate(start,row.durationDays)};
+}
 
 export const subscriptionPriceSchema = z.object({
   monthlyPrice: z.number().finite().min(0).max(100000000),
@@ -28,7 +51,7 @@ export function projectedSubscriptions(gyms: ApprovedGym[], from: Date, to: Date
     if (gym.status !== 'Active') continue;
     const start = parseISO(gym.start);
     if (!Number.isFinite(start.getTime()) || gym.end < gym.start) continue;
-    const months = billingMonths(gym.plan);
+    const months = gym.billingType ? (gym.billingType === 'Annual' ? 12 : 1) : billingMonths(gym.plan);
     const prices = gymPrices(gym);
     const amount = months === 12 ? prices.annualPrice : prices.monthlyPrice * months;
     if (amount <= 0) continue;
@@ -36,7 +59,7 @@ export function projectedSubscriptions(gyms: ApprovedGym[], from: Date, to: Date
     const first = Math.max(0, Math.floor(((from.getFullYear() - start.getFullYear()) * 12 + from.getMonth() - start.getMonth()) / months) - 1);
     for (let cycle = first; ; cycle++) {
       const date = format(addMonths(start, cycle * months), 'yyyy-MM-dd');
-      if (date > gym.end || date > toDay) break;
+      if (date > gym.end || (gym.planId && date === gym.end) || date > toDay) break;
       if (date >= fromDay) events.push({ id: `projection:${gym.id}:${date}`, date, amount, gymName: gym.name });
     }
   }
