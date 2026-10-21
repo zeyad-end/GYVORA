@@ -17,6 +17,24 @@ const product = {
   price: 240,
 };
 describe("gym stock and sales separation", () => {
+  it("creates the requested 100 stock example with zero sales and total", () => {
+    const row = saveProduct([], { ...product, qty: 100, sales: 100 })[0];
+    expect(row?.qty).toBe(100);
+    expect(row?.sales).toBe(0);
+    expect(totalSales(row ?? product)).toBe(0);
+  });
+  it("selling 2 from 100 leaves 98 available", () => {
+    const row = updateSoldQuantity([{ ...product, qty: 100 }], "product-1", 2)[0];
+    expect(row?.sales).toBe(2);
+    expect(row?.qty).toBe(98);
+    expect(totalSales(row ?? product)).toBe(480);
+  });
+  it("reversing 1 of 2 sales returns stock to 99", () => {
+    const row = updateSoldQuantity([{ ...product, qty: 98, sales: 2 }], "product-1", 1)[0];
+    expect(row?.sales).toBe(1);
+    expect(row?.qty).toBe(99);
+    expect(totalSales(row ?? product)).toBe(240);
+  });
   it("adds 10 available and zero sold even if a draft supplies sold units", () => {
     const rows = saveProduct([], { ...product, sales: 10 });
     expect(rows[0]?.qty).toBe(10);
