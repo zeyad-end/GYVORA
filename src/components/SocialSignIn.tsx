@@ -62,8 +62,9 @@ export function SocialSignIn() {
       <div className="grid grid-cols-3 gap-2">
         <Button type="button" variant="outline" className="h-11 gap-2 bg-card" disabled={!!busy} onClick={() => start("google")} aria-label="Sign in with Google"><GoogleIcon />Google</Button>
         <Button type="button" variant="outline" className="h-11 gap-2 bg-card" disabled={!!busy} onClick={() => start("apple")} aria-label="Sign in with Apple"><AppleIcon />Apple</Button>
-        <Button type="button" variant="outline" className="h-11 gap-2 bg-card" disabled={!!busy} aria-label="Sign in with X"
-          onClick={() => toast.info("X (Twitter) sign-in isn't set up: the app's sign-in service doesn't support X as a provider yet. Use Google, Apple or the regular login.")}><XIcon />X</Button>
+        <Button type="button" variant="outline" className="h-11 gap-2 bg-card" disabled={!!busy} aria-label="X sign-in unavailable"
+          title="Unavailable: the app's sign-in service does not offer X (Twitter) as a provider"
+          onClick={() => toast.info("X (Twitter) sign-in is unavailable: the app's sign-in service only offers Google, Apple and email/password. Enabling X would require the service to add X as a supported provider with an X developer app (API key and secret) and its callback address. Nothing was connected.")}><XIcon />X · Unavailable</Button>
       </div>
     </div>
   );

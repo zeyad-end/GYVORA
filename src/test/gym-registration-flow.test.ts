@@ -37,3 +37,19 @@ describe("Gym Account demo registration and subscription", () => {
     expect(demoDestination(acc)).toBe("/dashboard");
   });
 });
+
+import { rejectRequest } from "@/lib/demo";
+describe("rejected gym requests", () => {
+  it("keep a skipped account out of the dashboard after rejection", () => {
+    localStorage.clear();
+    const acc = registerDemoAccount({ type: "gym", name: "Rej Gym", email: "rej@example.com", password: "x" } as never);
+    setDemoSession("owner", { name: "Rej Gym", email: "rej@example.com" } as never);
+    submitDemoGymRequest("Rej Gym", "Monthly Plan");
+    updateDemoAccount("rej@example.com", { skipped: true });
+    const id = getDemoState().requests.find(r => r.email === "rej@example.com")!.id;
+    rejectRequest(id);
+    expect(getDemoState().requests.find(r => r.id === id)!.status).toBe("Rejected");
+    expect(demoOwnerHasAccess({ email: "rej@example.com", skipped: true })).toBe(false);
+    expect(demoDestination({ ...acc, skipped: true })).toBe("/subscription-request");
+  });
+});

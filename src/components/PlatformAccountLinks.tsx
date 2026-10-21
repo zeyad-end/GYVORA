@@ -24,12 +24,13 @@ export function PlatformAccountLinks({open}:{open:boolean}) {
     return()=>{active=false;};
   },[open,demo]);
   return <section className="mt-4 border-t pt-4"><h2 className="font-semibold">Linked accounts</h2>
-    <div className="mt-3 divide-y">{([{key:'google',name:'Google',icon:Chrome},{key:'apple',name:'Apple',icon:Apple},{key:'phone',name:'Phone Number',icon:Smartphone}] as const).map(provider=>{
+    <div className="mt-3 divide-y">{([{key:'google',name:'Google',icon:Chrome},{key:'apple',name:'Apple',icon:Apple},{key:'x',name:'X (Twitter)',icon:Link2},{key:'phone',name:'Phone Number',icon:Smartphone}] as const).map(provider=>{
       const connected=linked.includes(provider.key);
       return <div key={provider.key} className="flex items-center justify-between gap-3 py-3"><div className="flex min-w-0 items-start gap-3"><provider.icon className="mt-1 h-4 w-4 shrink-0"/><div><div className="text-sm font-medium">{provider.name}</div><p className="text-xs text-muted-foreground">{connected?'Connected · confirmed by authentication provider':status}</p></div></div>
       <Button type="button" size="sm" variant="outline" disabled title="Secure account linking is unavailable in this prototype">{connected?<Unlink className="h-4 w-4"/>:<Link2 className="h-4 w-4"/>}{connected?'Unlink':'Link'}</Button></div>;
     })}</div>
-    <p className="mt-2 text-xs text-muted-foreground">Google and Apple: a real signed-in account, enabled providers, and a supported secure identity-linking flow are required. Managed social sign-in alone does not link this account. Linking configuration has not been verified.</p>
+    <p className="mt-2 text-xs text-muted-foreground">Google and Apple: sign-in works through the app's secure sign-in service, but linking a provider to an account you're already signed in to needs manual identity linking, which that service doesn't offer yet. Signing in with a provider never merges into, replaces or duplicates this account's role or gym access.</p>
+    <p className="mt-2 text-xs text-muted-foreground">X (Twitter): unavailable — the app's sign-in service does not support X. It would need X added as a provider, with an X developer app key, secret and callback address.</p>
     <p className="mt-2 text-xs text-muted-foreground">Phone: a configured SMS provider and a verified phone-linking flow are required. Phone linking is unavailable; no SMS is sent and sign-in remains unchanged.</p>
   </section>;
 }
