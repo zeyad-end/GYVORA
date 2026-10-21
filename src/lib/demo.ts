@@ -3,6 +3,8 @@ import type { Database } from "@/integrations/supabase/types";
 import { z } from "zod";
 import { invitationStatus } from "./validation";
 import { initialState, type State, type StaffMember, type Workout } from "./store";
+import { gymEvents } from './gym-events';
+import { appendGymEvents } from './gym-notifications-demo';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -84,6 +86,7 @@ export type DemoAccount = {
   name: string;
   email: string;
   password: string;
+  phone?: string;
   type: DemoAccountType;
   /** Gym Account chose Skip — demo access to the owner dashboard. */
   skipped: boolean;
@@ -117,6 +120,7 @@ export function registerDemoAccount(
   email: string,
   password: string,
   type: DemoAccountType,
+  phone = '',
 ): DemoAccount {
   const e = email.trim().toLowerCase();
   const list = getDemoAccounts();
@@ -131,6 +135,7 @@ export function registerDemoAccount(
     email: e,
     password,
     type,
+    phone,
     skipped: false,
     requestPending: false,
   };
@@ -660,6 +665,7 @@ export function respondDemoInvitation(id: string, accept: boolean) {
         ]
       : demoState.staffRoles,
   });
+  appendGymEvents(row.gym_id, [{ id: `invitation-response:${id}`, type: 'Staff invitation', description: `${row.full_name} · Invitation ${accept ? 'accepted' : 'declined'} (${row.role})`, page: '/staff', createdAt: new Date().toISOString() }]);
 }
 
 export function readDemoGym(gymId: string, withSeed = false): State {
@@ -713,6 +719,7 @@ export function writeDemoGym(gymId: string, state: State) {
   rememberDemoMemberships(gymId, state.gym.name, state.members);
   localStorage.setItem(`ironhaus-demo-gym:${gymId}`, JSON.stringify(state));
   if (gymId === "demo-gym") localStorage.setItem("ironhaus-demo-gym-state", JSON.stringify(state));
+  appendGymEvents(gymId, gymEvents(previous, state));
 }
 export function changeDemoStaff(
   gymId: string,

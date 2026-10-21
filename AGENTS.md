@@ -10,6 +10,8 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Gym event history is appended from demo snapshot differences and Cloud record/invitation triggers; owner-only notification reads and per-user read/dismiss state stay separate from underlying gym records so notification actions cannot alter them.
+- Owner personal settings use account-scoped demo profile overrides or authenticated provider updates, while gym branding reads only the saved gym snapshot; shared calendar-date filtering keeps attendance, sessions and Finance-based dashboard expenses consistent.
 - Product sales reuse gym product snapshots: stable IDs identify edits, stock-only forms preserve `sales`, sales controls change `qty` by the sold delta, totals are derived, and transition validation blocks insufficient stock and deletion of recorded sales.
 - Keep gym invoice records in the existing transaction snapshots and archive deletions; retained numbered records preserve the per-gym sequence while database guards prevent duplicate or changed numbers. Trainer schedules use optional weekly rows so legacy trainer details remain compatible.
 - Keep platform expenses, gym-scoped prototype invitations and workout assignment snapshots in the existing demo store, and session client selections keyed by gym; this preserves local persistence without granting Cloud access or mixing platform and gym finances.

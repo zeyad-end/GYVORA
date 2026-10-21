@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Field } from '@/components/kit';
 import { seo } from '@/lib/seo';
 import { registerDemoAccount, setDemoSession, sessionKindFor, demoDestination, type DemoAccountType } from '@/lib/demo';
+import { registrationSchema } from '@/lib/registration';
 
 export const Route = createFileRoute('/register')({
   head: () => seo('Create account', 'Register your IronHaus client, owner or staff account.'),
@@ -24,6 +25,8 @@ function Register() {
   const cloud = useCloud();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [accountType, setAccountType] = useState<DemoAccountType | ''>('');
+  const [contact, setContact] = useState<'phone' | 'email'>('phone');
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -31,17 +34,9 @@ function Register() {
     setError('');
     const d = new FormData(e.currentTarget);
     try {
-      const p = z
-        .object({
-          full_name: z.string().trim().min(1).max(100),
-          email: z.string().trim().email().max(255),
-          phone: z.string().trim().max(30).optional(),
-          password: z.string().min(8).max(128),
-          account_type: z.enum(['gym', 'individual', 'dashboard'], { message: 'Select an account type to continue.' }),
-        })
-        .parse(Object.fromEntries(d));
+      const p = registrationSchema.parse(Object.fromEntries(d));
       // Prototype: demo accounts are stored locally and isolated from production auth.
-      const acc = registerDemoAccount(p.full_name, p.email, p.password, p.account_type);
+      const acc = registerDemoAccount(p.full_name, p.email || p.phone, p.password, p.account_type, p.phone);
       setDemoSession(sessionKindFor(acc.type), acc.email);
       await cloud.refresh();
       await navigate({ to: demoDestination(acc) });
@@ -63,7 +58,7 @@ function Register() {
               {ACCOUNT_TYPES.map((t) => (
                 <label key={t.value} className="flex cursor-pointer flex-col gap-1 rounded-md border p-3 text-sm has-checked:border-primary has-checked:bg-secondary">
                   <span className="flex items-center gap-2 font-medium">
-                    <input required type="radio" name="account_type" value={t.value} />
+                     <input required type="radio" name="account_type" value={t.value} checked={accountType === t.value} onChange={() => { setAccountType(t.value); setError(''); }} />
                     {t.label}
                   </span>
                   <span className="text-xs text-muted-foreground">{t.hint}</span>
@@ -74,25 +69,22 @@ function Register() {
           <Field label="Full Name" className="sm:col-span-2">
             <Input name="full_name" required maxLength={100} />
           </Field>
-          <Field label="Email">
-            <Input name="email" type="email" required maxLength={255} />
-          </Field>
-          <Field label="Phone Number">
-            <Input name="phone" type="tel" maxLength={30} />
-          </Field>
+           {accountType === 'individual' && <fieldset className="sm:col-span-2"><legend className="mb-2 text-sm">Contact detail</legend><div className="flex gap-4">{(['phone', 'email'] as const).map(value => <label key={value} className="flex items-center gap-2 text-sm"><input type="radio" checked={contact === value} onChange={() => setContact(value)}/>{value === 'phone' ? 'Phone Number' : 'Email'}</label>)}</div></fieldset>}
+           {(accountType === 'dashboard' || (accountType === 'individual' && contact === 'email')) && <Field label="Email" className="sm:col-span-2"><Input name="email" type="email" required maxLength={255}/></Field>}
+           {(accountType === 'gym' || (accountType === 'individual' && contact === 'phone')) && <Field label="Phone Number" className="sm:col-span-2"><Input name="phone" type="tel" required maxLength={30}/></Field>}
           <Field label="Password" className="sm:col-span-2">
             <Input name="password" type="password" required minLength={8} maxLength={128} />
           </Field>
-          <Field label="Date of birth">
+           {accountType === 'individual' && <><Field label="Date of birth">
             <Input name="dob" type="date" />
-          </Field>
+           </Field>
           <Field label="Gender">
             <select name="gender" className="h-10 w-full rounded-md border bg-card px-3">
               <option value="">Not specified</option>
               <option>Male</option>
               <option>Female</option>
             </select>
-          </Field>
+          </Field></>}
           {error && (
             <p role="alert" className="text-sm text-destructive sm:col-span-2">
               {error}

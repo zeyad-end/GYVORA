@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, Plus, Trash2, MessageCircle, Facebook, Mail, X } from "lucide-react";
 import { toast } from "sonner";
@@ -8,12 +8,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field } from "@/components/kit";
-import { getState, readFile, setState, type Gym, type Plan } from "@/lib/store";
+import { getState, readFile, saveState, type Gym, type Plan } from "@/lib/store";
 
 export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [g, setG] = useState<Gym>(getState().gym);
   const [plans, setPlans] = useState<Plan[]>(getState().plans);
   const [svc, setSvc] = useState("");
+  const [busy, setBusy] = useState(false);
+  useEffect(() => { if (open) { setG(getState().gym); setPlans(getState().plans); } }, [open]);
   const up = (p: Partial<Gym>) => setG((x) => ({ ...x, ...p }));
 
   return (
@@ -67,7 +69,7 @@ export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button onClick={() => { setState(() => ({ gym: g, plans })); toast.success("Profile saved"); onOpenChange(false); }}>Save</Button>
+          <Button disabled={busy} onClick={async () => { if (!g.name.trim()) { toast.error('Gym name is required'); return; } setBusy(true); try { await saveState(() => ({ gym: { ...g, name: g.name.trim() }, plans })); toast.success("Profile saved"); onOpenChange(false); } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not save profile'); } finally { setBusy(false); } }}>{busy ? 'Saving…' : 'Save'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

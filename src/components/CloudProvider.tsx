@@ -8,6 +8,10 @@ import { gym as gymSeed } from "@/lib/mock";
 import { saveRecords, getStaff } from "@/lib/cloud.functions";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import { readOwnerProfile } from '@/lib/owner-profile';
+import { expirationEvents } from '@/lib/gym-events';
+import { appendGymEvents } from '@/lib/gym-notifications-demo';
+import { localDate } from '@/lib/gym-period';
 import {
   getDemoSession,
   getDemoSessionInfo,
@@ -71,6 +75,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       setRole(owner ? "Owner" : (association?.role ?? "Client"));
       setPermissions(owner ? [] : (association?.permissions ?? []));
       hydrateState(readDemoGym(id, owner));
+      if (owner) appendGymEvents(id, expirationEvents(getState(), localDate()));
       if (owner)
         bindPersistence(async (changes) => {
           const next = { ...getState(), ...changes };
@@ -207,12 +212,12 @@ export function CloudProvider({ children }: { children: ReactNode }) {
             : demo === "individual"
               ? "Demo Member"
               : "zeyad salama1"),
-        email: info.email || acc?.email || "",
-        phone: "",
+        email: demo === 'owner' && !(info.email || acc?.email || '').includes('@') ? '' : (info.email || acc?.email || ''),
+        phone: acc?.phone || '',
         photo: "",
         account_type: demo === "individual" ? "client" : "owner",
       } as Profile;
-      setProfile(p);
+      setProfile(demo === 'owner' ? { ...p, ...(readOwnerProfile() ?? {}) } : p);
       setVerified(true);
       const memberGyms = associations.map((r) => ({
         id: r.gymId,
@@ -252,6 +257,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           staffAttendance: [],
         });
       } else hydrateState(base);
+      if (demo === 'owner') appendGymEvents(active, expirationEvents(base, localDate()));
       if (demo === "owner")
         bindPersistence(async (changes) => {
           const next = { ...getState(), ...changes };
