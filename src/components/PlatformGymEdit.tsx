@@ -31,7 +31,7 @@ export function PlatformGymEdit({gym,onClose}:{gym:ApprovedGym;onClose:()=>void}
   return <Dialog open onOpenChange={open=>{if(!open)onClose();}}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Edit gym</DialogTitle></DialogHeader>
     <form className="space-y-4" onSubmit={e=>{e.preventDefault();try{editGym(gym.id,{name,plan,planId:planId||undefined,applyPlan,start,end,notes,monthlyPrice:monthly===''?NaN:Number(monthly),annualPrice:annual===''?NaN:Number(annual),annualPriceManual:manual});toast.success('Gym updated (demo).');onClose();}catch(err){toast.error(err instanceof Error?err.message:'Could not save gym');}}}>
       <Field label="Gym name"><Input value={name} onChange={e=>setName(e.target.value)} required maxLength={100}/></Field>
-      <Field label="Subscription plan"><select className={selectCls} value={selectedValue} onChange={e=>{try{selectPlan(e.target.value);}catch{toast.error('Enter a valid start date before applying a plan.');}}}>
+      <Field label="Subscription plan"><select aria-label="Subscription plan" className={selectCls} value={selectedValue} onChange={e=>{try{selectPlan(e.target.value);}catch{toast.error('Enter a valid start date before applying a plan.');}}}>
         {planId&&!plans.some(p=>p.id===planId)&&<option value={selectedValue}>{plan} (saved agreement)</option>}
         {!planId&&!Object.keys(PLAN_PRICES).includes(plan)&&<option value={selectedValue}>{plan} (saved agreement)</option>}
         {Object.keys(PLAN_PRICES).map(p=><option key={p} value={`legacy:${p}`}>{p} (legacy)</option>)}

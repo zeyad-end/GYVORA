@@ -22,7 +22,7 @@ function SubscriptionPlans(){
     {!plans.length&&<p className="py-6 text-muted-foreground">No subscription plans.</p>}
     <Dialog open={!!editing} onOpenChange={open=>{if(!open)setEditing(null);}}><DialogContent className="sm:max-w-lg"><DialogHeader><DialogTitle>{isNew?'Add Plan':'Edit Plan'}</DialogTitle></DialogHeader><form className="space-y-4" onSubmit={e=>{e.preventDefault();if(!editing)return;try{savePlatformPlan({id:editing.id,name,billingType:billing,price:Number(price),durationDays:Number(days)});setEditing(null);toast.success('Plan saved (demo).');}catch{toast.error('Enter a plan name, positive price and positive whole-day duration.');}}}>
       <Field label="Plan name"><Input required value={name} maxLength={100} onChange={e=>setName(e.target.value)}/></Field>
-      <Field label="Billing type"><select className={selectCls} value={billing} onChange={e=>{setBilling(e.target.value==='Annual'?'Annual':'Monthly');}}><option>Monthly</option><option>Annual</option></select></Field>
+      <Field label="Billing type"><select aria-label="Billing type" className={selectCls} value={billing} onChange={e=>{setBilling(e.target.value==='Annual'?'Annual':'Monthly');}}><option>Monthly</option><option>Annual</option></select></Field>
       <Field label="Price (EGP)"><Input type="number" min="0.01" step="0.01" required value={price} onChange={e=>setPrice(e.target.value)}/></Field>
       <Field label="Duration in days"><Input type="number" min="1" max="36500" step="1" required value={days} onChange={e=>setDays(e.target.value)}/></Field>
       <div className="flex justify-end gap-2"><Button type="button" variant="outline" onClick={()=>setEditing(null)}>Cancel</Button><Button>Save Plan</Button></div>
