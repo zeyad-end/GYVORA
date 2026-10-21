@@ -1,14 +1,15 @@
 import { createFileRoute } from '@tanstack/react-router';
 import { useState } from 'react';
-import { PageHeader, DataTable, td, StatusPill, Field, selectCls } from '@/components/kit';
+import { PageHeader, DataTable, td } from '@/components/kit';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
-import { useDemoStore, editGym, setGymStatus, deleteGym, PLAN_PRICES, type ApprovedGym } from '@/lib/demo';
+import { useDemoStore, setGymStatus, deleteGym, type ApprovedGym } from '@/lib/demo';
 import { seo } from '@/lib/seo';
 import { gymPrices } from '@/lib/platform-subscriptions';
 import { egp } from '@/lib/mock';
-import { Checkbox } from '@/components/ui/checkbox';
+import { StickyNote } from 'lucide-react';
+import { PlatformGymEdit } from '@/components/PlatformGymEdit';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 export const Route = createFileRoute('/super-admin/gyms')({
   head: () => seo('Approved gyms', 'Manage fictional approved gyms and their subscriptions.'),
@@ -18,38 +19,13 @@ export const Route = createFileRoute('/super-admin/gyms')({
 function Gyms() {
   const gyms = useDemoStore((s) => s.gyms);
   const [editing, setEditing] = useState<ApprovedGym | null>(null);
-  const [name, setName] = useState('');
-  const [plan, setPlan] = useState('Basic');
-  const [monthly, setMonthly] = useState('0');
-  const [annual, setAnnual] = useState('0');
-  const [manual, setManual] = useState(false);
-
-  function openEdit(g: ApprovedGym) {
-    setEditing(g);
-    setName(g.name);
-    setPlan(g.plan);
-    const prices = gymPrices(g);
-    setMonthly(String(prices.monthlyPrice));
-    setAnnual(String(prices.annualPrice));
-    setManual(prices.annualPriceManual);
-  }
-
-  function saveEdit() {
-    if (!editing) return;
-    if (!name.trim()) {
-      toast.error('Gym name is required');
-      return;
-    }
-    try { editGym(editing.id, { name: name.trim(), plan, monthlyPrice: monthly === '' ? NaN : Number(monthly), annualPrice: annual === '' ? NaN : Number(annual), annualPriceManual: manual }); }
-    catch { toast.error('Enter valid non-negative subscription prices.'); return; }
-    toast.success('Gym updated (demo).');
-    setEditing(null);
-  }
+  const [noteGymId,setNoteGymId]=useState<string|null>(null);
+  const noteGym=gyms.find(g=>g.id===noteGymId&&g.notes?.trim());
 
   return (
     <div>
       <PageHeader title="Approved Gyms" subtitle={`Total approved gyms: ${gyms.length} · fictional demo data.`} />
-      <DataTable head={['#', 'Gym Name', 'Phone', 'Email', 'Plan', 'Monthly price', 'Annual price', 'Start', 'End', 'Status', 'Actions']}>
+      <DataTable head={['#', 'Gym Name', 'Phone', 'Email', 'Plan', 'Monthly price', 'Annual price', 'Start', 'End', 'Status', 'Notes', 'Actions']}>
         {gyms.map((g, index) => (
           <tr key={g.id}>
             <td className={td}>{index + 1}</td>
@@ -61,10 +37,11 @@ function Gyms() {
             <td className={td}>{egp(gymPrices(g).annualPrice)}</td>
             <td className={td}>{g.start}</td>
             <td className={td}>{g.end}</td>
-            <td className={td}><StatusPill status={g.status === 'Active' ? 'Active' : 'Expired'} /></td>
+            <td className={td}><span className={g.status==='Active'?'text-success':'text-muted-foreground'}>{g.status}</span></td>
+            <td className={td}>{g.notes?.trim()?<Button variant="ghost" size="icon" aria-label={`Notes for ${g.name}`} title={`Notes for ${g.name}`} onClick={()=>setNoteGymId(g.id)}><StickyNote className="h-4 w-4"/></Button>:'—'}</td>
             <td className={td}>
               <div className="flex flex-wrap gap-2">
-                <Button size="sm" variant="outline" onClick={() => openEdit(g)}>Edit</Button>
+                <Button size="sm" variant="outline" onClick={() => setEditing(g)}>Edit</Button>
                 {g.status === 'Active' ? (
                   <Button size="sm" variant="secondary" onClick={() => { setGymStatus(g.id, 'Frozen'); toast.success(`${g.name} frozen (demo).`); }}>Freeze</Button>
                 ) : (
@@ -78,29 +55,8 @@ function Gyms() {
       </DataTable>
       {!gyms.length && <p className="py-6 text-muted-foreground">No approved gyms yet. Approve a request to add one.</p>}
 
-      {editing && (
-        <div className="fixed inset-0 z-50 grid place-items-center bg-background/70 p-4" role="dialog" aria-modal="true" aria-label="Edit gym">
-          <div className="panel w-full max-w-sm p-6">
-            <h3 className="text-lg font-semibold">Edit gym</h3>
-            <div className="mt-4 space-y-4">
-              <Field label="Gym name"><Input value={name} onChange={(e) => setName(e.target.value)} maxLength={100} /></Field>
-              <Field label="Subscription plan">
-                <select className={selectCls} value={plan} onChange={(e) => setPlan(e.target.value)}>
-                  {Object.keys(PLAN_PRICES).map((p) => <option key={p} value={p}>{p}</option>)}
-                </select>
-              </Field>
-              <Field label="Monthly subscription price (EGP)"><Input type="number" min="0" step="0.01" value={monthly} onChange={e=>{setMonthly(e.target.value);if(!manual)setAnnual(String(Number(e.target.value)*12));}} /></Field>
-              <Field label="Annual subscription price (EGP)"><Input type="number" min="0" step="0.01" value={annual} onChange={e=>{setAnnual(e.target.value);setManual(true);}} /></Field>
-              <label className="flex items-center gap-2 text-sm"><Checkbox checked={!manual} onCheckedChange={checked=>{setManual(!checked);if(checked)setAnnual(String(Number(monthly)*12));}}/>Calculate annual price automatically (monthly × 12)</label>
-              <p className="text-xs text-muted-foreground">Changing the plan recalculates the subscription end date from the start date.</p>
-            </div>
-            <div className="mt-6 flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setEditing(null)}>Cancel</Button>
-              <Button onClick={saveEdit}>Save</Button>
-            </div>
-          </div>
-        </div>
-      )}
+      {editing&&<PlatformGymEdit key={editing.id} gym={editing} onClose={()=>setEditing(null)}/>}
+      <Dialog open={!!noteGym} onOpenChange={open=>{if(!open)setNoteGymId(null);}}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Notes · {noteGym?.name}</DialogTitle></DialogHeader><p className="whitespace-pre-wrap break-words text-sm">{noteGym?.notes}</p></DialogContent></Dialog>
     </div>
   );
 }
