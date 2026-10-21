@@ -90,7 +90,7 @@ function Trainers() {
               </div>
             </Button>
             <Button size="icon" variant="ghost" className="shrink-0" aria-label={`Edit ${t.name}`} title={`Edit ${t.name}`}
-              onClick={() => { setEditing(t); setImg(t.image); setOpen(true); }}>
+              onClick={() => { setEditing(t); setImg(t.image ?? ""); setOpen(true); }}>
               <Pencil className="h-4 w-4" />
             </Button>
             </div>
