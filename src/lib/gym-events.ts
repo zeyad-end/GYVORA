@@ -1,5 +1,10 @@
 import type { State } from './store';
 export type GymEvent = { id: string; type: string; description: string; page: string; createdAt: string };
+export function expirationEvents(state: State, today: string): GymEvent[] {
+ const end = new Date(`${today}T12:00:00`); end.setDate(end.getDate() + 7);
+ const limit = `${end.getFullYear()}-${String(end.getMonth()+1).padStart(2,'0')}-${String(end.getDate()).padStart(2,'0')}`;
+ return state.members.filter(m => m.expiry <= limit).map(m => ({ id: `expiry:${m.id}:${m.expiry}:${m.expiry < today ? 'expired' : 'approaching'}`, type: 'Membership expiration', description: `${m.name} · Membership ${m.expiry < today ? 'expired' : 'expires'} on ${m.expiry}`, page: '/members', createdAt: `${today}T12:00:00` }));
+}
 export function gymEvents(previous: State, next: State, now = new Date().toISOString()): GymEvent[] {
  const events: GymEvent[] = [];
  const add = (type: string, description: string, page: string) => events.push({ id: crypto.randomUUID(), type, description, page, createdAt: now });

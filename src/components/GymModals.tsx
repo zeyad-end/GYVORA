@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Copy, Plus, Trash2, MessageCircle, Facebook, Mail, X } from "lucide-react";
 import { toast } from "sonner";
@@ -15,6 +15,7 @@ export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   const [plans, setPlans] = useState<Plan[]>(getState().plans);
   const [svc, setSvc] = useState("");
   const [busy, setBusy] = useState(false);
+  useEffect(() => { if (open) { setG(getState().gym); setPlans(getState().plans); } }, [open]);
   const up = (p: Partial<Gym>) => setG((x) => ({ ...x, ...p }));
 
   return (
