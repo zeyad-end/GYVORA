@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { EditGymDialog, ShareGymDialog } from "@/components/GymModals";
-import { useStore, fmt12 } from "@/lib/store";
+import { currencyOf, useStore, fmt12 } from "@/lib/store";
 import { Clock, MapPin, Pencil, Share2, ExternalLink, Phone, MessageCircle, Instagram, Facebook, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/kit";
@@ -76,7 +76,7 @@ function GymProfile() {
             <div key={p.id} className={`rounded-xl border p-5 ${p.featured ? "border-primary/50 bg-accent" : "bg-surface"}`}>
               <div className="eyebrow">{p.duration}</div>
               <div className="mt-2 font-display text-xl font-semibold">{p.name}</div>
-              <div className="mt-3 font-display text-2xl text-primary">EGP {p.price.toLocaleString()}</div>
+              <div className="mt-3 font-display text-2xl text-primary">{currencyOf()} {p.price.toLocaleString()}</div>
               <ul className="mt-4 space-y-2 text-sm text-muted-foreground">{p.features.map((f) => <li key={f} className="flex gap-2"><Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />{f}</li>)}</ul>
             </div>
           ))}

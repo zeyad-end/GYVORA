@@ -6,7 +6,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useCloud } from "./CloudProvider";
-import { useStore } from "@/lib/store";
+import { currencyOf, useStore } from "@/lib/store";
 import { initials } from "@/lib/mock";
 import { Button } from "./ui/button";
 import { GymAccount } from './GymAccount';
@@ -90,7 +90,7 @@ export function GymShell({ children }: { children: ReactNode }) {
             <span className="hidden min-w-0 text-left text-xs sm:block"><span className="block truncate font-semibold">{c.profile?.full_name}</span><span className="block text-muted-foreground">{c.role}</span></span>
           </Button>
         </header>
-        <main className="mx-auto max-w-7xl px-4 py-8 sm:px-8">{children}</main>
+        <main key={currencyOf(gym)} className="mx-auto max-w-7xl px-4 py-8 sm:px-8">{children}</main>
       </div>
     </div>
   );

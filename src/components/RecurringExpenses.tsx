@@ -14,7 +14,8 @@ import { DataTable, Field, Panel, selectCls, td } from "./kit";
 import { useStore, saveState, type RecurringExpense } from "@/lib/store";
 import { nextPayment, recurringSchema } from "@/lib/validation";
 import { markRecurringPaid } from "@/lib/gym-updates";
-import { egp, expenseCategories } from "@/lib/mock";
+import { expenseCategories } from "@/lib/mock";
+import { money as egp, currencyOf } from "@/lib/store";
 
 const blank = (): RecurringExpense => ({
   id: crypto.randomUUID(),
@@ -181,7 +182,7 @@ export function RecurringExpenses() {
             <Field label="Next Payment">
               <Input type="date" required value={f.next} onChange={(e) => up({ next: e.target.value })} />
             </Field>
-            <Field label="Amount (EGP)">
+            <Field label={`Amount (${currencyOf()})`}>
               <Input
                 type="number"
                 min={0.01}

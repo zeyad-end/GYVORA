@@ -12,7 +12,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, PageHeader } from "@/components/kit";
-import { saveState, useStore } from "@/lib/store";
+import { currencyOf, saveState, useStore } from "@/lib/store";
 import { deletePlan } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
 
@@ -71,7 +71,7 @@ function Memberships() {
             </div>
             <h2 className="mt-3 text-2xl font-semibold">{p.name}</h2>
             <div className="mt-4 font-display text-3xl text-primary">
-              EGP {p.price.toLocaleString()}
+              {currencyOf()} {p.price.toLocaleString()}
             </div>
             <ul className="mt-6 flex-1 space-y-2.5 text-sm text-muted-foreground">
               {p.features.map((f) => (
@@ -162,7 +162,7 @@ function Memberships() {
                   onChange={(e) => setDuration(e.target.value)}
                 />
               </Field>
-              <Field label="Price (EGP)">
+              <Field label={`Price (${currencyOf()})`}>
                 <Input
                   type="number"
                   min={0}
