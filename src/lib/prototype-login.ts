@@ -1,4 +1,4 @@
-import { setDemoSession, sessionKindFor, type DemoAccountType } from "@/lib/demo";
+import { setDemoSession, sessionKindFor, findDemoAccount, demoDestination, type DemoAccountType } from "@/lib/demo";
 
 export type PrototypeLoginDetails = { destination: DemoAccountType; name: string; email: string };
 const PREFERENCE_KEY = "ironhaus-prototype-login-preference";
@@ -29,5 +29,8 @@ export function getPrototypePreference(): PrototypeLoginDetails | null {
 export function enterPrototype(details: PrototypeLoginDetails, remember: boolean) {
   savePrototypePreference(details, remember);
   setDemoSession(sessionKindFor(details.destination), details.email, { name: details.name, directAccess: true });
+  const registered = details.destination === "gym" && details.email.trim() ? findDemoAccount(details.email) : null;
+  // A registered Gym Account follows its request status: approved → dashboard, pending/rejected → status page.
+  if (registered?.type === "gym") return demoDestination(registered);
   return prototypeDestination(details.destination);
 }
