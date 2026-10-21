@@ -8,7 +8,7 @@ import { seo } from "@/lib/seo";
 import { useStore } from '@/lib/store';
 import { dailySummary } from '@/lib/gym-updates';
 import { localDate } from '@/lib/gym-period';
-import { egp } from '@/lib/mock';
+import { money as egp, currencyOf } from "@/lib/store";
 
 export const Route = createFileRoute("/_gym/dashboard")({
   head: () => seo("Dashboard", "Live overview of members, check-ins, revenue and expenses."),
@@ -37,10 +37,10 @@ function Dashboard() {
         <StatCard label="Active" value="391" icon={UserCheck} delta="81% of total" />
         <StatCard label="Expired" value="91" icon={UserX} delta="12 expiring this week" tone="bad" />
         <StatCard label="Today's check-ins" value="164" icon={ScanLine} delta="+9% vs last Wed" tone="good" />
-        <StatCard label="Today's revenue" value="EGP 18,420" icon={TrendingUp} delta="+12% vs avg" tone="good" />
+        <StatCard label="Today's revenue" value={egp(18420)} icon={TrendingUp} delta="+12% vs avg" tone="good" />
         <StatCard label="Today's expenses" value={egp(expenses.total)} icon={TrendingDown} delta={`${expenses.count} paid expense invoices`} />
-        <StatCard label="Net profit" value="EGP 15,220" icon={PiggyBank} tone="good" delta="Today" />
-        <StatCard label="Cash balance" value="EGP 286,900" icon={Banknote} delta="All accounts" />
+        <StatCard label="Net profit" value={egp(15220)} icon={PiggyBank} tone="good" delta="Today" />
+        <StatCard label="Cash balance" value={egp(286900)} icon={Banknote} delta="All accounts" />
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-3">

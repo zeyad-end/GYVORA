@@ -17,7 +17,8 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable, PageHeader, Panel, StatCard, td, selectCls, Field } from "@/components/kit";
 import { InvoiceFields } from "@/components/InvoiceFields";
-import { egp, revenueSeries } from "@/lib/mock";
+import { revenueSeries } from "@/lib/mock";
+import { money as egp, currencyOf } from "@/lib/store";
 import { useStore, saveState, readFile, type Invoice } from "@/lib/store";
 import {
   createInvoice,
@@ -401,12 +402,12 @@ function Finance() {
             )}
           </section>
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard label="Daily revenue" value="EGP 18,420" icon={TrendingUp} />
-            <StatCard label="Monthly revenue" value="EGP 212,000" icon={TrendingUp} />
-            <StatCard label="Yearly revenue" value="EGP 1.73M" icon={TrendingUp} />
+            <StatCard label="Daily revenue" value={egp(18420)} icon={TrendingUp} />
+            <StatCard label="Monthly revenue" value={egp(212000)} icon={TrendingUp} />
+            <StatCard label="Yearly revenue" value={egp(1730000)} icon={TrendingUp} />
             <StatCard
               label="Net profit (YTD)"
-              value="EGP 812,000"
+              value={egp(812000)}
               icon={Wallet}
               tone="good"
               delta="Expenses deducted"

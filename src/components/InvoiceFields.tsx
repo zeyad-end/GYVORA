@@ -1,5 +1,6 @@
 import type { Invoice } from "@/lib/store";
 import { expenseCategories } from "@/lib/mock";
+import { currencyOf } from "@/lib/store";
 import { Field, selectCls } from "./kit";
 import { Input } from "./ui/input";
 import { Textarea } from "./ui/textarea";
@@ -36,9 +37,9 @@ export function InvoiceFields({
           ))}
         </datalist>
       </Field>
-      <Field label="Amount (EGP)">
+      <Field label={`Amount (${currencyOf()})`}>
         <Input
-          aria-label="Amount (EGP)"
+          aria-label={`Amount (${currencyOf()})`}
           required
           type="number"
           min={0.01}

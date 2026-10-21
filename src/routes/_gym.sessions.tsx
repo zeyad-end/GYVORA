@@ -19,7 +19,7 @@ import { useStore, saveState, consumeSession, type Session } from "@/lib/store";
 import { GymPeriodFilter } from '@/components/GymPeriodFilter';
 import { filterGymPeriod, gymRange, localDate, type GymPeriod } from '@/lib/gym-period';
 import { sessionSchema } from "@/lib/validation";
-import { egp } from "@/lib/mock";
+import { money as egp, currencyOf } from "@/lib/store";
 import { toast } from "sonner";
 import { seo } from "@/lib/seo";
 export const Route = createFileRoute("/_gym/sessions")({
@@ -148,7 +148,7 @@ function Sessions() {
         </select>
       </Field>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Session Price (EGP)">
+        <Field label={`Session Price (${currencyOf()})`}>
           <Input
             type="number"
             required

@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/dialog";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { DataTable, Field, PageHeader, Panel, StatusPill, td } from "@/components/kit";
-import { egp } from "@/lib/mock";
+import { money as egp, currencyOf } from "@/lib/store";
 import { saveState, stockStatus, useStore, type Product } from "@/lib/store";
 import { uploadImage, imageUrl } from "@/lib/images";
 import {
@@ -455,7 +455,7 @@ function Products() {
               />
             )}
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Unit Price (EGP)">
+              <Field label={`Unit Price (${currencyOf()})`}>
                 <Input
                   type="number"
                   min={0}
