@@ -8,6 +8,7 @@ import { Building2, CreditCard, Users, Wallet, TrendingUp, UserPlus } from 'luci
 import { useDemoStore, PERIODS, periodRange, inRange, platformTotals, type Period } from '@/lib/demo';
 import { egp } from '@/lib/mock';
 import { seo } from '@/lib/seo';
+import { projectedSubscriptions } from '@/lib/platform-subscriptions';
 
 export const Route = createFileRoute('/super-admin/')({
   head: () => seo('Platform dashboard', 'Fictional platform metrics: gyms, subscriptions, clients and demo revenue.'),
@@ -17,12 +18,12 @@ export const Route = createFileRoute('/super-admin/')({
 function PlatformDashboard() {
   const gyms = useDemoStore((s) => s.gyms);
   const clients = useDemoStore((s) => s.clients);
-  const revenue = useDemoStore((s) => s.revenue);
   const expenses = useDemoStore((s) => s.expenses);
   const [period, setPeriod] = useState<Period>('year');
   const [custom, setCustom] = useState({ from: '2026-01-01', to: '2026-12-31' });
 
   const { from, to } = periodRange(period, custom);
+  const revenue = useMemo(() => projectedSubscriptions(gyms, from, to), [gyms, from.getTime(), to.getTime()]);
   const filteredRevenue = useMemo(() => revenue.filter((r) => inRange(r.date, from, to)), [revenue, from.getTime(), to.getTime()]);
   const totalRevenue = filteredRevenue.reduce((sum, r) => sum + r.amount, 0);
   const totals = platformTotals(revenue, expenses, from, to);
@@ -71,14 +72,14 @@ function PlatformDashboard() {
         <StatCard label="Approved gyms" value={String(gyms.length)} icon={Building2} delta={`+${newGyms} in period`} tone="good" />
         <StatCard label="Active subscriptions" value={String(activeSubs)} icon={CreditCard} delta={`${gyms.length - activeSubs} frozen`} />
         <StatCard label="Total clients" value={String(clients.length)} icon={Users} delta="Across all gyms" />
-        <StatCard label="Subscription Revenue (demo)" value={egp(totalRevenue)} icon={Wallet} delta="Saved demo subscription records" />
+        <StatCard label="Projected subscription revenue (demo)" value={egp(totalRevenue)} icon={Wallet} delta="Active gyms · scheduled billing · not collected" />
         <StatCard label="Expenses (demo)" value={egp(totals.expenses)} icon={Wallet} delta="Platform only · selected period" />
         <StatCard label="Net (demo)" value={`${totals.net < 0 ? '−' : ''}${egp(totals.net)}`} icon={Wallet} delta="Demo revenue minus demo expenses" />
       </div>
 
       <div className="mt-6 grid gap-4 lg:grid-cols-3">
-        <Panel title="Subscription revenue (demo)" className="lg:col-span-2">
-          {bars.length === 0 && <p className="py-6 text-sm text-muted-foreground">No revenue in this period.</p>}
+        <Panel title="Projected subscription revenue (demo)" className="lg:col-span-2">
+          {!filteredRevenue.length && <p className="py-6 text-sm text-muted-foreground">No priced active gym subscriptions have a billing date in this period.</p>}
           <div className="flex h-44 items-end gap-2">
             {bars.map((b) => (
               <div key={b.label} className="flex min-w-0 flex-1 flex-col items-center gap-2">
@@ -100,7 +101,7 @@ function PlatformDashboard() {
             </div>
             <div className="flex items-center gap-3">
               <span className="grid h-9 w-9 place-items-center rounded-lg bg-secondary text-primary"><Wallet className="h-4 w-4" /></span>
-              <div><div className="font-display text-xl font-semibold">{filteredRevenue.length}</div><div className="text-xs text-muted-foreground">Demo transactions in period</div></div>
+              <div><div className="font-display text-xl font-semibold">{filteredRevenue.length}</div><div className="text-xs text-muted-foreground">Projected billings in period</div></div>
             </div>
           </div>
         </Panel>

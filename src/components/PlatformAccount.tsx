@@ -11,6 +11,7 @@ import { uploadImage } from '@/lib/images';
 import { supabase } from '@/integrations/supabase/client';
 import { useServerFn } from '@tanstack/react-start';
 import { changePlatformCredentials } from '@/lib/platform-admin.functions';
+import { PlatformAccountLinks } from './PlatformAccountLinks';
 
 export function PlatformAccount({open,onOpenChange}:{open:boolean;onOpenChange:(open:boolean)=>void}){
  const changeCredentials=useServerFn(changePlatformCredentials);
@@ -23,5 +24,6 @@ export function PlatformAccount({open,onOpenChange}:{open:boolean;onOpenChange:(
  {!demo&&email!==c.profile?.email&&<Field label="Current password for email change"><Input name="current" type="password" autoComplete="current-password" required maxLength={128}/></Field>}
  <Button disabled={busy||uploading}>{uploading?'Uploading…':busy?'Saving…':'Save changes'}</Button></form>
  <section className="mt-4 border-t pt-4"><h2 className="font-semibold">Change Password</h2>{demo?<p className="mt-2 text-sm text-muted-foreground">Prototype access has no authenticated password. Password changes are unavailable here; no password is saved.</p>:<form className="mt-3 space-y-3" onSubmit={async e=>{e.preventDefault();const form=e.currentTarget;const d=new FormData(form);const current=String(d.get('current'));const next=String(d.get('next'));const confirm=String(d.get('confirm'));if(next.length<8||next.length>128||next!==confirm){setError('Use 8–128 characters and matching new passwords.');return;}setBusy(true);setError('');setMessage('');try{await changeCredentials({data:{current,change:{password:next}}});form.reset();setMessage('Password changed securely.');}catch(err){setError(err instanceof Error?err.message:'Password change failed');}finally{setBusy(false);}}}><Field label="Current password"><Input name="current" type="password" required autoComplete="current-password" maxLength={128}/></Field><Field label="New password"><Input name="next" type="password" required minLength={8} maxLength={128} autoComplete="new-password"/></Field><Field label="Confirm new password"><Input name="confirm" type="password" required minLength={8} maxLength={128} autoComplete="new-password"/></Field><Button disabled={busy} variant="secondary">{busy?'Changing…':'Change Password'}</Button></form>}</section>
- {error&&<p role="alert" className="text-sm text-destructive">{error}</p>}{message&&<p role="status" className="text-sm text-success">{message}</p>}</DialogContent></Dialog>;
+  <PlatformAccountLinks open={open}/>
+  {error&&<p role="alert" className="text-sm text-destructive">{error}</p>}{message&&<p role="status" className="text-sm text-success">{message}</p>}</DialogContent></Dialog>;
 }
