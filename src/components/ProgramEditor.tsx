@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Plus, Trash2 } from "lucide-react";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
+import { Textarea } from "./ui/textarea";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "./ui/dialog";
 import { Field } from "./kit";
 import { programSchema } from "@/lib/validation";
@@ -44,6 +45,7 @@ export function ProgramEditor({
 }) {
   const [name, setName] = useState("");
   const [trainer, setTrainer] = useState("");
+  const [notes, setNotes] = useState("");
   const [rows, setRows] = useState<Workout["exercises"]>([empty()]);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -51,6 +53,7 @@ export function ProgramEditor({
     if (open) {
       setName(program?.name ?? "");
       setTrainer(program?.trainer ?? "");
+      setNotes(program?.notes ?? "");
       setRows(program?.exercises.map((e) => ({ ...e })) ?? [empty()]);
     }
   }, [open, program]);
@@ -75,7 +78,7 @@ export function ProgramEditor({
                 id: program?.id ?? crypto.randomUUID(),
                 name,
                 trainer: trainers ? trainer.trim() : program?.trainer ?? "",
-                notes: program?.notes ?? "",
+                notes: trainers ? notes : program?.notes ?? "",
                 exercises: rows,
               });
               await onSave(p);
@@ -175,6 +178,12 @@ export function ProgramEditor({
             <Plus className="h-4 w-4" />
             Add exercise
           </Button>
+          {trainers && (
+            <Field label="Trainer Notes">
+              <Textarea aria-label="Trainer Notes" rows={4} maxLength={1000}
+                value={notes} onChange={(e) => setNotes(e.target.value)} />
+            </Field>
+          )}
           <DialogFooter>
             {program && onDelete && (
               <Button

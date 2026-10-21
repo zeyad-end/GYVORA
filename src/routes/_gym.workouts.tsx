@@ -93,8 +93,8 @@ function Workouts() {
                 </tr>
               ))}
             </DataTable>
-            {w.notes && (
-              <div className="mt-4 rounded-lg bg-surface p-3 text-sm text-muted-foreground">
+            {w.notes.trim() && (
+              <div className="mt-4 whitespace-pre-wrap break-words rounded-lg bg-surface p-3 text-sm text-muted-foreground">
                 <span className="eyebrow mr-2">Trainer notes</span>
                 {w.notes}
               </div>
