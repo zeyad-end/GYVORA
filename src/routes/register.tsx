@@ -77,14 +77,14 @@ function Register() {
           </Field>
            {accountType === 'individual' && <><Field label="Date of birth">
             <Input name="dob" type="date" />
-           </Field></>}
+           </Field>
           <Field label="Gender">
             <select name="gender" className="h-10 w-full rounded-md border bg-card px-3">
               <option value="">Not specified</option>
               <option>Male</option>
               <option>Female</option>
             </select>
-          </Field>
+          </Field></>}
           {error && (
             <p role="alert" className="text-sm text-destructive sm:col-span-2">
               {error}

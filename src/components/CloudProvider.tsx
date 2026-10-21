@@ -8,6 +8,7 @@ import { gym as gymSeed } from "@/lib/mock";
 import { saveRecords, getStaff } from "@/lib/cloud.functions";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
+import { readOwnerProfile } from '@/lib/owner-profile';
 import {
   getDemoSession,
   getDemoSessionInfo,
@@ -207,12 +208,12 @@ export function CloudProvider({ children }: { children: ReactNode }) {
             : demo === "individual"
               ? "Demo Member"
               : "zeyad salama1"),
-        email: info.email || acc?.email || "",
-        phone: "",
+        email: (info.email || acc?.email || '').includes('@') ? (info.email || acc?.email || '') : '',
+        phone: acc?.phone || '',
         photo: "",
         account_type: demo === "individual" ? "client" : "owner",
       } as Profile;
-      setProfile(p);
+      setProfile(demo === 'owner' ? { ...p, ...(readOwnerProfile() ?? {}) } : p);
       setVerified(true);
       const memberGyms = associations.map((r) => ({
         id: r.gymId,
