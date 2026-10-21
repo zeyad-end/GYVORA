@@ -36,7 +36,8 @@ function Register() {
     try {
       const p = registrationSchema.parse(Object.fromEntries(d));
       // Prototype: demo accounts are stored locally and isolated from production auth.
-      const acc = registerDemoAccount(p.full_name, p.email || p.phone, p.password, p.account_type, p.phone);
+      const id = p.email || p.phone || `gym:${p.full_name.toLowerCase().replace(/\s+/g, '-')}`;
+      const acc = registerDemoAccount(p.full_name, id, p.password, p.account_type, p.phone);
       setDemoSession(sessionKindFor(acc.type), acc.email);
       await cloud.refresh();
       await navigate({ to: demoDestination(acc) });
@@ -71,7 +72,8 @@ function Register() {
           </Field>
            {accountType === 'individual' && <fieldset className="sm:col-span-2"><legend className="mb-2 text-sm">Contact detail</legend><div className="flex gap-4">{(['phone', 'email'] as const).map(value => <label key={value} className="flex items-center gap-2 text-sm"><input type="radio" checked={contact === value} onChange={() => setContact(value)}/>{value === 'phone' ? 'Phone Number' : 'Email'}</label>)}</div></fieldset>}
            {(accountType === 'dashboard' || (accountType === 'individual' && contact === 'email')) && <Field label="Email" className="sm:col-span-2"><Input name="email" type="email" required maxLength={255}/></Field>}
-           {(accountType === 'gym' || (accountType === 'individual' && contact === 'phone')) && <Field label="Phone Number" className="sm:col-span-2"><Input name="phone" type="tel" required maxLength={30}/></Field>}
+           {accountType === 'gym' && <><Field label="Phone Number (optional)"><Input name="phone" type="tel" maxLength={30} placeholder="Demo values are fine"/></Field><Field label="Email (optional)"><Input name="email" type="email" maxLength={255}/></Field><p className="text-xs text-muted-foreground sm:col-span-2">Prototype account — fictional details are fine. No phone, SMS or email verification.</p></>}
+           {accountType === 'individual' && contact === 'phone' && <Field label="Phone Number" className="sm:col-span-2"><Input name="phone" type="tel" required maxLength={30}/></Field>}
           <Field label="Password" className="sm:col-span-2">
             <Input name="password" type="password" required minLength={8} maxLength={128} />
           </Field>

@@ -16,6 +16,7 @@ import {
   getDemoSession,
   getDemoSessionInfo,
   getDemoAccount,
+  demoOwnerHasAccess,
   setDemoSession,
   demoUserId,
   demoMemberId,
