@@ -120,6 +120,73 @@ export type Database = {
           },
         ]
       }
+      gym_owner_event_status: {
+        Row: {
+          dismissed_at: string | null
+          event_id: string
+          read_at: string | null
+          user_id: string
+        }
+        Insert: {
+          dismissed_at?: string | null
+          event_id: string
+          read_at?: string | null
+          user_id: string
+        }
+        Update: {
+          dismissed_at?: string | null
+          event_id?: string
+          read_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_owner_event_status_event_id_fkey"
+            columns: ["event_id"]
+            isOneToOne: false
+            referencedRelation: "gym_owner_events"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      gym_owner_events: {
+        Row: {
+          created_at: string
+          description: string
+          event_key: string | null
+          gym_id: string
+          id: string
+          page: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          description: string
+          event_key?: string | null
+          gym_id: string
+          id?: string
+          page: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          description?: string
+          event_key?: string | null
+          gym_id?: string
+          id?: string
+          page?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_owner_events_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gym_records: {
         Row: {
           client_id: string | null
@@ -505,6 +572,10 @@ export type Database = {
       gym_access: { Args: { area?: string; g: string }; Returns: boolean }
       is_super_admin: { Args: never; Returns: boolean }
       otp_verified: { Args: never; Returns: boolean }
+      refresh_gym_expiration_events: {
+        Args: { day: string; g: string }
+        Returns: undefined
+      }
       respond_invitation: {
         Args: { accept: boolean; invitation_id: string }
         Returns: undefined

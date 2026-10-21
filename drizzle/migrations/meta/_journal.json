@@ -99,6 +99,13 @@
       "when": 1792496597031,
       "tag": "0013_platform_admin_request_notifications",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1792601514975,
+      "tag": "0014_gym_owner_event_notifications",
+      "breakpoints": true
     }
   ]
 }
