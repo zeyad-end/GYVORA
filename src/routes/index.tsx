@@ -11,11 +11,12 @@ import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
 import { type DemoAccountType } from "@/lib/demo";
 import { enterPrototype, getPrototypePreference, savePrototypePreference } from "@/lib/prototype-login";
-import cover from "@/assets/gym-cover.jpg";
+import cover from "@/assets/gyvora-login-hero.jpg.asset.json";
+import { AppBrand } from '@/components/AppBrand';
 import { SocialSignIn } from "@/components/SocialSignIn";
 
 export const Route = createFileRoute("/")({
-  head: () => seo("Demo login", "Enter the IRONHAUS local prototype as a Gym Account, Client / Individual, or Platform Super Admin."),
+  head: () => seo("Demo login", "Enter the GYVORA local prototype as a Gym Account, Client / Individual, or Platform Super Admin."),
   component: Login,
 });
 
@@ -54,7 +55,7 @@ function Login() {
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       <div className="relative hidden lg:block">
-        <img src={cover} alt="Premium gym interior" className="absolute inset-0 h-full w-full object-cover" width={1600} height={640} />
+        <img src={cover.url} alt="Gym training racks and weight plates" className="absolute inset-0 h-full w-full object-cover" width={675} height={1200} />
         <div className="hero-overlay absolute inset-0" />
         <div className="absolute bottom-12 left-12 right-12">
           <span className="eyebrow">Gym OS</span>
@@ -64,10 +65,7 @@ function Login() {
       </div>
       <div className="flex items-center justify-center px-6 py-12">
         <div className="w-full max-w-sm">
-          <div className="mb-10 flex items-center gap-3">
-            <span className="grid h-10 w-10 place-items-center rounded-lg bg-primary font-display font-bold text-primary-foreground">IH</span>
-            <span className="font-display text-lg font-semibold">IRONHAUS</span>
-          </div>
+          <AppBrand large className="mb-8" />
           <h1 className="text-3xl font-semibold">Welcome back</h1>
           <p className="mt-1 text-sm text-muted-foreground">Demo access · No real authentication</p>
 

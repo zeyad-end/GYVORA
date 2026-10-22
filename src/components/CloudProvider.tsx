@@ -426,7 +426,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
   if (!c.profile)
     return (
       <div className="mx-auto max-w-md p-10">
-        <h1 className="text-2xl">Sign in to IronHaus</h1>
+        <h1 className="text-2xl">Sign in to GYVORA</h1>
         <Button asChild className="mt-6">
           <Link to="/">Sign in</Link>
         </Button>

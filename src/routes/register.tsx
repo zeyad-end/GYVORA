@@ -8,9 +8,10 @@ import { Field } from '@/components/kit';
 import { seo } from '@/lib/seo';
 import { registerDemoAccount, setDemoSession, sessionKindFor, demoDestination, type DemoAccountType } from '@/lib/demo';
 import { registrationSchema } from '@/lib/registration';
+import { AppBrand } from '@/components/AppBrand';
 
 export const Route = createFileRoute('/register')({
-  head: () => seo('Create account', 'Register your IronHaus client, owner or staff account.'),
+  head: () => seo('Create account', 'Register your GYVORA client, owner or staff account.'),
   component: Register,
 });
 
@@ -51,6 +52,7 @@ function Register() {
   return (
     <div className="flex min-h-screen items-center justify-center px-6 py-12">
       <div className="w-full max-w-lg">
+        <AppBrand large className="mb-8" />
         <h1 className="text-2xl font-semibold">Create your account</h1>
         <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <fieldset className="sm:col-span-2">
