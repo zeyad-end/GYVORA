@@ -1,13 +1,20 @@
 import { beforeEach, describe, expect, it } from "vitest";
 import { enterPrototype, getPrototypePreference, savePrototypePreference } from "@/lib/prototype-login";
-import { getDemoAccount, getDemoSessionInfo, registerDemoAccount } from "@/lib/demo";
+import { getDemoAccount, getDemoSessionInfo, registerDemoAccount, updateDemoAccount } from "@/lib/demo";
 
 describe("destination-based prototype login", () => {
   beforeEach(() => localStorage.clear());
 
-  it("accepts two-character display values for Gym Account and opens the owner dashboard", () => {
-    expect(enterPrototype({ destination: "gym", name: "zy", email: "zy" }, false)).toBe("/dashboard");
-    expect(getDemoSessionInfo()).toEqual({ kind: "owner", name: "zy", email: "zy", directAccess: true });
+  it("sends a new Gym Account to the subscription screen before the dashboard", () => {
+    expect(enterPrototype({ destination: "gym", name: "zy", email: "zy" }, false)).toBe("/subscription-request");
+    expect(getDemoSessionInfo()).toEqual({ kind: "owner", name: "zy", email: "zy" });
+    expect(getDemoAccount()?.password).toBe("");
+  });
+
+  it("skipped Gym Account goes straight to the dashboard on later sign-ins", () => {
+    enterPrototype({ destination: "gym", name: "S", email: "s@x" }, false);
+    updateDemoAccount("s@x", { skipped: true });
+    expect(enterPrototype({ destination: "gym", name: "S", email: "s@x" }, false)).toBe("/dashboard");
   });
 
   it("allows blank Client / Individual entry", () => {
@@ -26,7 +33,7 @@ describe("destination-based prototype login", () => {
     expect(getDemoAccount()).toBeNull();
     expect(enterPrototype({ destination: "gym", name: "Owner", email: "ab" }, false)).toBe("/subscription-request");
     expect(getDemoAccount()?.email).toBe("ab");
-    expect(enterPrototype({ destination: "gym", name: "Owner", email: "new@x" }, false)).toBe("/dashboard");
+    expect(enterPrototype({ destination: "gym", name: "Owner", email: "new@x" }, false)).toBe("/subscription-request");
   });
 
   it("remembers only destination and display details", () => {
