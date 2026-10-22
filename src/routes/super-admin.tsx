@@ -12,6 +12,7 @@ import { Settings } from 'lucide-react';
 import { PlatformSettings } from '@/components/PlatformSettings';
 import { ExerciseImage } from '@/components/ProgramEditor';
 import { useDemoStore } from '@/lib/demo';
+import { AppBrand } from '@/components/AppBrand';
 
 export const Route = createFileRoute('/super-admin')({
   head: () => seo('Platform administration', 'IronHaus platform super admin: gym requests, approved gyms, clients and platform metrics.'),
@@ -43,9 +44,10 @@ function SuperAdminContent() {
     <div className="mx-auto max-w-6xl px-6 py-10">
       <div className="mb-8 flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
-          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-lg bg-primary font-display font-bold text-primary-foreground">{branding?.logo?<ExerciseImage path={branding.logo} className="h-10 w-10 rounded-lg object-contain"/>:'IH'}</span>
+          <AppBrand />
           <div className="min-w-0">
-            <div className="break-words font-display text-lg font-semibold">{branding?.name??'IRONHAUS Platform'}</div>
+            {branding?.name && branding.name !== 'IRONHAUS Platform' && branding.name !== 'GYVORA' && <div className="break-words font-display text-sm font-semibold">{branding.name}</div>}
+            {branding?.logo && <ExerciseImage path={branding.logo} className="h-10 w-10 object-contain" />}
             <div className="text-xs text-muted-foreground">Super Admin · fictional demo data</div>
           </div>
         </div>

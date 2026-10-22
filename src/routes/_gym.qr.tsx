@@ -8,6 +8,7 @@ import { Avatar, PageHeader, Panel, StatusPill } from "@/components/kit";
 import { useStore } from "@/lib/store";
 import { useCloud } from "@/components/CloudProvider";
 import { seo } from "@/lib/seo";
+import { AppBrand } from '@/components/AppBrand';
 
 export const Route = createFileRoute("/_gym/qr")({
   head: () => seo("QR management", "Generate the gym registration QR and member QR cards."),
@@ -35,7 +36,7 @@ function QR() {
         <Panel title="Membership card">
           {m?<>
           <div className="rounded-2xl border border-primary/40 bg-accent p-5">
-            <div className="flex items-center justify-between"><span className="font-display text-sm font-semibold">IRONHAUS</span><StatusPill status={m.status} /></div>
+            <div className="flex flex-wrap items-center justify-between gap-2"><AppBrand /><StatusPill status={m.status} /></div>
             <div className="mt-5 flex items-end justify-between gap-3">
               <div className="min-w-0"><div className="truncate font-display text-lg font-semibold">{m.name}</div><div className="text-xs text-muted-foreground">{m.id} · {m.plan}</div><div className="text-xs text-muted-foreground">Exp. {m.expiry}</div></div>
               <div className="rounded-lg bg-foreground p-2"><QRCodeSVG value={`ironhaus:member:${m.memberQrId??m.id}`} size={72} bgColor="transparent" fgColor="currentColor" className="text-background" /></div>

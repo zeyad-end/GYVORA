@@ -12,6 +12,7 @@ import { Button } from "./ui/button";
 import { GymAccount } from './GymAccount';
 import { GymNotifications } from './GymNotifications';
 import { ExerciseImage } from './ProgramEditor';
+import { AppBrand } from './AppBrand';
 
 const nav = [
   { to: "/gym", label: "Gym Profile", icon: Building2 },
@@ -38,6 +39,7 @@ export function GymShell({ children }: { children: ReactNode }) {
 
   const sidebar = (
     <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+      <AppBrand className="border-b border-sidebar-border px-5 py-3" />
       <div className="flex items-center gap-3 px-5 py-6">
         {gym.logo ? <img src={gym.logo} alt={`${gym.name} logo`} className="h-9 w-9 shrink-0 rounded-lg object-cover"/> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary font-display text-sm font-bold text-primary-foreground">{initials(gym.name)}</span>}
         <div className="min-w-0">

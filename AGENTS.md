@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Shared app branding uses a reusable component backed by uploaded CDN asset pointers; gym identity and legacy storage/QR namespaces stay separate to preserve user records and permanent codes.
 - Super Admin plans, dates, notes, prices and branding extend existing prototype snapshots; assigning a plan copies its stable ID, billing type, duration and agreed prices into the gym, so catalog edits cannot change agreements. Projected billing uses saved billing types and anchored dates, with plan duration end dates exclusive, never payment receipts. Provider identities are read from authenticated accounts without substituting social sign-in for linking or fabricating demo connections.
 - Trainer profile mutations merge only validated profile fields into the current gym snapshot by trainer ID; program/assignment attribution is a saved name snapshot, not an account association, so schedule changes and later renames cannot rewrite historical creators.
 - Gym event history is appended from demo snapshot differences and Cloud record/invitation triggers; owner-only notification reads and per-user read/dismiss state stay separate from underlying gym records so notification actions cannot alter them.

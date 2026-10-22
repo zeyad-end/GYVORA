@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { Avatar, StatusPill } from "@/components/kit";
 import { seo } from "@/lib/seo";
+import { AppBrand } from '@/components/AppBrand';
 
 export const Route = createFileRoute("/member/")({
   head: () => seo("My account", "Your membership status, QR code and training at a glance."),
@@ -44,6 +45,7 @@ function MemberHome() {
     : 0;
   return (
     <div className="mx-auto min-h-screen max-w-md px-5 py-8">
+      <AppBrand className="mb-6" />
       <div className="flex items-center justify-between">
         <Link to="/member/settings" className="flex items-center gap-3">
           <Avatar initials={initials(c.profile?.full_name ?? "")} />

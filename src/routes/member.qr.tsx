@@ -39,7 +39,7 @@ function MemberQR() {
       ctx.fillStyle = "#000000";
       ctx.textAlign = "center";
       ctx.font = "20px sans-serif";
-      ctx.fillText("IRONHAUS · Member ID", 320, 650);
+      ctx.fillText("GYVORA · Member ID", 320, 650);
       ctx.font = "14px sans-serif";
       ctx.fillText(id ?? "", 320, 680);
       return await new Promise<Blob>((resolve, reject) =>
@@ -58,7 +58,7 @@ function MemberQR() {
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
-      a.download = "ironhaus-member-qr.png";
+      a.download = "gyvora-member-qr.png";
       a.click();
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
@@ -68,12 +68,12 @@ function MemberQR() {
   async function share() {
     if (!id) return;
     try {
-      const file = new File([await image()], "ironhaus-member-qr.png", { type: "image/png" });
+      const file = new File([await image()], "gyvora-member-qr.png", { type: "image/png" });
       if (navigator.share) {
         await navigator.share(
           navigator.canShare?.({ files: [file] })
-            ? { files: [file], title: "My IronHaus QR", text: `Member ID: ${id}` }
-            : { title: "My IronHaus Member ID", text: `Member ID: ${id}` },
+            ? { files: [file], title: "My GYVORA QR", text: `Member ID: ${id}` }
+            : { title: "My GYVORA Member ID", text: `Member ID: ${id}` },
         );
         return;
       }
