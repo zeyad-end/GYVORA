@@ -413,7 +413,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
         <div className="mx-auto max-w-md p-10">
           <h1 className="text-2xl">{demoRequestStatus(acc.email) === "Rejected" ? "Subscription request rejected" : "Subscription approval pending"}</h1>
           <p className="mt-2 text-muted-foreground">
-            {demoRequestStatus(acc.email) === "Rejected" ? "Your request was rejected, so the Gym Owner dashboard is unavailable. Contact the administrator." : "Your request is waiting for admin approval — or skip to enter with demo access."}
+            {demoRequestStatus(acc.email) === "Rejected" ? "Your request was rejected, so the Gym Owner dashboard is unavailable. Contact the administrator." : "The Gym Owner dashboard is unavailable until your subscription request is approved."}
           </p>
           <Button asChild className="mt-6">
             <Link to="/subscription-request">View subscription</Link>
