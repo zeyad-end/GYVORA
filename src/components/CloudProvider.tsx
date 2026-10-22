@@ -420,6 +420,15 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
           </Button>
         </div>
       );
+    if (acc?.skipped && demoRequestStatus(acc.email) === "Pending" && !path.startsWith("/member") && path !== "/subscription-request")
+      return (
+        <>
+          <div role="status" className="border-b bg-secondary px-4 py-2 text-center text-xs text-muted-foreground">
+            Prototype demo access · Your subscription request is still Pending — not approved or paid.
+          </div>
+          {children}
+        </>
+      );
     return children;
   }
   if (c.loading) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
