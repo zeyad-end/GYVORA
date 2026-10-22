@@ -48,7 +48,7 @@ function Request() {
     setGymName((n) => n || demoAcc?.name || '');
     if (!isDemoOwner && c.profile)
       void supabase.from('owner_requests').select('*').eq('user_id', c.profile.id).maybeSingle()
-        .then(({ data }) => { const d = data as Record<string, unknown> | null; setCloudReq(d ? { status: String(d.status ?? ''), plan: String(d.plan ?? ''), gym: String(d.gym_name ?? d.name ?? ''), date: String(d.created_at ?? '').slice(0, 10) } : null); });
+        .then(({ data }) => { const d = data as Record<string, unknown> | null; setCloudReq(d ? { status: String(d['status'] ?? ''), plan: String(d['plan'] ?? ''), gym: String(d['gym_name'] ?? d['name'] ?? ''), date: String(d['created_at'] ?? '').slice(0, 10) } : null); });
   }, [c.profile?.id]);
 
   async function onSend(e: React.FormEvent<HTMLFormElement>) {
