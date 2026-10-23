@@ -559,7 +559,7 @@ function OwnerGateBoundary({ children }: { children: ReactNode }) {
     );
 
   if (gate.requestStatus === 'Pending') {
-    if (trialExpired(gate))
+    if (trialExpired(gate, elapsed()))
       return (
         <div className="mx-auto max-w-md p-10">
           <h1 className="text-2xl">Trial ended</h1>
@@ -570,11 +570,11 @@ function OwnerGateBoundary({ children }: { children: ReactNode }) {
           </div>
         </div>
       );
-    if (trialActive(gate))
+    if (trialActive(gate, elapsed()))
       return (
         <>
           <div role="status" className="border-b bg-secondary px-4 py-2 text-center text-xs text-muted-foreground">
-            Trial access · {formatRemaining(trialRemainingMs(gate))} remaining — your subscription request is still Pending approval.
+            Trial access · {formatRemaining(trialRemainingMs(gate, elapsed()))} remaining — your subscription request is still Pending approval.
           </div>
           {children}
         </>
