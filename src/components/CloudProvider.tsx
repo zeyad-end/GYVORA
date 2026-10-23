@@ -13,6 +13,10 @@ import { expirationEvents } from '@/lib/gym-events';
 import { appendGymEvents } from '@/lib/gym-notifications-demo';
 import { localDate } from '@/lib/gym-period';
 import { isClientPortalPath } from '@/lib/membership-link';
+import { getOwnerGate } from '@/lib/owner-gate.functions';
+import { trialActive, trialExpired, trialRemainingMs, formatRemaining, type OwnerGate } from '@/lib/trial';
+import { whatsappLink } from '@/lib/demo';
+import { MessageCircle } from 'lucide-react';
 import {
   getDemoSession,
   getDemoSessionInfo,
@@ -453,6 +457,8 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     path === "/gyms"
   )
     return children;
+  if (c.profile.account_type === 'owner' && c.role !== 'super_admin')
+    return <OwnerGateBoundary>{children}</OwnerGateBoundary>;
   if (!c.gymId)
     return (
       <div className="p-10">
