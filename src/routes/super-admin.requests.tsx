@@ -2,7 +2,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import { PageHeader, DataTable, td, StatusPill } from '@/components/kit';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { useDemoStore, approveRequest, rejectRequest } from '@/lib/demo';
+import { useDemoStore, approveRequest, rejectRequest, getDemoSession } from '@/lib/demo';
+import { CloudGymRequests } from '@/components/CloudGymRequests';
 import { seo } from '@/lib/seo';
 import { usePlatformAdmin } from '@/components/PlatformAdminProvider';
 
@@ -21,6 +22,8 @@ function Requests() {
   const reviewing = requests.find((r) => r.id === request);
   const pending = requests.filter((r) => r.status === 'Pending');
   const decided = requests.filter((r) => r.status !== 'Pending');
+
+  if(!getDemoSession())return <CloudGymRequests/>;
 
   function decide(id: string, gymName: string, approve: boolean) {
     if (!window.confirm(`${approve ? 'Approve' : 'Reject'} ${gymName}?`)) return;
