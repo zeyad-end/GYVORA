@@ -14,6 +14,7 @@ import { findSessionClient } from "@/lib/session-client";
 import { programSchema } from "@/lib/validation";
 import { uploadImage } from "@/lib/images";
 import { getDemoSession, sendDemoAssignment } from "@/lib/demo";
+import { generateId } from "@/lib/utils";
 
 const emptyRow = () => ({ name: "", sets: 3, reps: "10", image: "" });
 
@@ -46,7 +47,7 @@ export function AssignWorkout({ open, onClose }: { open: boolean; onClose: () =>
     setName("");
     setTrainer("");
     setRows([emptyRow()]);
-    setRequestKey(crypto.randomUUID());
+    setRequestKey(generateId());
   }, [open]);
 
   function pick(m: Member | undefined) {
@@ -76,8 +77,8 @@ export function AssignWorkout({ open, onClose }: { open: boolean; onClose: () =>
       if (mode === "existing" && !source) throw new Error("Choose a program to send");
       const program = programSchema.parse(
         source
-           ? { ...source, id: crypto.randomUUID(), trainer: trainer.trim() }
-           : { id: crypto.randomUUID(), name, trainer: trainer.trim(), notes: "", exercises: rows },
+           ? { ...source, id: generateId(), trainer: trainer.trim() }
+           : { id: generateId(), name, trainer: trainer.trim(), notes: "", exercises: rows },
       );
       sendDemoAssignment({ requestKey, gymId: c.gymId, gymName, memberId: client.id, program });
       toast.success(`Workout sent to ${client.name}`);

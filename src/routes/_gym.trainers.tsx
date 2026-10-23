@@ -19,6 +19,7 @@ import { TrainerSchedule } from "@/components/TrainerSchedule";
 import { defaultSchedule, scheduleSchema } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
 import { trainerProfileSchema, updateTrainerProfile, deleteTrainerProfile, trainerCreatedWorkout } from "@/lib/trainer-profiles";
+import { generateId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_gym/trainers")({
   head: () => seo("Trainers", "Your coaching team, their members, schedules and programs."),
@@ -164,7 +165,7 @@ function Trainers() {
                 }
                 const validated = scheduleSchema.parse(schedule);
                 const t: Trainer = {
-                  id: crypto.randomUUID(),
+                  id: generateId(),
                   ...profile,
                   bio: "",
                   members: 0,

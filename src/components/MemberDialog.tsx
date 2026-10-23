@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Field, selectCls } from "@/components/kit";
 import { initials } from "@/lib/mock";
 import { getState, setState, useStore, type Member } from "@/lib/store";
+import { generateId } from "@/lib/utils";
 
 const blank = () => ({ name: "", phone: "", email: "", plan: "Basic", type: "Unlimited" as Member["type"], sessionsTotal: 20, start: new Date().toISOString().slice(0, 10), expiry: "", trainer: "", notes: "" });
 
@@ -42,7 +43,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
       setState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
       
     } else {
-      const id = crypto.randomUUID();
+      const id = generateId();
       setState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
       
     }

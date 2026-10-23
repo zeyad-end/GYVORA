@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field } from "@/components/kit";
 import { getState, readFile, saveState, type Gym, type Plan } from "@/lib/store";
+import { generateId } from "@/lib/utils";
 
 export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [g, setG] = useState<Gym>(getState().gym);
@@ -59,7 +60,7 @@ export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenCha
               <Button size="icon" variant="ghost" aria-label="Remove plan" onClick={() => setPlans(plans.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
             </div>
           ))}
-          <Button size="sm" variant="secondary" onClick={() => setPlans([...plans, { id: crypto.randomUUID(), name: "New plan", duration: "1 month", price: 0, features: [] }])}><Plus className="h-4 w-4" />Add plan</Button>
+          <Button size="sm" variant="secondary" onClick={() => setPlans([...plans, { id: generateId(), name: "New plan", duration: "1 month", price: 0, features: [] }])}><Plus className="h-4 w-4" />Add plan</Button>
         </div>
 
         <Field label="Gallery images">

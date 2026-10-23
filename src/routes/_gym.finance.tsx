@@ -33,13 +33,14 @@ import {
   type ReportPeriod,
 } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
+import { generateId } from "@/lib/utils";
 export const Route = createFileRoute("/_gym/finance")({
   head: () =>
     seo("Finance", "Gym invoices, expenses, recurring costs and date-filtered invoice reports."),
   component: Finance,
 });
 const blank = (): Invoice => ({
-  id: crypto.randomUUID(),
+  id: generateId(),
   name: "",
   category: "",
   description: "",

@@ -10,6 +10,7 @@ import {
 } from "date-fns";
 import type { Invoice, Plan, Member, TrainerDay, Workout, RecurringExpense } from "./store";
 import { nextPayment } from "./validation";
+import { generateId } from "./utils";
 
 export const weekDays = [
   "Monday",
@@ -126,7 +127,7 @@ export function markRecurringPaid(
   if (row.lastPaidOccurrence === occurrence)
     throw new Error("This scheduled payment was already recorded as paid");
   const transactionsNext = createInvoice(transactions, {
-    id: crypto.randomUUID(),
+    id: generateId(),
     name: row.name,
     category: row.category,
     description: `Recurring payment (${row.frequency}) due ${occurrence}`,

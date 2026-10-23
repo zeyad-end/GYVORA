@@ -10,6 +10,7 @@ import { uploadImage, imageUrl } from "@/lib/images";
 import type { Trainer, Workout } from "@/lib/store";
 import { TrainerField } from "./TrainerField";
 import { toast } from "sonner";
+import { generateId } from "@/lib/utils";
 export function ExerciseImage({
   path,
   className = "h-16 w-20 rounded-md object-cover",
@@ -75,7 +76,7 @@ export function ProgramEditor({
             setBusy(true);
             try {
               const p = programSchema.parse({
-                id: program?.id ?? crypto.randomUUID(),
+                id: program?.id ?? generateId(),
                 name,
                 trainer: trainers ? trainer.trim() : program?.trainer ?? "",
                 notes: trainers ? notes : program?.notes ?? "",

@@ -23,6 +23,7 @@ import { readFile } from "@/lib/store";
 import { egp } from "@/lib/mock";
 import { seo } from "@/lib/seo";
 import { toast } from "sonner";
+import { generateId } from "@/lib/utils";
 
 export const Route = createFileRoute("/super-admin/expenses")({
   head: () =>
@@ -33,7 +34,7 @@ export const Route = createFileRoute("/super-admin/expenses")({
   component: Expenses,
 });
 const blank = (): PlatformExpense => ({
-  id: crypto.randomUUID(),
+  id: generateId(),
   name: "",
   category: "Operations",
   amount: 0,

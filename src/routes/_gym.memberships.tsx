@@ -15,6 +15,7 @@ import { Field, PageHeader } from "@/components/kit";
 import { currencyOf, saveState, useStore } from "@/lib/store";
 import { deletePlan } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
+import { generateId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_gym/memberships")({
   head: () => seo("Membership plans", "Create and manage membership plans, durations and pricing."),
@@ -129,7 +130,7 @@ function Memberships() {
                     : [
                         ...s.plans,
                         {
-                          id: crypto.randomUUID(),
+                          id: generateId(),
                           name: name.trim(),
                           duration,
                           price,

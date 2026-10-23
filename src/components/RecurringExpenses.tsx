@@ -16,9 +16,10 @@ import { nextPayment, recurringSchema } from "@/lib/validation";
 import { markRecurringPaid } from "@/lib/gym-updates";
 import { expenseCategories } from "@/lib/mock";
 import { money as egp, currencyOf } from "@/lib/store";
+import { generateId } from "@/lib/utils";
 
 const blank = (): RecurringExpense => ({
-  id: crypto.randomUUID(),
+  id: generateId(),
   name: "",
   category: "Rent",
   frequency: "Monthly",
