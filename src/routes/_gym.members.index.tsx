@@ -7,6 +7,10 @@ import { Avatar, DataTable, PageHeader, Panel, StatusPill, td } from "@/componen
 import { useStore, type Member } from "@/lib/store";
 import { MemberDialog } from "@/components/MemberDialog";
 import { seo } from "@/lib/seo";
+import { useCloud } from '@/components/CloudProvider';
+import { GymSubscriptionStatus } from '@/components/GymSubscriptionStatus';
+import { membershipStatus } from '@/lib/membership-link';
+import { localDate } from '@/lib/gym-period';
 
 export const Route = createFileRoute("/_gym/members/")({
   head: () => seo("Members", "Search, filter and manage every member of your gym."),
@@ -14,17 +18,20 @@ export const Route = createFileRoute("/_gym/members/")({
 });
 
 function Members() {
+  const c=useCloud();
   const [q, setQ] = useState("");
   const [f, setF] = useState("All");
-  const members = useStore((s) => s.members);
+  const storedMembers = useStore((s) => s.members);
+  const members=storedMembers.map(m=>({...m,status:membershipStatus(m,localDate())}));
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const rows = members.filter((m) => (f === "All" || m.status === f) && (m.name + m.phone).toLowerCase().includes(q.toLowerCase()));
   return (
     <>
       <MemberDialog open={open} onOpenChange={setOpen} member={editing} />
-      <PageHeader title="Members" subtitle={`${members.length} members · auto-generated QR for each`}
+      <PageHeader title="Members" subtitle={`${members.length} members`}
         actions={<><Button variant="secondary"><Download className="h-4 w-4" />Export</Button><Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Add Member</Button></>} />
+      <div className="mb-5"><GymSubscriptionStatus gymId={c.gymId}/></div>
       <Panel>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or phone" className="h-10 bg-surface sm:max-w-xs" />
@@ -46,7 +53,7 @@ function Members() {
               <td className={`${td} text-right`}>
                 <div className="flex justify-end gap-1">
                   <Button asChild size="icon" variant="ghost"><Link to="/members/$id" params={{ id: m.id }} aria-label="View"><Eye className="h-4 w-4" /></Link></Button>
-                  <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => { setEditing(m); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => { setEditing(storedMembers.find(x=>x.id===m.id)??null); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
                 </div>
               </td>
             </tr>

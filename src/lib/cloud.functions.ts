@@ -18,8 +18,18 @@ export const saveRecords = createServerFn({method:'POST'}).middleware([requireSu
  });
 
 export const lookupClient = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
- .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.string().uuid()}).parse(input))
- .handler(async({data,context})=>{ const {data:allowed}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Members'}); if(!allowed)throw new Error('Member access required'); const {supabaseAdmin}=await import('@/integrations/supabase/client.server'); const {data:p,error}=await supabaseAdmin.from('profiles').select('id,member_id,full_name,email,phone').eq('member_id',data.memberId).maybeSingle(); if(error||!p)throw new Error('No client found with this Member ID'); return p; });
+ .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.union([z.string().uuid(),z.string().trim().email().max(255)])}).parse(input))
+ .handler(async({data,context})=>{
+  const {data:owner,error:roleError}=await context.supabase.from('user_roles').select('id').eq('user_id',context.userId).eq('gym_id',data.gymId).eq('role','Owner').maybeSingle();
+  if(roleError||!owner)throw new Error('Only gym owners can look up existing clients');
+  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
+  let query=supabaseAdmin.from('profiles').select('id,member_id,full_name,email,phone').in('account_type',['client','staff']);
+  query=data.memberId.includes('@')?query.eq('email',data.memberId.toLowerCase()):query.eq('member_id',data.memberId);
+  const {data:p,error}=await query.maybeSingle();
+  if(error)throw new Error('Client lookup failed. Please try again.');
+  if(!p)throw new Error('No existing client found with this Member ID or email');
+  return p;
+ });
 
 export const manageInvitation = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
  .inputValidator(input=>z.object({gymId:z.string().uuid(),action:z.enum(['create','resend','cancel']),id:z.string().uuid().optional(),name:text.optional(),email:z.string().trim().email().max(255).optional(),role:z.enum(['Admin','Reception','Trainer']).optional()}).parse(input))
