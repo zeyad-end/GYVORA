@@ -72,7 +72,7 @@ export function demoMemberships(id: string): MembershipSnapshot[] {
   });
 }
 export function isCurrentMembership(m: MembershipSnapshot, date: string) {
-  return m.start <= date && m.expiry >= date && m.status !== "Expired";
+  return m.start <= date && m.expiry >= date;
 }
 export function useClientGyms() {
   const c = useCloud();
@@ -125,6 +125,11 @@ export function useClientGyms() {
       return;
     }
     const current = links.find((l) => l.gymId === gymId);
+    if(action !== 'leave') {
+      const {data:allowed,error}=await supabase.rpc('client_has_gym_approval',{g:gymId});
+      if(error)throw error;
+      if(!allowed)throw new Error('A gym owner must add or approve you before you can join this gym.');
+    }
     const result =
       action === "leave"
         ? await supabase.from("client_gym_links").delete().eq("user_id", id).eq("gym_id", gymId)

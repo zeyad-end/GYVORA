@@ -556,6 +556,7 @@ export type Database = {
       can_read_image: { Args: { path: string }; Returns: boolean }
       client_gym_content: { Args: { g: string }; Returns: Json }
       client_gym_directory: { Args: never; Returns: Json }
+      client_has_gym_approval: { Args: { g: string }; Returns: boolean }
       decide_owner_request: {
         Args: { approve: boolean; request_id: string }
         Returns: string
@@ -570,6 +571,7 @@ export type Database = {
         Returns: boolean
       }
       gym_access: { Args: { area?: string; g: string }; Returns: boolean }
+      gym_subscription_summary: { Args: { g: string }; Returns: Json }
       is_super_admin: { Args: never; Returns: boolean }
       otp_verified: { Args: never; Returns: boolean }
       refresh_gym_expiration_events: {

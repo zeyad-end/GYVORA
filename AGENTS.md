@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Existing-client memberships reuse gym_records/client_id and historical snapshots; database uniqueness and owner/approved-gym guards enforce linking, while client-owned directory links never grant access. Shared summaries expose only gym approval/plan, never billing credentials or receipts. Client portal path exceptions match /member or /member/ exactly, not /members or /memberships.
 - Shared app branding uses a reusable component backed by uploaded CDN asset pointers; gym identity and legacy storage/QR namespaces stay separate to preserve user records and permanent codes.
 - Super Admin plans, dates, notes, prices and branding extend existing prototype snapshots; assigning a plan copies its stable ID, billing type, duration and agreed prices into the gym, so catalog edits cannot change agreements. Projected billing uses saved billing types and anchored dates, with plan duration end dates exclusive, never payment receipts. Provider identities are read from authenticated accounts without substituting social sign-in for linking or fabricating demo connections.
 - Both owner trainer views read the same gym-scoped store and persistence pipeline; optional notes and shared photo fallbacks avoid duplicate records. Trainer profile mutations merge validated fields by trainer ID and retain previous names for workout lookup; program/assignment attribution remains a historical name snapshot, so renames preserve associations without rewriting creators.

@@ -7,6 +7,9 @@ import { getDemoSession, readDemoMembershipHistory } from "@/lib/demo";
 import { useClientGyms, isCurrentMembership, type MembershipSnapshot } from "@/lib/client-portal";
 import { seo } from "@/lib/seo";
 import { egp } from "@/lib/mock";
+import { GymSubscriptionStatus } from '@/components/GymSubscriptionStatus';
+import { membershipStatus } from '@/lib/membership-link';
+import { localDate } from '@/lib/gym-period';
 export const Route = createFileRoute("/member/membership")({
   head: () =>
     seo(
@@ -24,6 +27,7 @@ function Details({ m }: { m: MembershipSnapshot }) {
         {[
           ["Type", m.type],
           ["Gym", m.gym],
+          ["Membership status", membershipStatus(m,localDate())],
           ["Start date", m.start],
           ["Expiration date", m.expiry],
           [
@@ -39,6 +43,7 @@ function Details({ m }: { m: MembershipSnapshot }) {
           </div>
         ))}
       </dl>
+      <div className="mt-5 border-t pt-4"><GymSubscriptionStatus gymId={m.gymId}/></div>
     </article>
   );
 }
@@ -82,7 +87,7 @@ function Membership() {
       active = false;
     };
   }, [c.profile?.id, p.memberships.length]);
-  const today = new Date().toLocaleDateString("en-CA");
+  const today = localDate();
   const current = p.memberships.filter((m) => isCurrentMembership(m, today));
   const past = history
     .filter(

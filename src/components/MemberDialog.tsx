@@ -11,8 +11,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Field, selectCls } from "@/components/kit";
 import { initials } from "@/lib/mock";
-import { getState, setState, useStore, type Member } from "@/lib/store";
+import { getState, saveState, useStore, type Member } from "@/lib/store";
 import { generateId } from "@/lib/utils";
+import { assertUniqueClientMembership } from '@/lib/membership-link';
 
 const blank = () => ({ name: "", phone: "", email: "", plan: "Basic", type: "Unlimited" as Member["type"], sessionsTotal: 20, start: new Date().toISOString().slice(0, 10), expiry: "", trainer: "", notes: "" });
 
@@ -22,33 +23,45 @@ function statusFor(expiry: string): Member["status"] {
 }
 
 export function MemberDialog({ open, onOpenChange, member }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null }) {
-  const c=useCloud();const lookup=useServerFn(lookupClient);const [scan,setScan]=useState(false);const [memberId,setMemberId]=useState("");const [clientId,setClientId]=useState<string|undefined>();const [lookupBusy,setLookupBusy]=useState(false);
-  async function findClient(value:string){const id=value.replace(/^ironhaus:member:/,"");const v=z.string().uuid().safeParse(id);if(!v.success){toast.error("Enter a valid Member ID or member QR");return;}setLookupBusy(true);try{const p=await lookup({data:{gymId:c.gymId,memberId:v.data}});up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setMemberId(p.member_id);toast.success("Client found. Confirm their details before saving.");}catch(e){toast.error(e instanceof Error?e.message:"Client not found");}finally{setLookupBusy(false);}}
+  const c=useCloud();const lookup=useServerFn(lookupClient);const [scan,setScan]=useState(false);const [memberId,setMemberId]=useState("");const [clientId,setClientId]=useState<string|undefined>();const [lookupBusy,setLookupBusy]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
+  async function findClient(value:string){const id=value.trim().replace(/^ironhaus:member:/,"");const v=z.union([z.string().uuid(),z.string().email()]).safeParse(id);if(!v.success){toast.error("Enter a valid Member ID, member QR or existing client email");return;}setLookupBusy(true);setClientId(undefined);try{const p=await lookup({data:{gymId:c.gymId,memberId:v.data}});assertUniqueClientMembership(getState().members,p.id,member?.id);up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setMemberId(p.member_id);toast.success("Client found. Confirm their details before saving.");}catch(e){toast.error(e instanceof Error?e.message:"Client not found");}finally{setLookupBusy(false);}}
   const plans = useStore((s) => s.plans);
   const trainers = useStore((s) => s.trainers);
   const [f, setF] = useState(blank());
   useEffect(() => {
-    if(open){setClientId(member?.clientId);setMemberId("");}
+    if(open){setClientId(member?.clientId);setMemberId("");setError('');}
     if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: member.start, expiry: member.expiry, trainer: member.trainer, notes: member.notes } : blank());
   }, [open, member]);
   const up = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
 
-  const save = (e: React.FormEvent) => {
+  const save = async (e: React.FormEvent) => {
     e.preventDefault();
     if (f.expiry < f.start) { toast.error("End date must be after start date"); return; }
+    setBusy(true);setError('');
+    try {
+    assertUniqueClientMembership(getState().members,clientId,member?.id);
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
     const base = { ...f, ...(clientId?{clientId,memberQrId:memberId||member?.memberQrId}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
       const left = f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0;
-      setState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
+      await saveState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
       
     } else {
       const id = generateId();
-      setState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
+      await saveState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
       
     }
-    onOpenChange(false);
+    toast.success(member?'Membership updated':'Membership saved');onOpenChange(false);
+    } catch(e) {setError(e instanceof Error?e.message:'Could not save membership. Please try again.');} finally {setBusy(false);}
   };
+
+  async function remove() {
+    if(!member||!window.confirm('Delete this gym subscription?'))return;
+    setBusy(true);setError('');
+    try {await saveState(s=>({members:s.members.filter(m=>m.id!==member.id)}));toast.success('Membership removed; history retained');onOpenChange(false);}
+    catch(e){setError(e instanceof Error?e.message:'Could not delete membership. Please try again.');}
+    finally {setBusy(false);}
+  }
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -56,11 +69,11 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
         <DialogHeader><DialogTitle>{member ? "Edit member" : "Add member"}</DialogTitle></DialogHeader>
         <QRScanner open={scan} onClose={()=>setScan(false)} onScan={v=>void findClient(v)}/>
         <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
-          {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="Enter Member ID"><div className="flex gap-2"><Input maxLength={100} value={memberId} onChange={e=>setMemberId(e.target.value)}/><Button type="button" disabled={lookupBusy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="text-sm text-success">Existing client linked · {f.name}</p>}</div>}
+          {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="Member ID or existing client email"><div className="flex gap-2"><Input aria-label="Member ID or existing client email" maxLength={255} value={memberId} onChange={e=>{setMemberId(e.target.value);setClientId(undefined);}}/><Button type="button" disabled={lookupBusy||busy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="text-sm text-success">Existing client linked · {f.name}</p>}</div>}
           <Field label="Full name" className="sm:col-span-2"><Input required maxLength={80} value={f.name} onChange={(e) => up({ name: e.target.value })} /></Field>
-          <Field label="Phone number"><Input required maxLength={30} value={f.phone} onChange={(e) => up({ phone: e.target.value })} /></Field>
+          <Field label="Phone number"><Input required={!clientId} maxLength={30} value={f.phone} onChange={(e) => up({ phone: e.target.value })} /></Field>
           <Field label="Email"><Input type="email" maxLength={120} value={f.email} onChange={(e) => up({ email: e.target.value })} /></Field>
-          <Field label="Membership plan"><select className={selectCls} value={f.plan} onChange={(e) => up({ plan: e.target.value })}>{plans.map((p) => <option key={p.id}>{p.name}</option>)}</select></Field>
+          <Field label="Membership plan"><select aria-label="Membership plan" required className={selectCls} value={f.plan} onChange={(e) => up({ plan: e.target.value })}>{plans.map((p) => <option key={p.id}>{p.name}</option>)}</select></Field>
           <Field label="Membership type"><select className={selectCls} value={f.type} onChange={(e) => up({ type: e.target.value as Member["type"] })}><option value="Unlimited">Unlimited membership</option><option value="Limited">Limited sessions</option></select></Field>
           {f.type === "Limited" && (
             <Field label="Number of sessions" className="sm:col-span-2">
@@ -70,15 +83,16 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
               </div>
             </Field>
           )}
-          <Field label="Start date"><Input type="date" required value={f.start} onChange={(e) => up({ start: e.target.value })} /></Field>
-          <Field label="End date"><Input type="date" required value={f.expiry} onChange={(e) => up({ expiry: e.target.value })} /></Field>
+          <Field label="Start date"><Input aria-label="Start date" type="date" required value={f.start} onChange={(e) => up({ start: e.target.value })} /></Field>
+          <Field label="End date"><Input aria-label="End date" type="date" required value={f.expiry} onChange={(e) => up({ expiry: e.target.value })} /></Field>
           <Field label="Trainer" className="sm:col-span-2"><select className={selectCls} value={f.trainer} onChange={(e) => up({ trainer: e.target.value })}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
           <Field label="Notes" className="sm:col-span-2"><Textarea maxLength={500} value={f.notes} onChange={(e) => up({ notes: e.target.value })} /></Field>
           <DialogFooter className="gap-2 sm:col-span-2">
-            {member && <Button type="button" variant="destructive" className="sm:mr-auto" onClick={() => { if(!window.confirm("Delete this gym subscription?"))return; setState((s) => ({ members: s.members.filter((m) => m.id !== member.id) }));  onOpenChange(false); }}>Delete member</Button>}
-            <Button type="button" variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit">{member ? "Save changes" : "Save"}</Button>
+            {member && <Button type="button" disabled={busy} variant="destructive" className="sm:mr-auto" onClick={()=>void remove()}>Delete member</Button>}
+            <Button type="button" disabled={busy} variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="submit" disabled={busy||lookupBusy||!plans.length}>{busy?'Saving…':member ? "Save changes" : "Save"}</Button>
           </DialogFooter>
+          {error&&<p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p>}
         </form>
       </DialogContent>
     </Dialog>

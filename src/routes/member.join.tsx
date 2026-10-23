@@ -9,6 +9,8 @@ import { Input } from "@/components/ui/input";
 import { useClientGyms } from "@/lib/client-portal";
 import { seo } from "@/lib/seo";
 import { toast } from "sonner";
+import { getDemoSession } from '@/lib/demo';
+import { useCloud } from '@/components/CloudProvider';
 export const Route = createFileRoute("/member/join")({
   head: () =>
     seo("Join a gym", "Find and join gyms by name, Gym ID or QR without purchasing a membership."),
@@ -16,6 +18,8 @@ export const Route = createFileRoute("/member/join")({
 });
 function Join() {
   const p = useClientGyms();
+  const c=useCloud();
+  const canJoin=(id:string)=>!!getDemoSession()||p.memberships.some(m=>m.gymId===id)||c.gyms.some(g=>g.id===id);
   const [query, setQuery] = useState("");
   const [scan, setScan] = useState(false);
   const [busy, setBusy] = useState("");
@@ -62,10 +66,10 @@ function Join() {
             gym={g}
             actions={
               <Button
-                disabled={busy === g.id || p.links.some((l) => l.gymId === g.id)}
+                disabled={busy === g.id || !canJoin(g.id) || p.links.some((l) => l.gymId === g.id)}
                 onClick={() => void change(g.id, "join")}
               >
-                {p.links.some((l) => l.gymId === g.id) ? "Joined" : "Join / Add"}
+                {p.links.some((l) => l.gymId === g.id) ? "Joined" : !canJoin(g.id)?'Owner approval required':"Join / Add"}
               </Button>
             }
           />
