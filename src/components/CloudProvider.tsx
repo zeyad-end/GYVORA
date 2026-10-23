@@ -100,7 +100,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       .eq("gym_id", id)
       .eq("user_id", profile?.id ?? "")
       .maybeSingle();
-    setRole(r?.role ?? "");
+    setRole((prev) => (prev === "super_admin" ? prev : (r?.role ?? "")));
     setPermissions(r?.permissions ?? []);
     const base: State = {
       gym: {
@@ -280,6 +280,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         generation.current++;
         setRole("");
         setPermissions([]);
+        setIsAdmin(false);
         setProfile(null);
         setVerified(false);
         setGyms([]);
