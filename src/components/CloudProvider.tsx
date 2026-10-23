@@ -233,12 +233,14 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         name: r.gymName,
         owner_id: "",
         created_at: "",
+        frozen_at: null,
+        freeze_note: "",
       }));
       setGyms(
         demo === "owner"
           ? [
-              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "" },
-              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "" },
+              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "", frozen_at: null, freeze_note: "" },
+              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "", frozen_at: null, freeze_note: "" },
             ]
           : demo === "individual"
             ? memberGyms
