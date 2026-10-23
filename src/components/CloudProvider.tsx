@@ -66,6 +66,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const [role, setRole] = useState("");
   const [permissions, setPermissions] = useState<string[]>([]);
   const [verified, setVerified] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
   async function loadGym(id: string) {
     if (!gyms.some((g) => g.id === id)) throw new Error("Gym access required");
@@ -99,7 +100,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       .eq("gym_id", id)
       .eq("user_id", profile?.id ?? "")
       .maybeSingle();
-    setRole(r?.role ?? "");
+    setRole((prev) => (prev === "super_admin" ? prev : (r?.role ?? "")));
     setPermissions(r?.permissions ?? []);
     const base: State = {
       gym: {
@@ -279,6 +280,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         generation.current++;
         setRole("");
         setPermissions([]);
+        setIsAdmin(false);
         setProfile(null);
         setVerified(false);
         setGyms([]);
@@ -303,6 +305,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
           .eq("user_id", user.id)
           .eq("role", "super_admin")
           .maybeSingle();
+        setIsAdmin(!!admin);
         if (admin) setRole("super_admin");
       }
     } catch (e) {
@@ -328,9 +331,9 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     };
   }, []);
   useEffect(() => {
-    if (profile && verified && gyms.length === 1 && !getDemoSession())
+    if (profile && verified && !isAdmin && gyms.length === 1 && !getDemoSession())
       void loadGym(gyms[0]?.id ?? "").catch((e) => toast.error(String(e)));
-  }, [profile?.id, verified, gyms]);
+  }, [profile?.id, verified, gyms, isAdmin]);
   async function logout() {
     const demo = getDemoSession();
     setDemoSession(null);
