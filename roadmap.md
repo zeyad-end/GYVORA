@@ -50,3 +50,4 @@
 - [x] WhatsApp number saved in Platform Settings drives the request-page link with name and plan (link verified; no chat opened)
 - [ ] X (Twitter) sign-in — not supported by the sign-in service (button labelled Unavailable)
 - [ ] Linking social providers to an existing signed-in account — needs identity linking enabled
+- [x] Connect gym subscription requests to the admin dashboard: admin-only request list with owner name/email, confirm-before-decide Approve/Reject via the existing request table and decision function; fixed super-admin role being wiped by single-gym auto-select. Verified with fictional accounts: owner submitted Annual request → admin saw gym/owner/plan/date → Approved → owner saw "subscription approved" and opened the dashboard; rejection saved and shown; non-admin list returns empty and decide is refused. 178 tests pass, build OK. No payments.
