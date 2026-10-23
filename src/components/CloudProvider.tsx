@@ -495,20 +495,22 @@ function OwnerGateBoundary({ children }: { children: ReactNode }) {
   const whatsapp = useDemoStore((s) => s.platformWhatsapp);
   const [gate, setGate] = useState<OwnerGate | null>(null);
   const [failed, setFailed] = useState(false);
+  const fetchedAt = useRef(0);
   const [, tick] = useState(0);
+  const elapsed = () => (fetchedAt.current ? Date.now() - fetchedAt.current : 0);
 
   useEffect(() => {
     let on = true;
     setGate(null);
     setFailed(false);
     getGate({})
-      .then((g) => { if (on) setGate(g); })
+      .then((g) => { if (on) { fetchedAt.current = Date.now(); setGate(g); } })
       .catch(() => { if (on) setFailed(true); });
     return () => { on = false; };
   }, [c.profile?.id]);
 
   useEffect(() => {
-    if (!gate || !trialActive(gate)) return;
+    if (!gate || !trialActive(gate, elapsed())) return;
     const t = setInterval(() => tick((n) => n + 1), 1000);
     return () => clearInterval(t);
   }, [gate?.trialEndsAt]);
