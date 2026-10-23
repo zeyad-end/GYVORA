@@ -22,12 +22,13 @@ import { sessionSchema } from "@/lib/validation";
 import { money as egp, currencyOf } from "@/lib/store";
 import { toast } from "sonner";
 import { seo } from "@/lib/seo";
+import { generateId } from "@/lib/utils";
 export const Route = createFileRoute("/_gym/sessions")({
   head: () => seo("Daily sessions", "Register, edit and manage IronHaus daily sessions."),
   component: Sessions,
 });
 const blank = (): Session => ({
-  id: crypto.randomUUID(),
+  id: generateId(),
   name: "",
   trainer: "",
   price: 150,

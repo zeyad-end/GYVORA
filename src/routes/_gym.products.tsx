@@ -25,6 +25,7 @@ import {
   updateSoldQuantity,
 } from "@/lib/product-sales";
 import { seo } from "@/lib/seo";
+import { generateId } from "@/lib/utils";
 
 export const Route = createFileRoute("/_gym/products")({
   head: () =>
@@ -380,7 +381,7 @@ function Products() {
               }
               const draft: Product = {
                 ...(editing ?? { sales: 0, min: 10 }),
-                id: editing ? productKey(editing) : crypto.randomUUID(),
+                id: editing ? productKey(editing) : generateId(),
                 image: img,
                 name,
                 price: Number(price),

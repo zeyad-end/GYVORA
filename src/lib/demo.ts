@@ -6,6 +6,7 @@ import { initialState, type State, type StaffMember, type Workout } from "./stor
 import { gymEvents } from './gym-events';
 import { appendGymEvents } from './gym-notifications-demo';
 import { billingMonths, gymPrices, savePrices, platformPlanSchema, defaultPlatformPlans, gymDatesSchema, planDefaults, type PlatformPlan, type subscriptionPriceSchema } from './platform-subscriptions';
+import { generateId } from "./utils";
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -290,7 +291,7 @@ export function demoMemberId(userId: string): string {
     (m) => (m.clientId ?? demoUserId(m.email)) === userId,
   );
   const candidate = membership?.memberQrId ?? userId;
-  const id = Object.values(registry).includes(candidate) ? crypto.randomUUID() : candidate;
+  const id = Object.values(registry).includes(candidate) ? generateId() : candidate;
   registry[userId] = id;
   localStorage.setItem(key, JSON.stringify(registry));
   return id;
@@ -562,7 +563,7 @@ export function submitDemoGymRequest(gymName: string, plan: string) {
   const existing = demoState.requests.find(r => r.email === s.email && r.status === 'Pending' && r.submittedAt);
   if (existing) return existing;
   const now = new Date().toISOString();
-  const row: GymRequest = {id:crypto.randomUUID(),gymName:name,ownerName:s.name || getDemoAccount()?.name || 'Name not recorded',email:s.email,phone:getDemoAccount()?.phone ?? '',plan:selected,requestDate:now.slice(0,10),submittedAt:now,status:'Pending'};
+  const row: GymRequest = {id:generateId(),gymName:name,ownerName:s.name || getDemoAccount()?.name || 'Name not recorded',email:s.email,phone:getDemoAccount()?.phone ?? '',plan:selected,requestDate:now.slice(0,10),submittedAt:now,status:'Pending'};
   commit({...demoState,requests:[row,...demoState.requests]});
   return row;
 }
@@ -635,7 +636,7 @@ export function createDemoInvitation(
       "An active invitation already exists for this email and role. Resend it from Invitations.",
     );
   const row: DemoInvitation = {
-    id: uid(),
+    id: generateId(),
     gym_id: gymId,
     gym_name: gymName,
     full_name: fullName,
@@ -802,7 +803,7 @@ export function saveDemoProgram(userId: string, definition: Workout, id?: string
   if (getDemoSession() !== "individual" || demoUserId(getDemoSessionInfo()?.email ?? "") !== userId)
     throw new Error("Your own programs only");
   const row: DemoProgram = {
-    id: id ?? uid(),
+    id: id ?? generateId(),
     user_id: userId,
     definition: structuredClone(definition),
     completion: [],
@@ -830,10 +831,6 @@ export function changeDemoProgram(id: string, completion: number[] | null) {
   });
 }
 
-const uid = () =>
-  crypto.randomUUID
-    ? crypto.randomUUID()
-    : `id-${Date.now()}-${Math.random().toString(36).slice(2)}`;
 const today = () => new Date().toISOString().slice(0, 10);
 
 function addMonths(iso: string, months: number) {
@@ -848,7 +845,7 @@ export function approveRequest(id: string) {
   const start = today();
   const offeredPlan=(demoState.platformPlans??defaultPlatformPlans).find(p=>p.name===req.plan);
   const gym: ApprovedGym = {
-    id: uid(),
+    id: generateId(),
     name: req.gymName,
     phone: req.phone,
     email: req.email,
@@ -864,7 +861,7 @@ export function approveRequest(id: string) {
     requests: demoState.requests.map((r) => (r.id === id ? { ...r, status: "Approved", decidedAt: start } : r)),
     gyms: [gym, ...demoState.gyms],
     revenue: [
-      { id: uid(), date: start, amount: PLAN_PRICES[req.plan] ?? 0, gymName: req.gymName },
+      { id: generateId(), date: start, amount: PLAN_PRICES[req.plan] ?? 0, gymName: req.gymName },
       ...demoState.revenue,
     ],
   });
@@ -1022,7 +1019,7 @@ export function sendDemoAssignment(input: {
   );
   if (!member) throw new Error("This client is not a member of the current gym");
   const row: DemoAssignment = {
-    id: uid(),
+    id: generateId(),
     requestKey: input.requestKey,
     gymId: input.gymId,
     gymName: input.gymName,
@@ -1052,9 +1049,9 @@ export function respondDemoAssignment(id: string, save: boolean) {
   if (!row || row.status !== "Pending") throw new Error("Workout unavailable");
   const copy: DemoProgram | null = save
     ? {
-        id: uid(),
+        id: generateId(),
         user_id: userId,
-        definition: { ...structuredClone(row.program), id: crypto.randomUUID() },
+        definition: { ...structuredClone(row.program), id: generateId() },
         completion: [],
         created_at: new Date().toISOString(),
       }

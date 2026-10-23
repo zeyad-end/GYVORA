@@ -1,5 +1,6 @@
 import { currencyOf } from './store';
 import type { State } from './store';
+import { generateId } from "./utils";
 export type GymEvent = { id: string; type: string; description: string; page: string; createdAt: string };
 export function expirationEvents(state: State, today: string): GymEvent[] {
  const end = new Date(`${today}T12:00:00`); end.setDate(end.getDate() + 7);
@@ -8,7 +9,7 @@ export function expirationEvents(state: State, today: string): GymEvent[] {
 }
 export function gymEvents(previous: State, next: State, now = new Date().toISOString()): GymEvent[] {
  const events: GymEvent[] = [];
- const add = (type: string, description: string, page: string) => events.push({ id: crypto.randomUUID(), type, description, page, createdAt: now });
+ const add = (type: string, description: string, page: string) => events.push({ id: generateId(), type, description, page, createdAt: now });
  for (const m of next.members) { const old = previous.members.find(x => x.id === m.id); if (!old) add('Membership', `${m.name} · Membership created (${m.plan}), ${m.start} – ${m.expiry}`, '/members'); else if (old.expiry !== m.expiry || old.start !== m.start || old.plan !== m.plan) add('Membership', `${m.name} · Membership renewed or updated (${m.plan}), expires ${m.expiry}`, '/members'); }
  for (const row of [...next.attendance, ...next.staffAttendance]) if (![...previous.attendance, ...previous.staffAttendance].some(x => x.id === row.id)) add('Attendance', `${row.name} · Check-in on ${row.date} at ${row.time}`, '/attendance');
  for (const row of next.sessions) { const old = previous.sessions.find(x => x.id === row.id); if (!old || JSON.stringify(old) !== JSON.stringify(row)) add('Session', `${row.name} · Session ${old ? 'updated' : 'created'} on ${row.date} (${row.type})`, '/sessions'); }

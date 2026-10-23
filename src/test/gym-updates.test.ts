@@ -2,7 +2,8 @@ import { describe, it, expect } from 'vitest';
 import { markRecurringPaid, cashSummary, dailySummary, deletePlan, deleteProgram, createInvoice, deleteInvoice, nextInvoiceNumber, defaultSchedule, scheduleSchema, reportInvoices, reportRange, groupInvoices } from '@/lib/gym-updates';
 import { initialState, type Invoice } from '@/lib/store';
 import { readDemoGym, writeDemoGym } from '@/lib/demo';
-const invoice=(date='2026-10-18'):Invoice=>({id:crypto.randomUUID(),name:'Repairs',category:'Custom category',description:'Fixed treadmill',date,amount:-100,type:'Expense',method:'Cash'});
+import { generateId } from "@/lib/utils";
+const invoice=(date='2026-10-18'):Invoice=>({id:generateId(),name:'Repairs',category:'Custom category',description:'Fixed treadmill',date,amount:-100,type:'Expense',method:'Cash'});
 describe('requested gym updates',()=>{
  it('blocks deletion of a plan assigned to members',()=>{const plan=initialState.plans[0];if(!plan)throw new Error('Seed missing');expect(()=>deletePlan([plan],[{...initialState.members[0],plan:plan.name} as typeof initialState.members[number]],plan.id)).toThrow('assigned to members');});
  it('deletes only an unused selected plan',()=>{expect(deletePlan([{id:'one',name:'One',duration:'1 month',price:1,features:[]},{id:'two',name:'Two',duration:'1 month',price:2,features:[]}],[],'one').map(p=>p.id)).toEqual(['two']);});
