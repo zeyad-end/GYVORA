@@ -553,6 +553,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_request_list: {
+        Args: never
+        Returns: {
+          created_at: string
+          decided_at: string
+          gym_name: string
+          id: string
+          owner_email: string
+          owner_name: string
+          plan: string
+          status: string
+        }[]
+      }
       can_read_image: { Args: { path: string }; Returns: boolean }
       client_gym_content: { Args: { g: string }; Returns: Json }
       client_gym_directory: { Args: never; Returns: Json }
