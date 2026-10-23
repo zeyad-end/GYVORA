@@ -5,7 +5,7 @@ import { currencyOf, useStore, fmt12 } from "@/lib/store";
 import { Clock, MapPin, Pencil, Share2, ExternalLink, Phone, MessageCircle, Instagram, Facebook, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Panel } from "@/components/kit";
-import { trainers, initials } from "@/lib/mock";
+import { TrainerAvatar } from "@/components/TrainerAvatar";
 import { seo } from "@/lib/seo";
 import cover from "@/assets/gym-cover.jpg";
 import g1 from "@/assets/gallery-1.jpg";
@@ -19,6 +19,7 @@ export const Route = createFileRoute("/_gym/gym")({
 function GymProfile() {
   const gym = useStore((s) => s.gym);
   const plans = useStore((s) => s.plans);
+  const trainers = useStore((s) => s.trainers);
   const [edit, setEdit] = useState(false);
   const [share, setShare] = useState(false);
   const heroCover = gym.cover || cover;
@@ -86,14 +87,15 @@ function GymProfile() {
       <Panel title="Trainers">
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           {trainers.map((t) => (
-            <div key={t.id} className="rounded-xl bg-surface p-5">
-              <span className="grid h-14 w-14 place-items-center rounded-full bg-accent font-display font-semibold text-primary">{initials(t.name.replace("Coach ", ""))}</span>
-              <div className="mt-4 font-semibold">{t.name}</div>
-              <div className="text-xs text-primary">{t.specialty}</div>
-              <p className="mt-2 text-xs text-muted-foreground">{t.bio}</p>
+            <div key={t.id} className="min-w-0 rounded-lg bg-surface p-5">
+              <TrainerAvatar t={t} size="h-14 w-14" />
+              <div className="mt-4 break-words font-semibold">{t.name?.trim() || "Trainer"}</div>
+              {t.specialty?.trim() && <div className="break-words text-xs text-primary">{t.specialty}</div>}
+              {t.notes?.trim() && <p className="mt-3 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted-foreground">{t.notes}</p>}
             </div>
           ))}
         </div>
+        {!trainers.length && <p className="text-sm text-muted-foreground">No trainers</p>}
       </Panel>
 
       <div className="grid gap-6 lg:grid-cols-3">

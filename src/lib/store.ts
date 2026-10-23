@@ -26,7 +26,7 @@ export type Product = {
   min: number;
 };
 export type TrainerDay = { day: string; available: boolean; start: string; end: string };
-export type Trainer = (typeof trainersSeed)[number] & { schedule?: TrainerDay[] };
+export type Trainer = (typeof trainersSeed)[number] & { schedule?: TrainerDay[]; notes?: string | undefined; previousNames?: string[] | undefined };
 export type Invoice = {
   id: string;
   number?: number | undefined;
