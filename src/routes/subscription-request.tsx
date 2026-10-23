@@ -5,6 +5,7 @@ import { MessageCircle, Clock } from 'lucide-react';
 import { useCloud } from '@/components/CloudProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { requestSubscription } from '@/lib/cloud.functions';
+import { startOwnerTrial } from '@/lib/owner-gate.functions';
 import { getDemoSessionInfo, getDemoAccount, updateDemoAccount, submitDemoGymRequest, useDemoStore, whatsappLink } from '@/lib/demo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ function Request() {
   const navigate = useNavigate();
   const router = useRouter();
   const submit = useServerFn(requestSubscription);
+  const startTrial = useServerFn(startOwnerTrial);
   const whatsapp = useDemoStore((s) => s.platformWhatsapp);
   const requests = useDemoStore((s) => s.requests);
   const [cloudReq, setCloudReq] = useState<{ status: string; plan: string; gym: string; date: string } | null>(null);
