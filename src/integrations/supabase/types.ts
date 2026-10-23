@@ -242,18 +242,24 @@ export type Database = {
       gyms: {
         Row: {
           created_at: string
+          freeze_note: string
+          frozen_at: string | null
           id: string
           name: string
           owner_id: string
         }
         Insert: {
           created_at?: string
+          freeze_note?: string
+          frozen_at?: string | null
           id?: string
           name: string
           owner_id: string
         }
         Update: {
           created_at?: string
+          freeze_note?: string
+          frozen_at?: string | null
           id?: string
           name?: string
           owner_id?: string
@@ -310,6 +316,7 @@ export type Database = {
           id: string
           plan: string
           status: string
+          trial_started_at: string | null
           user_id: string
         }
         Insert: {
@@ -321,6 +328,7 @@ export type Database = {
           id?: string
           plan: string
           status?: string
+          trial_started_at?: string | null
           user_id: string
         }
         Update: {
@@ -332,6 +340,7 @@ export type Database = {
           id?: string
           plan?: string
           status?: string
+          trial_started_at?: string | null
           user_id?: string
         }
         Relationships: [
@@ -587,6 +596,7 @@ export type Database = {
       gym_subscription_summary: { Args: { g: string }; Returns: Json }
       is_super_admin: { Args: never; Returns: boolean }
       otp_verified: { Args: never; Returns: boolean }
+      owner_gate_state: { Args: never; Returns: Json }
       refresh_gym_expiration_events: {
         Args: { day: string; g: string }
         Returns: undefined
@@ -599,6 +609,11 @@ export type Database = {
         Args: { changes: Json; g: string }
         Returns: undefined
       }
+      set_gym_frozen: {
+        Args: { frozen: boolean; g: string; note?: string }
+        Returns: undefined
+      }
+      start_owner_trial: { Args: never; Returns: Json }
     }
     Enums: {
       [_ in never]: never
