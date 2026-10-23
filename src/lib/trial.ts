@@ -13,25 +13,26 @@ export type OwnerGate = {
   now: string;
 };
 
-/** Milliseconds of trial left, using the server-provided end and current times. */
-export function trialRemainingMs(gate: Pick<OwnerGate, 'trialEndsAt' | 'now'>, at?: number): number {
+/**
+ * Milliseconds of trial left, anchored to the server times returned with the gate.
+ * `elapsedMs` is the time passed on the client since the gate was fetched, so a
+ * refresh (which refetches fresh server times) can never extend the trial.
+ */
+export function trialRemainingMs(gate: Pick<OwnerGate, 'trialEndsAt' | 'now'>, elapsedMs = 0): number {
   if (!gate.trialEndsAt) return 0;
   const end = new Date(gate.trialEndsAt).getTime();
   const serverNow = new Date(gate.now).getTime();
-  const base = at === undefined ? Date.now() : at;
-  // Anchor the client clock to the server time returned with the gate so refreshes cannot extend the trial.
-  const elapsed = at === undefined ? base - serverNow : at - serverNow;
-  return Math.max(0, end - serverNow - Math.max(0, elapsed));
+  return Math.max(0, end - serverNow - Math.max(0, elapsedMs));
 }
 
 /** True while a pending request has a started, unexpired trial. */
-export function trialActive(gate: Pick<OwnerGate, 'requestStatus' | 'trialStartedAt' | 'trialEndsAt' | 'now'>): boolean {
-  return gate.requestStatus === 'Pending' && !!gate.trialStartedAt && trialRemainingMs(gate) > 0;
+export function trialActive(gate: Pick<OwnerGate, 'requestStatus' | 'trialStartedAt' | 'trialEndsAt' | 'now'>, elapsedMs = 0): boolean {
+  return gate.requestStatus === 'Pending' && !!gate.trialStartedAt && trialRemainingMs(gate, elapsedMs) > 0;
 }
 
-/** True when a pending request's trial has run out (or was never started after expiring). */
-export function trialExpired(gate: Pick<OwnerGate, 'requestStatus' | 'trialStartedAt' | 'trialEndsAt' | 'now'>): boolean {
-  return gate.requestStatus === 'Pending' && !!gate.trialStartedAt && trialRemainingMs(gate) <= 0;
+/** True when a pending request's trial has run out. */
+export function trialExpired(gate: Pick<OwnerGate, 'requestStatus' | 'trialStartedAt' | 'trialEndsAt' | 'now'>, elapsedMs = 0): boolean {
+  return gate.requestStatus === 'Pending' && !!gate.trialStartedAt && trialRemainingMs(gate, elapsedMs) <= 0;
 }
 
 export function formatRemaining(ms: number): string {
