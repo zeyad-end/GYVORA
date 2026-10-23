@@ -4,6 +4,8 @@ import { Phone, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { TrainerAvatar } from "@/components/TrainerAvatar";
 import {
   Dialog,
   DialogContent,
@@ -12,33 +14,19 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Field, PageHeader, Panel } from "@/components/kit";
-import { initials } from "@/lib/mock";
 import { readFile, saveState, useStore, type Trainer } from "@/lib/store";
 import { TrainerSchedule } from "@/components/TrainerSchedule";
 import { defaultSchedule, scheduleSchema } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
-import { trainerProfileSchema, updateTrainerProfile, deleteTrainerProfile } from "@/lib/trainer-profiles";
+import { trainerProfileSchema, updateTrainerProfile, deleteTrainerProfile, trainerCreatedWorkout } from "@/lib/trainer-profiles";
 
 export const Route = createFileRoute("/_gym/trainers")({
   head: () => seo("Trainers", "Your coaching team, their members, schedules and programs."),
   component: Trainers,
 });
 
-function TrainerAvatar({ t, size = "h-12 w-12" }: { t: Trainer; size?: string }) {
-  return t.image ? (
-    <img src={t.image} alt={t.name} className={`${size} shrink-0 rounded-full object-cover`} />
-  ) : (
-    <span
-      className={`grid ${size} shrink-0 place-items-center rounded-full bg-accent font-display font-semibold text-primary`}
-    >
-      {initials(t.name.replace("Coach ", ""))}
-    </span>
-  );
-}
-
 function Trainers() {
   const trainers = useStore((s) => s.trainers);
-  const members = useStore((s) => s.members);
   const workouts = useStore((s) => s.workouts);
   const [selId, setSelId] = useState(trainers[0]?.id ?? "");
   const sel = trainers.find((t) => t.id === selId) ?? trainers[0];
@@ -81,12 +69,12 @@ function Trainers() {
             >
               <TrainerAvatar t={t} />
               <div className="min-w-0">
-                <div className="font-medium">{t.name}</div>
-                <div className="text-xs text-primary">{t.specialty}</div>
-                <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-                  <Phone className="h-3 w-3" />
+                <div className="break-words font-medium">{t.name?.trim() || "Trainer"}</div>
+                {t.specialty?.trim() && <div className="break-words text-xs text-primary">{t.specialty}</div>}
+                {t.phone?.trim() && <div className="mt-1 flex items-center gap-1 break-all text-xs text-muted-foreground">
+                  <Phone className="h-3 w-3 shrink-0" />
                   {t.phone}
-                </div>
+                </div>}
               </div>
             </Button>
             <Button size="icon" variant="ghost" className="shrink-0" aria-label={`Edit ${t.name}`} title={`Edit ${t.name}`}
@@ -99,6 +87,7 @@ function Trainers() {
         </div>
         {sel && (
           <div className="space-y-6 lg:col-span-2">
+            {sel.notes?.trim() && <Panel title="Notes"><p className="whitespace-pre-wrap break-words text-sm leading-relaxed text-muted-foreground">{sel.notes}</p></Panel>}
             <Panel
               title="Weekly schedule"
               action={
@@ -115,7 +104,7 @@ function Trainers() {
                 </Button>
               }
             >
-              <div className="grid grid-cols-7 gap-2 text-center text-xs">
+              <div className="grid grid-cols-4 gap-2 text-center text-xs sm:grid-cols-7">
                 {(sel.schedule ?? defaultSchedule()).map((d) => (
                   <div key={d.day} className="min-w-0 rounded-md bg-surface p-2">
                     <div className="eyebrow">{d.day.slice(0, 3)}</div>
@@ -139,7 +128,7 @@ function Trainers() {
             <Panel title="Workout programs">
               <ul className="space-y-2 text-sm">
                 {workouts
-                  .filter((w) => w.trainer === sel.name)
+                  .filter((w) => trainerCreatedWorkout(sel, w.trainer))
                   .map((w) => (
                     <li key={w.name} className="flex justify-between rounded-lg bg-surface p-3">
                       <span>{w.name}</span>
@@ -166,7 +155,7 @@ function Trainers() {
               const d = new FormData(e.currentTarget);
               setBusy(true);
               try {
-                const profile = trainerProfileSchema.parse({ name: String(d.get("name")), specialty: String(d.get("specialty")), phone: String(d.get("phone")), image: img });
+                const profile = trainerProfileSchema.parse({ name: String(d.get("name")), specialty: String(d.get("specialty")), phone: String(d.get("phone")), image: img, notes: String(d.get("notes") ?? "") });
                 if (editing) {
                   await saveState((s) => ({ trainers: updateTrainerProfile(s.trainers, editing.id, profile) }));
                   toast.success("Trainer saved");
@@ -186,7 +175,7 @@ function Trainers() {
                 toast.success("Trainer added");
                 setOpen(false);
               } catch (error) {
-                toast.error(error && typeof error === "object" && "issues" in error ? "Enter a valid name, specialty and phone number" : error instanceof Error ? error.message : "Could not save trainer");
+                toast.error(error && typeof error === "object" && "issues" in error ? "Enter a valid name, specialty and phone number; notes must be within 1,000 characters" : error instanceof Error ? error.message : "Could not save trainer");
               } finally {
                 setBusy(false);
               }
@@ -221,6 +210,9 @@ function Trainers() {
               />
             </Field>
             {img && <img src={img} alt="Preview" className="h-16 w-16 rounded-full object-cover" />}
+            <Field label="Notes">
+              <Textarea aria-label="Notes" name="notes" rows={4} maxLength={1000} defaultValue={editing?.notes ?? ""} />
+            </Field>
             {!editing && <TrainerSchedule value={schedule} onChange={setSchedule} />}
             <DialogFooter>
               {editing && <Button type="button" variant="destructive" disabled={busy || uploading} onClick={async () => {
