@@ -3,7 +3,8 @@ import { useState } from 'react';
 import { PageHeader, DataTable, td } from '@/components/kit';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { useDemoStore, setGymStatus, deleteGym, type ApprovedGym } from '@/lib/demo';
+import { useDemoStore, setGymStatus, deleteGym, getDemoSession, type ApprovedGym } from '@/lib/demo';
+import { CloudGyms } from '@/components/CloudGyms';
 import { seo } from '@/lib/seo';
 import { gymPrices } from '@/lib/platform-subscriptions';
 import { egp } from '@/lib/mock';
@@ -18,6 +19,7 @@ export const Route = createFileRoute('/super-admin/gyms')({
 
 function Gyms() {
   const gyms = useDemoStore((s) => s.gyms);
+  if (!getDemoSession()) return <CloudGyms />;
   const [editing, setEditing] = useState<ApprovedGym | null>(null);
   const [noteGymId,setNoteGymId]=useState<string|null>(null);
   const noteGym=gyms.find(g=>g.id===noteGymId&&g.notes?.trim());

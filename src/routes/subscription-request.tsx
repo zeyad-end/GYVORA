@@ -5,6 +5,7 @@ import { MessageCircle, Clock } from 'lucide-react';
 import { useCloud } from '@/components/CloudProvider';
 import { supabase } from '@/integrations/supabase/client';
 import { requestSubscription } from '@/lib/cloud.functions';
+import { startOwnerTrial } from '@/lib/owner-gate.functions';
 import { getDemoSessionInfo, getDemoAccount, updateDemoAccount, submitDemoGymRequest, useDemoStore, whatsappLink } from '@/lib/demo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -28,6 +29,7 @@ function Request() {
   const navigate = useNavigate();
   const router = useRouter();
   const submit = useServerFn(requestSubscription);
+  const startTrial = useServerFn(startOwnerTrial);
   const whatsapp = useDemoStore((s) => s.platformWhatsapp);
   const requests = useDemoStore((s) => s.requests);
   const [cloudReq, setCloudReq] = useState<{ status: string; plan: string; gym: string; date: string } | null>(null);
@@ -74,10 +76,19 @@ function Request() {
   }
 
   async function onSkip() {
-    if (demoAcc) updateDemoAccount(demoAcc.email, { skipped: true });
-    setConfirmOpen(false);
-    await c.refresh();
-    await navigate({ to: '/dashboard' });
+    setBusy(true);
+    setError('');
+    try {
+      if (demoAcc) updateDemoAccount(demoAcc.email, { skipped: true });
+      else await startTrial({}); // server records the one-hour trial start; refresh/re-login cannot restart it
+      setConfirmOpen(false);
+      await c.refresh();
+      await navigate({ to: '/dashboard' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Could not start the trial. Please try again.');
+    } finally {
+      setBusy(false);
+    }
   }
 
   function onCancel() {
@@ -126,6 +137,13 @@ function Request() {
           {isDemoOwner && demoAcc?.skipped && status === 'Pending' && (
             <p className="text-sm text-muted-foreground">Prototype demo access is on. <Link to="/dashboard" className="text-primary">Open demo dashboard</Link></p>
           )}
+          {!isDemoOwner && status === 'Pending' && (
+            <div className="space-y-2">
+              <Button type="button" variant="secondary" disabled={busy} onClick={() => void onSkip()}>{busy ? 'Starting…' : 'Skip — start a 1-hour trial'}</Button>
+              <p className="text-xs text-muted-foreground">The trial gives one hour of dashboard access while your request waits for approval. It starts once and cannot be restarted.</p>
+            </div>
+          )}
+          {error && <p role="alert" className="text-sm text-destructive">{error}</p>}
           {contact}
           <Button type="button" variant="outline" onClick={() => void c.logout()}>Sign Out</Button>
         </div>
@@ -156,10 +174,10 @@ function Request() {
             <DialogTitle>Request sent</DialogTitle>
             <DialogDescription>{SENT}</DialogDescription>
           </DialogHeader>
-          {isDemoOwner && <p className="text-xs text-muted-foreground">Skip opens the Gym Owner dashboard with prototype demo access. Your request stays Pending — it is not approved or paid.</p>}
+          {isDemoOwner ? <p className="text-xs text-muted-foreground">Skip opens the Gym Owner dashboard with prototype demo access. Your request stays Pending — it is not approved or paid.</p> : <p className="text-xs text-muted-foreground">Skip starts a one-hour trial of the Gym Owner dashboard. Your request stays Pending — it is not approved or paid.</p>}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>Done</Button>
-            {isDemoOwner && <Button onClick={onSkip}>Skip — Enter Demo Dashboard</Button>}
+            <Button disabled={busy} onClick={() => void onSkip()}>{isDemoOwner ? 'Skip — Enter Demo Dashboard' : 'Skip — Start 1-Hour Trial'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

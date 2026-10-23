@@ -22,6 +22,23 @@ export const getPlatformNotifications = createServerFn({method:'POST'}).middlewa
   if(profileError)throw new Error('Could not load request owner names.');
   return (rows??[]).flatMap(n=>{const r=requests?.find(r=>r.id===n.request_id);return r ? [{id:n.id,requestId:r.id,gymName:r.gym_name,ownerName:profiles?.find(p=>p.id===r.user_id)?.full_name || 'Name not recorded',plan:r.plan,date:r.created_at,status:r.status,read:!!n.read_at}] : [];});
 });
+export const listAdminGyms=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
+  const {data:allowed}=await context.supabase.rpc('is_super_admin');if(!allowed)throw new Error('Administrator access required');
+  const {data:gyms,error}=await context.supabase.from('gyms').select('id,name,owner_id,created_at,frozen_at,freeze_note').order('created_at',{ascending:true});
+  if(error)throw new Error('Could not load gyms.');
+  const ids=[...new Set((gyms??[]).map(g=>g.owner_id))];
+  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
+  const {data:profiles}=ids.length?await supabaseAdmin.from('profiles').select('id,full_name,email').in('id',ids):{data:[] as {id:string;full_name:string;email:string}[]};
+  const {data:requests}=await context.supabase.from('owner_requests').select('gym_id,plan,status').eq('status','Approved');
+  return (gyms??[]).map(g=>({id:g.id,name:g.name,ownerName:profiles?.find(p=>p.id===g.owner_id)?.full_name||'',ownerEmail:profiles?.find(p=>p.id===g.owner_id)?.email||'',plan:requests?.find(r=>r.gym_id===g.id)?.plan??'',frozen:!!g.frozen_at,freezeNote:g.freeze_note??''}));
+});
+
+export const setGymFrozen=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({gymId:z.string().uuid(),frozen:z.boolean(),note:z.string().max(1000).optional()}).parse(input)).handler(async({data,context})=>{
+  const {data:allowed}=await context.supabase.rpc('is_super_admin');if(!allowed)throw new Error('Administrator access required');
+  const {error}=await context.supabase.rpc('set_gym_frozen',{g:data.gymId,frozen:data.frozen,note:data.note??''});
+  if(error)throw new Error(error.message);return true;
+});
+
 export const markPlatformNotificationsRead=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({ids:z.array(z.string().uuid()).max(1000)}).parse(input)).handler(async({data,context})=>{
   const {data:allowed}=await context.supabase.rpc('is_super_admin');if(!allowed)throw new Error('Administrator access required');
   if(!data.ids.length)return true;

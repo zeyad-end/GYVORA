@@ -13,6 +13,10 @@ import { expirationEvents } from '@/lib/gym-events';
 import { appendGymEvents } from '@/lib/gym-notifications-demo';
 import { localDate } from '@/lib/gym-period';
 import { isClientPortalPath } from '@/lib/membership-link';
+import { getOwnerGate } from '@/lib/owner-gate.functions';
+import { trialActive, trialExpired, trialRemainingMs, formatRemaining, type OwnerGate } from '@/lib/trial';
+import { whatsappLink } from '@/lib/demo';
+import { MessageCircle } from 'lucide-react';
 import {
   getDemoSession,
   getDemoSessionInfo,
@@ -229,12 +233,14 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         name: r.gymName,
         owner_id: "",
         created_at: "",
+        frozen_at: null,
+        freeze_note: "",
       }));
       setGyms(
         demo === "owner"
           ? [
-              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "" },
-              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "" },
+              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "", frozen_at: null, freeze_note: "" },
+              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "", frozen_at: null, freeze_note: "" },
             ]
           : demo === "individual"
             ? memberGyms
@@ -453,6 +459,8 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     path === "/gyms"
   )
     return children;
+  if (c.profile.account_type === 'owner' && c.role !== 'super_admin')
+    return <OwnerGateBoundary>{children}</OwnerGateBoundary>;
   if (!c.gymId)
     return (
       <div className="p-10">
@@ -479,5 +487,108 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
         </Button>
       </div>
     );
+  return children;
+}
+
+/** Server-enforced gate for gym owners: freeze, rejection and the one-hour pending-approval trial. */
+function OwnerGateBoundary({ children }: { children: ReactNode }) {
+  const c = useCloud();
+  const getGate = useServerFn(getOwnerGate);
+  const whatsapp = useDemoStore((s) => s.platformWhatsapp);
+  const [gate, setGate] = useState<OwnerGate | null>(null);
+  const [failed, setFailed] = useState(false);
+  const fetchedAt = useRef(0);
+  const [, tick] = useState(0);
+  const elapsed = () => (fetchedAt.current ? Date.now() - fetchedAt.current : 0);
+
+  useEffect(() => {
+    let on = true;
+    setGate(null);
+    setFailed(false);
+    getGate({})
+      .then((g) => { if (on) { fetchedAt.current = Date.now(); setGate(g); } })
+      .catch(() => { if (on) setFailed(true); });
+    return () => { on = false; };
+  }, [c.profile?.id]);
+
+  useEffect(() => {
+    if (!gate || !trialActive(gate, elapsed())) return;
+    const t = setInterval(() => tick((n) => n + 1), 1000);
+    return () => clearInterval(t);
+  }, [gate?.trialEndsAt]);
+
+  if (failed)
+    return (
+      <div className="mx-auto max-w-md p-10">
+        <h1 className="text-2xl">Could not verify your gym access</h1>
+        <p className="mt-2 text-muted-foreground">Please try again.</p>
+        <Button className="mt-6" onClick={() => void c.refresh()}>Reload</Button>
+      </div>
+    );
+  if (!gate) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
+
+  const contact = (
+    <p className="flex items-center gap-2 text-sm text-muted-foreground">
+      <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
+      {whatsapp ? (
+        <span>Need help? <a className="text-primary" href={whatsappLink(whatsapp, `Hello, my gym account (${gate.gymName ?? 'my gym'}) is frozen and I need assistance.`)} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp.</a></span>
+      ) : (
+        <span>Need help? WhatsApp contact isn't set yet — please reach out to the platform administrator.</span>
+      )}
+    </p>
+  );
+
+  if (gate.frozen)
+    return (
+      <div className="mx-auto max-w-md p-10">
+        <h1 className="text-2xl">Gym account frozen</h1>
+        <p className="mt-2 text-muted-foreground">Your gym account has been frozen by the administrator. The Gym Owner dashboard is unavailable until the account is reactivated.</p>
+        {gate.freezeNote.trim() && (
+          <p className="mt-4 rounded-md border bg-card p-4 text-sm"><span className="font-medium">Reason: </span>{gate.freezeNote}</p>
+        )}
+        <div className="mt-4">{contact}</div>
+        <Button className="mt-6" variant="outline" onClick={() => void c.logout()}>Log out</Button>
+      </div>
+    );
+
+  if (gate.requestStatus === 'Rejected')
+    return (
+      <div className="mx-auto max-w-md p-10">
+        <h1 className="text-2xl">Subscription request rejected</h1>
+        <p className="mt-2 text-muted-foreground">Your request was rejected, so the Gym Owner dashboard is unavailable. Contact the administrator.</p>
+        <Button asChild className="mt-6"><Link to="/subscription-request">View subscription</Link></Button>
+      </div>
+    );
+
+  if (gate.requestStatus === 'Pending') {
+    if (trialExpired(gate, elapsed()))
+      return (
+        <div className="mx-auto max-w-md p-10">
+          <h1 className="text-2xl">Trial ended</h1>
+          <p className="mt-2 text-muted-foreground">Your trial period has ended. Your request is awaiting administrator approval.</p>
+          <div className="mt-6 flex gap-2">
+            <Button asChild variant="outline"><Link to="/subscription-request">View subscription</Link></Button>
+            <Button variant="outline" onClick={() => void c.logout()}>Log out</Button>
+          </div>
+        </div>
+      );
+    if (trialActive(gate, elapsed()))
+      return (
+        <>
+          <div role="status" className="border-b bg-secondary px-4 py-2 text-center text-xs text-muted-foreground">
+            Trial access · {formatRemaining(trialRemainingMs(gate, elapsed()))} remaining — your subscription request is still Pending approval.
+          </div>
+          {children}
+        </>
+      );
+    return (
+      <div className="mx-auto max-w-md p-10">
+        <h1 className="text-2xl">Subscription approval pending</h1>
+        <p className="mt-2 text-muted-foreground">The Gym Owner dashboard is unavailable until your subscription request is approved.</p>
+        <Button asChild className="mt-6"><Link to="/subscription-request">View subscription</Link></Button>
+      </div>
+    );
+  }
+
   return children;
 }
