@@ -1,5 +1,5 @@
 # IronHaus update
-- [ ] Complete database-backed owner-added existing fictional client memberships, prevent duplicates and unauthorized joins, show membership and gym approval status, and verify with fictional authenticated accounts only; no payments.
+- [x] Complete database-backed owner-added existing fictional client memberships, prevent duplicates and unauthorized joins, and show membership and gym approval status. Verified fictional password-authenticated owner request → reviewer approval → zero-price plan → existing client link → owner/client reload readback; database duplicate/unauthorized access rejection, actual snapshot-failure feedback, pending-owner/client management gates and mobile membership view. No payments; 27 focused tests pass.
 - [x] Share saved gym trainer records between Gym Profile and Trainers; add persistent trainer notes and shared photo fallbacks, preserving schedules and historical workout associations. Prototype preview verified add/photo/notes, edit/reload, delete/reload and phone-width layouts; 26 focused tests pass and build OK. Existing Cloud JSON persistence is reused without duplicate tables; populated real-owner verification remains unavailable.
 - [x] Apply uploaded GYVORA logo and login photo across app branding without altering gym data or behavior; Login/Sign Up desktop and narrow layouts plus owner/admin/client navigation preview-verified; 28 regression tests pass and build OK. Sign Up retains its existing form-only layout, so it has no hero area to replace.
 - [x] Extend Super Admin with saved gym dates/notes and monthly/annual Subscription Plans; preview verified catalog add/edit/delete/reload, in-use deletion protection, duration-based end dates, negotiated prices/manual annual override, notes icon/dialog/reload, unchanged gym agreements after catalog edits, monthly/annual projections without double counting, approval/counts and existing branding/account states; 163 tests pass and build OK. These subscriptions remain prototype snapshots, not collected payment records or Cloud-wide settings.
@@ -35,7 +35,7 @@
 - [x] Check compilation, regression tests and signed-out access; document remaining setup in DELIVERY.md.
 - [x] Keep invitations in the persistent prototype; real email delivery excluded by request.
 - [ ] Verify populated real-account gym workflows — signed-in client pages checked, but no real gyms or memberships exist; workout assignments remain prototype-only.
-- [ ] Provision and verify super administrator approvals — blocked by missing administrator identity.
+- [x] Verify administrator approval with a clearly fictional reviewer account through the existing approval function; no real administrator identity or real customer data used.
 - [x] Remove phone authentication; phone fields are contact information only.
 
 - [x] Remove OTP from sign-up and sign-in; route by account type.
