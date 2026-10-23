@@ -1,8 +1,14 @@
 import {describe,it,expect} from 'vitest';
-import {assertUniqueClientMembership,membershipStatus} from '@/lib/membership-link';
+import {assertUniqueClientMembership,membershipStatus,isClientPortalPath} from '@/lib/membership-link';
 import {initialState} from '@/lib/store';
 
 describe('owner-added client memberships',()=>{
+ it('does not allow pending owners or clients into member management through the client portal exception',()=>{
+  expect(isClientPortalPath('/members')).toBe(false);
+  expect(isClientPortalPath('/memberships')).toBe(false);
+  expect(isClientPortalPath('/members/fictional-member')).toBe(false);
+  expect(isClientPortalPath('/member/membership')).toBe(true);
+ });
  const base=initialState.members[0];
  if(!base)throw new Error('Missing fixture');
  const member={...base,id:'fictional-membership',clientId:'fictional-client'};

@@ -1,5 +1,9 @@
 import type { Member } from './store';
 
+export function isClientPortalPath(path: string) {
+  return path === '/member' || path.startsWith('/member/');
+}
+
 export function assertUniqueClientMembership(rows: Member[], clientId: string | undefined, recordId?: string) {
   if (clientId && rows.some(row => row.clientId === clientId && row.id !== recordId)) {
     throw new Error('This client already has a membership at this gym. Edit their existing membership instead.');

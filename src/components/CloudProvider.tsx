@@ -12,6 +12,7 @@ import { readOwnerProfile } from '@/lib/owner-profile';
 import { expirationEvents } from '@/lib/gym-events';
 import { appendGymEvents } from '@/lib/gym-notifications-demo';
 import { localDate } from '@/lib/gym-period';
+import { isClientPortalPath } from '@/lib/membership-link';
 import {
   getDemoSession,
   getDemoSessionInfo,
@@ -388,7 +389,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     );
   }
   if (demo === "individual") {
-    if (path.startsWith("/member") || path === "/gyms") return children;
+    if (isClientPortalPath(path) || path === "/gyms") return children;
     return (
       <div className="mx-auto max-w-md p-10">
         <h1 className="text-2xl">Member area</h1>
@@ -406,7 +407,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
       acc &&
       !demoOwnerHasAccess(acc) &&
       path !== "/subscription-request" &&
-      !path.startsWith("/member") &&
+      !isClientPortalPath(path) &&
       path !== "/gyms"
     )
       return (
@@ -420,7 +421,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
           </Button>
         </div>
       );
-    if (acc?.skipped && demoRequestStatus(acc.email) === "Pending" && !path.startsWith("/member") && path !== "/subscription-request")
+    if (acc?.skipped && demoRequestStatus(acc.email) === "Pending" && !isClientPortalPath(path) && path !== "/subscription-request")
       return (
         <>
           <div role="status" className="border-b bg-secondary px-4 py-2 text-center text-xs text-muted-foreground">
@@ -442,7 +443,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
       </div>
     );
   if (
-    path.startsWith("/member") ||
+    isClientPortalPath(path) ||
     path === "/subscription-request" ||
     path === "/super-admin" ||
     (c.role === "super_admin" && path.startsWith("/super-admin/")) ||
