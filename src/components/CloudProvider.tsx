@@ -235,12 +235,13 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         created_at: "",
         frozen_at: null,
         freeze_note: "",
+        deleted_at: null,
       }));
       setGyms(
         demo === "owner"
           ? [
-              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "", frozen_at: null, freeze_note: "" },
-              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "", frozen_at: null, freeze_note: "" },
+              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null },
+              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null },
             ]
           : demo === "individual"
             ? memberGyms
@@ -341,6 +342,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       void loadGym(gyms[0]?.id ?? "").catch((e) => toast.error(String(e)));
   }, [profile?.id, verified, gyms, isAdmin]);
   async function logout() {
+    await router.options.context?.queryClient.cancelQueries();
+    router.options.context?.queryClient.clear();
     const demo = getDemoSession();
     setDemoSession(null);
     bindPersistence(undefined);
@@ -357,7 +360,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       await supabase.auth.signOut();
       await refresh();
     }
-    await router.navigate({ to: "/" });
+    await router.navigate({ to: "/", replace: true });
   }
   return (
     <CloudContext.Provider
@@ -451,6 +454,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
         </Button>
       </div>
     );
+  if(c.profile.disabled_at)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Gym account deleted</h1><p className="mt-2 text-muted-foreground">This account has been disabled by the administrator.</p><Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
   if (
     isClientPortalPath(path) ||
     path === "/subscription-request" ||
@@ -494,7 +498,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
 function OwnerGateBoundary({ children }: { children: ReactNode }) {
   const c = useCloud();
   const getGate = useServerFn(getOwnerGate);
-  const whatsapp = useDemoStore((s) => s.platformWhatsapp);
+  const [whatsapp,setWhatsapp]=useState('');
   const [gate, setGate] = useState<OwnerGate | null>(null);
   const [failed, setFailed] = useState(false);
   const fetchedAt = useRef(0);
@@ -503,13 +507,16 @@ function OwnerGateBoundary({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     let on = true;
-    setGate(null);
     setFailed(false);
-    getGate({})
+    const load=()=>getGate({})
       .then((g) => { if (on) { fetchedAt.current = Date.now(); setGate(g); } })
       .catch(() => { if (on) setFailed(true); });
-    return () => { on = false; };
-  }, [c.profile?.id]);
+    void load();
+    void supabase.from('platform_settings').select('whatsapp').eq('id',true).maybeSingle().then(({data})=>{if(on)setWhatsapp(data?.whatsapp??'');});
+    const poll=setInterval(()=>void load(),10000);
+    const focus=()=>void load();window.addEventListener('focus',focus);
+    return () => { on = false;clearInterval(poll);window.removeEventListener('focus',focus); };
+  }, [c.profile?.id,c.gymId]);
 
   useEffect(() => {
     if (!gate || !trialActive(gate, elapsed())) return;
@@ -526,6 +533,7 @@ function OwnerGateBoundary({ children }: { children: ReactNode }) {
       </div>
     );
   if (!gate) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
+  if(gate.deleted)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Gym account deleted</h1><p className="mt-2 text-muted-foreground">This gym is disabled and can no longer be used.</p><Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
 
   const contact = (
     <p className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -590,5 +598,6 @@ function OwnerGateBoundary({ children }: { children: ReactNode }) {
     );
   }
 
+  if(gate.requestStatus!=='Approved'&&!gate.gymId)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Subscription required</h1><Button asChild className="mt-6"><Link to="/subscription-request">Choose a subscription</Link></Button></div>;
   return children;
 }

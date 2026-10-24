@@ -2,6 +2,7 @@ import { createServerFn } from '@tanstack/react-start';
 import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
 import { reauthenticateAdminChange } from './platform-admin-auth';
+import { deactivateDedicatedOwner } from './gym-deactivation';
 
 export const changePlatformCredentials=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({current:z.string().min(1).max(128),change:z.union([z.object({email:z.string().trim().email().max(255).transform(v=>v.toLowerCase())}).strict(),z.object({password:z.string().min(8).max(128)}).strict()])}).parse(input)).handler(async({data,context})=>{
  const {data:allowed}=await context.supabase.rpc('is_super_admin');if(!allowed)throw new Error('Administrator access required');
@@ -24,13 +25,30 @@ export const getPlatformNotifications = createServerFn({method:'POST'}).middlewa
 });
 export const listAdminGyms=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
   const {data:allowed}=await context.supabase.rpc('is_super_admin');if(!allowed)throw new Error('Administrator access required');
-  const {data:gyms,error}=await context.supabase.from('gyms').select('id,name,owner_id,created_at,frozen_at,freeze_note').order('created_at',{ascending:true});
+  const {data:gyms,error}=await context.supabase.from('gyms').select('id,name,owner_id,created_at,frozen_at,freeze_note,deleted_at').order('created_at',{ascending:true});
   if(error)throw new Error('Could not load gyms.');
   const ids=[...new Set((gyms??[]).map(g=>g.owner_id))];
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
   const {data:profiles}=ids.length?await supabaseAdmin.from('profiles').select('id,full_name,email').in('id',ids):{data:[] as {id:string;full_name:string;email:string}[]};
-  const {data:requests}=await context.supabase.from('owner_requests').select('gym_id,plan,status').eq('status','Approved');
-  return (gyms??[]).map(g=>({id:g.id,name:g.name,ownerName:profiles?.find(p=>p.id===g.owner_id)?.full_name||'',ownerEmail:profiles?.find(p=>p.id===g.owner_id)?.email||'',plan:requests?.find(r=>r.gym_id===g.id)?.plan??'',frozen:!!g.frozen_at,freezeNote:g.freeze_note??''}));
+  const {data:requests}=await context.supabase.from('owner_requests').select('gym_id,plan,status');
+  return (gyms??[]).filter(g=>g.deleted_at || requests?.some(r=>r.gym_id===g.id&&r.status==='Approved')).map(g=>({id:g.id,name:g.name,ownerName:profiles?.find(p=>p.id===g.owner_id)?.full_name||'',ownerEmail:profiles?.find(p=>p.id===g.owner_id)?.email||'',plan:requests?.find(r=>r.gym_id===g.id)?.plan??'',deleted:!!g.deleted_at,frozen:!!g.frozen_at,freezeNote:g.freeze_note??''}));
+});
+
+export const deleteGymAccount=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({gymId:z.string().uuid()}).parse(input)).handler(async({data,context})=>{
+  const {data:allowed,error:roleError}=await context.supabase.rpc('is_super_admin');
+  if(roleError||!allowed)throw new Error('Administrator access required');
+  const {data:target,error}=await context.supabase.rpc('disable_gym_account',{g:data.gymId});
+  if(error)throw new Error(error.message);
+  const parsed=z.object({ownerId:z.string().uuid(),disableOwner:z.boolean()}).parse(target);
+  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
+  await deactivateDedicatedOwner(parsed,(id,attributes)=>supabaseAdmin.auth.admin.updateUserById(id,attributes));
+  return {ownerDisabled:parsed.disableOwner};
+});
+
+export const savePlatformContact=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({whatsapp:z.string().trim().max(20).refine(v=>!v||/^\+?[0-9 ()-]{6,20}$/.test(v),'Enter a valid contact number')}).parse(input)).handler(async({data,context})=>{
+  const {data:allowed}=await context.supabase.rpc('is_super_admin');if(!allowed)throw new Error('Administrator access required');
+  const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
+  const {error}=await supabaseAdmin.from('platform_settings').upsert({id:true,whatsapp:data.whatsapp});if(error)throw new Error('Could not save the contact number.');return true;
 });
 
 export const setGymFrozen=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({gymId:z.string().uuid(),frozen:z.boolean(),note:z.string().max(1000).optional()}).parse(input)).handler(async({data,context})=>{

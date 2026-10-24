@@ -242,6 +242,7 @@ export type Database = {
       gyms: {
         Row: {
           created_at: string
+          deleted_at: string | null
           freeze_note: string
           frozen_at: string | null
           id: string
@@ -250,6 +251,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          deleted_at?: string | null
           freeze_note?: string
           frozen_at?: string | null
           id?: string
@@ -258,6 +260,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          deleted_at?: string | null
           freeze_note?: string
           frozen_at?: string | null
           id?: string
@@ -406,9 +409,25 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          id: boolean
+          whatsapp: string
+        }
+        Insert: {
+          id?: boolean
+          whatsapp?: string
+        }
+        Update: {
+          id?: boolean
+          whatsapp?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           account_type: string
+          disabled_at: string | null
           email: string
           full_name: string
           id: string
@@ -418,6 +437,7 @@ export type Database = {
         }
         Insert: {
           account_type?: string
+          disabled_at?: string | null
           email?: string
           full_name?: string
           id: string
@@ -427,6 +447,7 @@ export type Database = {
         }
         Update: {
           account_type?: string
+          disabled_at?: string | null
           email?: string
           full_name?: string
           id?: string
@@ -583,6 +604,7 @@ export type Database = {
         Args: { approve: boolean; request_id: string }
         Returns: string
       }
+      disable_gym_account: { Args: { g: string }; Returns: Json }
       finish_login: {
         Args: {
           challenge_hash: string
@@ -593,6 +615,7 @@ export type Database = {
         Returns: boolean
       }
       gym_access: { Args: { area?: string; g: string }; Returns: boolean }
+      gym_operational: { Args: { g: string }; Returns: boolean }
       gym_subscription_summary: { Args: { g: string }; Returns: Json }
       is_super_admin: { Args: never; Returns: boolean }
       otp_verified: { Args: never; Returns: boolean }

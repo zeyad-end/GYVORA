@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
-import { listAdminGyms, setGymFrozen } from '@/lib/platform-admin.functions';
+import { listAdminGyms, setGymFrozen, deleteGymAccount } from '@/lib/platform-admin.functions';
 import { Button } from './ui/button';
 import { DataTable, PageHeader, td } from './kit';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
@@ -12,6 +12,7 @@ type AdminGym = Awaited<ReturnType<typeof listAdminGyms>>[number];
 export function CloudGyms() {
   const list = useServerFn(listAdminGyms);
   const freeze = useServerFn(setGymFrozen);
+  const remove = useServerFn(deleteGymAccount);
   const [rows, setRows] = useState<AdminGym[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -47,9 +48,17 @@ export function CloudGyms() {
     finally { setBusy(false); }
   }
 
+  async function deleteAccount(g: AdminGym) {
+    if(!window.confirm(`Delete ${g.name}? Gym access will be permanently disabled. A dedicated owner's sign-in will also be disabled. Historical records and unrelated accounts are retained.`))return;
+    setBusy(true);setError('');
+    try {const result=await remove({data:{gymId:g.id}});toast.success(result.ownerDisabled?'Gym deleted and owner sign-in disabled.':'Gym deleted. The shared owner account retains unrelated access.');await load();}
+    catch(e){await load();setError(e instanceof Error?e.message:'Could not delete the gym.');}
+    finally{setBusy(false);}
+  }
+
   return (
     <div>
-      <PageHeader title="Approved Gyms" subtitle={`Total approved gyms: ${rows.length}`} />
+      <PageHeader title="Approved Gyms" subtitle={`Total approved gyms: ${rows.filter(g=>!g.deleted).length}`} />
       {error && <p role="alert" className="mb-4 text-destructive">{error}</p>}
       <DataTable head={['#', 'Gym Name', 'Owner', 'Plan', 'Status', 'Freeze note', 'Actions']}>
         {rows.map((g, i) => (
@@ -58,12 +67,13 @@ export function CloudGyms() {
             <td className={td}>{g.name}</td>
             <td className={td}>{g.ownerName || '—'}{g.ownerEmail ? <span className="block text-xs text-muted-foreground">{g.ownerEmail}</span> : null}</td>
             <td className={td}>{g.plan || '—'}</td>
-            <td className={td}><span className={g.frozen ? 'text-destructive' : 'text-success'}>{g.frozen ? 'Frozen' : 'Active'}</span></td>
+             <td className={td}><span className={g.deleted||g.frozen ? 'text-destructive' : 'text-success'}>{g.deleted?'Deleted':g.frozen ? 'Frozen' : 'Active'}</span></td>
             <td className={td}>{g.frozen && g.freezeNote ? g.freezeNote : '—'}</td>
             <td className={td}>
-              {g.frozen
+               <div className="flex flex-wrap gap-2">{!g.deleted && (g.frozen
                 ? <Button size="sm" variant="secondary" disabled={busy} onClick={() => void unfreeze(g)}>Unfreeze</Button>
-                : <Button size="sm" variant="secondary" disabled={busy} onClick={() => { setFreezing(g); setNote(''); }}>Freeze</Button>}
+                 : <Button size="sm" variant="secondary" disabled={busy} onClick={() => { setFreezing(g); setNote(''); }}>Freeze</Button>)}
+                 <Button size="sm" variant="destructive" disabled={busy} onClick={()=>void deleteAccount(g)}>{g.deleted?'Retry deactivation':'Delete'}</Button></div>
             </td>
           </tr>
         ))}

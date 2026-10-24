@@ -18,8 +18,11 @@ export const Route = createFileRoute('/super-admin/gyms')({
 });
 
 function Gyms() {
+  return getDemoSession()?<DemoGyms/>:<CloudGyms/>;
+}
+
+function DemoGyms() {
   const gyms = useDemoStore((s) => s.gyms);
-  if (!getDemoSession()) return <CloudGyms />;
   const [editing, setEditing] = useState<ApprovedGym | null>(null);
   const [noteGymId,setNoteGymId]=useState<string|null>(null);
   const noteGym=gyms.find(g=>g.id===noteGymId&&g.notes?.trim());

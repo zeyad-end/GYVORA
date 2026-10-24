@@ -2,6 +2,7 @@
 export const TRIAL_MS = 60 * 60 * 1000;
 
 export type OwnerGate = {
+  deleted?: boolean;
   gymId: string | null;
   frozen: boolean;
   freezeNote: string;
