@@ -98,7 +98,7 @@ function Attendance() {
         onClose={() => setScan(false)}
         onScan={async (value) => {
           const id = value.replace(/^ironhaus:member:/, "");
-          let m = members.find((x) => x.id === id || x.memberQrId === id);
+          let m = members.find((x) => x.id === id || x.memberQrId === id || x.gyvoraId === id);
           if (!m && getDemoSession())
             m = members.find((x) => demoMemberId(x.clientId ?? demoUserId(x.email)) === id);
           if (!m && !getDemoSession()) {

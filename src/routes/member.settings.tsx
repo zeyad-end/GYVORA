@@ -15,7 +15,7 @@ export const Route = createFileRoute("/member/settings")({
   head: () =>
     seo(
       "Account settings",
-      "Update your IronHaus photo and contact details, change password or sign out.",
+      "View your permanent GYVORA ID and update account details or sign out.",
     ),
   component: Settings,
 });
@@ -26,6 +26,7 @@ function Settings() {
   if (!c.profile) return null;
   return (
     <ClientShell title="Account Settings">
+      {c.profile.gyvora_id&&<p className="mb-6 break-all text-sm text-muted-foreground">GYVORA ID · {c.profile.gyvora_id}</p>}
       <form
         className="max-w-lg space-y-5"
         onSubmit={async (e) => {

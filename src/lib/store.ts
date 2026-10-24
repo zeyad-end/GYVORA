@@ -12,6 +12,7 @@ import {
 
 export type Member = (typeof membersSeed)[number] & {
   clientId?: string;
+  gyvoraId?: string | undefined;
   memberQrId?: string | undefined;
   planPrice?: number;
   createdByName?: string;

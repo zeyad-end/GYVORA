@@ -23,8 +23,9 @@ export function CloudClients({gymId}: {gymId?: string}) {
   return <div className="space-y-4">
     <PageHeader title={gymId ? 'Client accounts' : 'Clients'} subtitle={loading ? 'Loading clients…' : `${rows.length} saved client accounts`} />
     {error && <p role="alert" className="text-destructive">{error}<Button variant="outline" className="ml-3" onClick={()=>void refresh()}>Retry</Button></p>}
-    <DataTable head={['Client','Registered contact','Gyms','Status','Actions']}>{rows.map(p=><tr key={p.id}>
+    <DataTable head={['Client','GYVORA ID','Registered contact','Gyms','Status','Actions']}>{rows.map(p=><tr key={p.id}>
       <td className={td}><div className="flex items-center gap-3">{p.photo ? <ExerciseImage path={p.photo} alt={`${p.full_name} photo`} className="h-10 w-10 rounded-full object-cover"/> : <Avatar initials={initials(p.full_name || 'Client')}/>}<span>{p.full_name || 'Name not provided'}</span></div></td>
+      <td className={td}><span className="break-all">{p.gyvora_id || 'Unavailable'}</span></td>
       <td className={td}><p className="break-all">{p.email || 'Email not provided'}</p><p className="text-xs text-muted-foreground">{p.phone || 'Phone not provided'}</p></td>
       <td className={td}>{p.gyms.map(g=>g.name).join(', ') || 'No gym memberships'}</td>
       <td className={td}>{p.disabled_at ? 'Deactivated' : 'Active'}</td>

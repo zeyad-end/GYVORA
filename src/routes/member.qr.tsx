@@ -9,13 +9,14 @@ import { toast } from "sonner";
 import { seo } from "@/lib/seo";
 export const Route = createFileRoute("/member/qr")({
   head: () =>
-    seo("My permanent QR", "Share or download your personal IronHaus Member ID and QR code."),
+    seo("My permanent QR", "Share or download your permanent GYVORA account ID and private QR code."),
   component: MemberQR,
 });
 function MemberQR() {
   const c = useCloud();
   const ref = useRef<HTMLDivElement>(null);
-  const id = c.profile?.member_id;
+  const id = c.profile?.gyvora_id ?? (c.gymId.startsWith('demo-') ? c.profile?.member_id : undefined);
+  const qrValue = c.profile?.gyvora_id ?? (id ? `ironhaus:member:${id}` : '');
   async function image() {
     const svg = ref.current?.querySelector("svg");
     if (!svg) throw new Error("QR unavailable");
@@ -77,7 +78,7 @@ function MemberQR() {
         );
         return;
       }
-      await navigator.clipboard.writeText(`Member ID: ${id}\nironhaus:member:${id}`);
+      await navigator.clipboard.writeText(qrValue);
       toast.success("Member ID and QR value copied");
     } catch (e) {
       if (e instanceof Error && e.name === "AbortError") return;
@@ -96,7 +97,7 @@ function MemberQR() {
         <div ref={ref} className="mx-auto w-fit rounded-lg bg-foreground p-6">
           {id ? (
             <QRCodeSVG
-              value={`ironhaus:member:${id}`}
+              value={qrValue}
               size={240}
               marginSize={4}
               bgColor="transparent"
@@ -108,7 +109,7 @@ function MemberQR() {
           )}
         </div>
         <h2 className="mt-6 text-xl font-semibold">{c.profile?.full_name}</h2>
-        <p className="mt-3 break-all text-sm text-muted-foreground">Member ID · {id}</p>
+        <p className="mt-3 break-all text-sm text-muted-foreground">GYVORA ID · {id}</p>
         <div className="mt-6 flex justify-center gap-3">
           <Button disabled={!id} onClick={() => void share()}>
             <Share2 className="h-4 w-4" />

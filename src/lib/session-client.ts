@@ -6,5 +6,5 @@ export function findSessionClient(members: Member[], value: string): Member | un
   if (!input || (input.includes(":") && !input.startsWith("ironhaus:member:"))) return undefined;
   const id = input.replace(/^ironhaus:member:/, "");
   if (!id || id.includes(":")) return undefined;
-  return members.find((m) => m.id === id || m.memberQrId === id);
+  return members.find((m) => m.id === id || m.memberQrId === id || m.gyvoraId === id);
 }

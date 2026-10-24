@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { invoiceSchema, scheduleSchema } from './gym-updates';
 import { productSchema, validateProductChanges } from './product-sales';
 import { planSchema, programSchema, recurringSchema, sessionSchema, text } from './validation';
+import { isGyvoraId, normalizeAccountLookup } from './gyvora-id';
 
 const areas: Record<string,string> = {gym:'Profile', members:'Members',plans:'Members',workouts:'Workout programs',sessions:'Sessions',attendance:'Attendance',staffAttendance:'Attendance',products:'Products',trainers:'Workout programs',recurring:'Finance',transactions:'Finance'};
 const memberSchema = z.object({id:text,name:text,email:z.union([z.string().email().max(255),z.literal('')]),phone:z.string().max(30),plan:text,type:z.enum(['Limited','Unlimited']),start:z.string().date(),expiry:z.string().date(),sessionsTotal:z.number().int().min(0).max(999),sessionsLeft:z.number().int().min(0).max(999),trainer:z.string().max(100),notes:z.string().max(1000),clientId:z.string().uuid().optional(),memberQrId:z.string().uuid().optional(),planPrice:z.number().min(0).optional(),createdByName:z.string().max(100).optional()}).passthrough().refine(m=>m.expiry>=m.start,'End date must not precede start date');
@@ -24,9 +25,10 @@ export const lookupClient = createServerFn({method:'POST'}).middleware([requireS
   const {data:owner,error:roleError}=await context.supabase.from('user_roles').select('id').eq('user_id',context.userId).eq('gym_id',data.gymId).eq('role','Owner').maybeSingle();
   if(roleError||!owner)throw new Error('Only gym owners can look up existing clients');
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
-  const value=data.memberId.replace(/^ironhaus:member:/,'');
-  let query=supabaseAdmin.from('profiles').select('id,member_id,full_name,email,phone').in('account_type',['client','staff']).is('disabled_at',null);
-  if(z.string().uuid().safeParse(value).success)query=query.or(`id.eq.${value},member_id.eq.${value}`);
+  const value=normalizeAccountLookup(data.memberId);
+  let query=supabaseAdmin.from('profiles').select('id,member_id,gyvora_id,full_name,email,phone').in('account_type',['client','staff']).is('disabled_at',null);
+  if(isGyvoraId(value))query=query.eq('gyvora_id',value);
+  else if(z.string().uuid().safeParse(value).success)query=query.or(`id.eq.${value},member_id.eq.${value}`);
   else if(z.string().email().safeParse(value).success)query=query.ilike('email',value.replace(/[%_]/g,'\\$&'));
   else query=query.ilike('full_name',value.replace(/[%_]/g,'\\$&'));
   const {data:matches,error}=await query.limit(20);
