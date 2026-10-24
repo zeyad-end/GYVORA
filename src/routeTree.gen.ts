@@ -42,6 +42,7 @@ import { Route as MemberSettingsRouteImport } from './routes/member.settings'
 import { Route as MemberWorkoutsRouteImport } from './routes/member.workouts'
 import { Route as SuperAdminIndexRouteImport } from './routes/super-admin.index'
 import { Route as SuperAdminClientsRouteImport } from './routes/super-admin.clients'
+import { Route as SuperAdminDeletedGymsRouteImport } from './routes/super-admin.deleted-gyms'
 import { Route as SuperAdminExpensesRouteImport } from './routes/super-admin.expenses'
 import { Route as SuperAdminGymsRouteImport } from './routes/super-admin.gyms'
 import { Route as SuperAdminNotificationsRouteImport } from './routes/super-admin.notifications'
@@ -215,6 +216,11 @@ const SuperAdminClientsRoute = SuperAdminClientsRouteImport.update({
   path: '/clients',
   getParentRoute: () => SuperAdminRoute,
 } as any)
+const SuperAdminDeletedGymsRoute = SuperAdminDeletedGymsRouteImport.update({
+  id: '/deleted-gyms',
+  path: '/deleted-gyms',
+  getParentRoute: () => SuperAdminRoute,
+} as any)
 const SuperAdminExpensesRoute = SuperAdminExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
@@ -287,6 +293,7 @@ export interface FileRoutesByFullPath {
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
   '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/deleted-gyms': typeof SuperAdminDeletedGymsRoute
   '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/notifications': typeof SuperAdminNotificationsRoute
@@ -328,6 +335,7 @@ export interface FileRoutesByTo {
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
   '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/deleted-gyms': typeof SuperAdminDeletedGymsRoute
   '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/notifications': typeof SuperAdminNotificationsRoute
@@ -372,6 +380,7 @@ export interface FileRoutesById {
   '/member/settings': typeof MemberSettingsRoute
   '/member/workouts': typeof MemberWorkoutsRoute
   '/super-admin/clients': typeof SuperAdminClientsRoute
+  '/super-admin/deleted-gyms': typeof SuperAdminDeletedGymsRoute
   '/super-admin/expenses': typeof SuperAdminExpensesRoute
   '/super-admin/gyms': typeof SuperAdminGymsRoute
   '/super-admin/notifications': typeof SuperAdminNotificationsRoute
@@ -416,6 +425,7 @@ export interface FileRouteTypes {
     | '/member/settings'
     | '/member/workouts'
     | '/super-admin/clients'
+    | '/super-admin/deleted-gyms'
     | '/super-admin/expenses'
     | '/super-admin/gyms'
     | '/super-admin/notifications'
@@ -457,6 +467,7 @@ export interface FileRouteTypes {
     | '/member/settings'
     | '/member/workouts'
     | '/super-admin/clients'
+    | '/super-admin/deleted-gyms'
     | '/super-admin/expenses'
     | '/super-admin/gyms'
     | '/super-admin/notifications'
@@ -500,6 +511,7 @@ export interface FileRouteTypes {
     | '/member/settings'
     | '/member/workouts'
     | '/super-admin/clients'
+    | '/super-admin/deleted-gyms'
     | '/super-admin/expenses'
     | '/super-admin/gyms'
     | '/super-admin/notifications'
@@ -767,6 +779,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SuperAdminClientsRouteImport
       parentRoute: typeof SuperAdminRoute
     }
+    '/super-admin/deleted-gyms': {
+      id: '/super-admin/deleted-gyms'
+      path: '/deleted-gyms'
+      fullPath: '/super-admin/deleted-gyms'
+      preLoaderRoute: typeof SuperAdminDeletedGymsRouteImport
+      parentRoute: typeof SuperAdminRoute
+    }
     '/super-admin/expenses': {
       id: '/super-admin/expenses'
       path: '/expenses'
@@ -866,6 +885,7 @@ const GymRouteWithChildren = GymRoute._addFileChildren(GymRouteChildren)
 
 interface SuperAdminRouteChildren {
   SuperAdminClientsRoute: typeof SuperAdminClientsRoute
+  SuperAdminDeletedGymsRoute: typeof SuperAdminDeletedGymsRoute
   SuperAdminExpensesRoute: typeof SuperAdminExpensesRoute
   SuperAdminGymsRoute: typeof SuperAdminGymsRoute
   SuperAdminNotificationsRoute: typeof SuperAdminNotificationsRoute
@@ -876,6 +896,7 @@ interface SuperAdminRouteChildren {
 
 const SuperAdminRouteChildren: SuperAdminRouteChildren = {
   SuperAdminClientsRoute: SuperAdminClientsRoute,
+  SuperAdminDeletedGymsRoute: SuperAdminDeletedGymsRoute,
   SuperAdminExpensesRoute: SuperAdminExpensesRoute,
   SuperAdminGymsRoute: SuperAdminGymsRoute,
   SuperAdminNotificationsRoute: SuperAdminNotificationsRoute,

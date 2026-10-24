@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { enterPrototype } from '@/lib/prototype-login';
-import { submitDemoGymRequest, rejectRequest, approveRequest, getDemoState, setGymStatus, demoOwnerHasAccess, getDemoAccount, deleteGym, setDemoSession } from '@/lib/demo';
+import { submitDemoGymRequest, rejectRequest, approveRequest, getDemoState, setGymStatus, demoOwnerHasAccess, getDemoAccount, deleteGym, restoreGym, setDemoSession } from '@/lib/demo';
 
 describe('local gym lifecycle',()=>{
  it('reapproves the same rejected request without duplicating its gym',()=>{
