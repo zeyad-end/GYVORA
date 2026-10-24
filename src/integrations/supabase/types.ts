@@ -638,6 +638,10 @@ export type Database = {
       gym_operational: { Args: { g: string }; Returns: boolean }
       gym_subscription_summary: { Args: { g: string }; Returns: Json }
       is_super_admin: { Args: never; Returns: boolean }
+      manage_client_lifecycle: {
+        Args: { g?: string; target: string }
+        Returns: boolean
+      }
       my_staff_invitations: { Args: never; Returns: Json }
       otp_verified: { Args: never; Returns: boolean }
       owner_gate_state: { Args: never; Returns: Json }

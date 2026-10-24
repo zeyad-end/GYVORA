@@ -14,9 +14,11 @@ import { generateId } from "@/lib/utils";
 export function ExerciseImage({
   path,
   className = "h-16 w-20 rounded-md object-cover",
+  alt = "Exercise",
 }: {
   path?: string | undefined;
   className?: string;
+  alt?: string;
 }) {
   const [url, setUrl] = useState("");
   useEffect(() => {
@@ -26,7 +28,7 @@ export function ExerciseImage({
         .then(setUrl)
         .catch(() => setUrl(""));
   }, [path]);
-  return url ? <img src={url} alt="Exercise" className={className} /> : null;
+  return url ? <img src={url} alt={alt} className={className} /> : null;
 }
 const empty = () => ({ name: "", sets: 3, reps: "10", image: "" });
 export function ProgramEditor({

@@ -11,6 +11,8 @@ import { useCloud } from '@/components/CloudProvider';
 import { GymSubscriptionStatus } from '@/components/GymSubscriptionStatus';
 import { membershipStatus } from '@/lib/membership-link';
 import { localDate } from '@/lib/gym-period';
+import { CloudClients } from '@/components/CloudClients';
+import { getDemoSession } from '@/lib/demo';
 import { canChange } from '@/lib/gym-permissions';
 
 export const Route = createFileRoute("/_gym/members/")({
@@ -61,6 +63,7 @@ function Members() {
           ))}
         </DataTable>
       </Panel>
+      {!getDemoSession() && c.role==='Owner' && c.gymId && <div className="mt-8"><CloudClients gymId={c.gymId}/></div>}
     </>
   );
 }

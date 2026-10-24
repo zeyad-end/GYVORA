@@ -169,6 +169,20 @@
       "when": 1792802979508,
       "tag": "0023_read_only_gym_browsing_and_workout_sources",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1792804355030,
+      "tag": "0024_client_profiles_and_visible_gym_images",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1792804386594,
+      "tag": "0025_safe_client_account_lifecycle",
+      "breakpoints": true
     }
   ]
 }

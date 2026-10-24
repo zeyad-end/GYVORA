@@ -8,6 +8,8 @@ import { Field } from '@/components/kit';
 import { seo } from '@/lib/seo';
 import { registerDemoAccount, setDemoSession, sessionKindFor, demoDestination, type DemoAccountType } from '@/lib/demo';
 import { registrationSchema } from '@/lib/registration';
+import { supabase } from '@/integrations/supabase/client';
+import { readFile } from '@/lib/store';
 import { AppBrand } from '@/components/AppBrand';
 
 export const Route = createFileRoute('/register')({
@@ -27,7 +29,7 @@ function Register() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [accountType, setAccountType] = useState<DemoAccountType | ''>('');
-  const [contact, setContact] = useState<'phone' | 'email'>('phone');
+  const [created,setCreated] = useState(false);
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -36,6 +38,17 @@ function Register() {
     const d = new FormData(e.currentTarget);
     try {
       const p = registrationSchema.parse(Object.fromEntries(d));
+      if (p.account_type === 'individual') {
+        if (!p.email) throw new Error('Email is required for a saved client account.');
+        const file=d.get('photo');
+        if (file instanceof File && file.size && (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 750000)) throw new Error('Choose a JPG, PNG or WebP photo under 750 KB.');
+        const photo=file instanceof File && file.size ? await readFile(file) : '';
+        const {data,error}=await supabase.auth.signUp({email:p.email,password:p.password,options:{emailRedirectTo:window.location.origin+'/client-sign-in',data:{full_name:p.full_name,phone:p.phone,photo,account_type:'client'}}});
+        if(error)throw new Error(error.message);
+        setDemoSession(null);
+        if(data.session){await cloud.refresh();await navigate({to:'/member'});}else setCreated(true);
+        return;
+      }
       // Prototype: demo accounts are stored locally and isolated from production auth.
       const id = p.email || p.phone || `gym:${p.full_name.toLowerCase().replace(/\s+/g, '-')}`;
       const acc = registerDemoAccount(p.full_name, id, p.password, p.account_type, p.phone);
@@ -54,7 +67,7 @@ function Register() {
       <div className="w-full max-w-lg">
         <AppBrand large className="mb-8" />
         <h1 className="text-2xl font-semibold">Create your account</h1>
-        <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
+        {created ? <div className="mt-6 space-y-4"><p role="status">Your account was created. Check your email to confirm it before signing in.</p><Button asChild><Link to="/client-sign-in">Client sign in</Link></Button></div> : <form className="mt-6 grid gap-4 sm:grid-cols-2" onSubmit={onSubmit}>
           <fieldset className="sm:col-span-2">
             <legend className="mb-2 text-sm">Account type</legend>
             <div className="grid gap-2 sm:grid-cols-3">
@@ -72,10 +85,9 @@ function Register() {
           <Field label="Full Name" className="sm:col-span-2">
             <Input name="full_name" required maxLength={100} />
           </Field>
-           {accountType === 'individual' && <fieldset className="sm:col-span-2"><legend className="mb-2 text-sm">Contact detail</legend><div className="flex gap-4">{(['phone', 'email'] as const).map(value => <label key={value} className="flex items-center gap-2 text-sm"><input type="radio" checked={contact === value} onChange={() => setContact(value)}/>{value === 'phone' ? 'Phone Number' : 'Email'}</label>)}</div></fieldset>}
-           {(accountType === 'dashboard' || (accountType === 'individual' && contact === 'email')) && <Field label="Email" className="sm:col-span-2"><Input name="email" type="email" required maxLength={255}/></Field>}
+           {(accountType === 'dashboard' || accountType === 'individual') && <Field label="Email" className="sm:col-span-2"><Input name="email" type="email" required maxLength={255}/></Field>}
            {accountType === 'gym' && <><Field label="Phone Number (optional)"><Input name="phone" type="tel" maxLength={30} placeholder="Demo values are fine"/></Field><Field label="Email (optional)"><Input name="email" type="email" maxLength={255}/></Field><p className="text-xs text-muted-foreground sm:col-span-2">Prototype account — fictional details are fine. No phone, SMS or email verification.</p></>}
-           {accountType === 'individual' && contact === 'phone' && <Field label="Phone Number" className="sm:col-span-2"><Input name="phone" type="tel" required maxLength={30}/></Field>}
+           {accountType === 'individual' && <><Field label="Phone Number (optional)" className="sm:col-span-2"><Input name="phone" type="tel" maxLength={30}/></Field><Field label="Profile photo (optional)" className="sm:col-span-2"><Input name="photo" type="file" accept="image/jpeg,image/png,image/webp"/></Field></>}
           <Field label="Password" className="sm:col-span-2">
             <Input name="password" type="password" required minLength={8} maxLength={128} />
           </Field>
@@ -99,11 +111,11 @@ function Register() {
           </Button>
           <p className="text-sm text-muted-foreground sm:col-span-2">
             Already have an account?{' '}
-            <Link to="/" className="text-primary">
+            <Link to={accountType === 'individual' ? '/client-sign-in' : '/'} className="text-primary">
               Sign in
             </Link>
           </p>
-        </form>
+        </form>}
       </div>
     </div>
   );

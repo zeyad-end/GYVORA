@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Individual signup uses provider email/password with the existing signup profile trigger; saved client management uses authenticated server functions, gym-scoped removal and platform-only retained-profile deactivation. The separate client sign-in page preserves the destination-based Local demo login.
 - User gym browsing uses the existing safe content RPC and a dashboard-styled client workspace; public projections never include management data or grant membership. Personal workout saves keep source gym/plan keys with a per-user unique index, while editable definitions remain independent.
 - Persisted staff page names grant read access and page:create/edit/delete grant independent actions in existing invitation/role permission arrays; database record triggers enforce actions, and member gym discovery includes owner-added memberships without manual directory links.
 - Gym lifecycle uses retained tombstones and a shared database entitlement predicate; dedicated owners are provider-banned after durable access revocation, while shared owners and membership history are preserved.

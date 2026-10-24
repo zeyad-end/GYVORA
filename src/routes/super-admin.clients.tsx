@@ -6,14 +6,19 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { initials } from '@/lib/mock';
 import { useDemoStore, editClient, deleteClient, removeClientGym, type DemoClient } from '@/lib/demo';
+import { CloudClients } from '@/components/CloudClients';
+import { getDemoSession } from '@/lib/demo';
 import { seo } from '@/lib/seo';
 
 export const Route = createFileRoute('/super-admin/clients')({
-  head: () => seo('Clients', 'Fictional client accounts across platform gyms.'),
+  head: () => seo('Clients', 'Review and manage saved GYVORA client profiles and account access.'),
   component: Clients,
 });
 
 function Clients() {
+  return getDemoSession() ? <DemoClients /> : <CloudClients />;
+}
+function DemoClients() {
   const clients = useDemoStore((s) => s.clients);
   const [editing, setEditing] = useState<DemoClient | null>(null);
   const [name, setName] = useState('');

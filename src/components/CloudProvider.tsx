@@ -387,7 +387,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
   const path = useRouterState({ select: (s) => s.location.pathname });
   useDemoStore((s) => s.requests); // re-check gym access when request decisions load or change
   useDemoStore((s) => s.gyms);
-  const publicPaths = ["/", "/register", "/auth", "/reset-password"];
+  const publicPaths = ["/", "/register", "/auth", "/reset-password", "/client-sign-in"];
   if (publicPaths.includes(path)) return children;
   if (c.loading) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
   const demo = getDemoSession();
@@ -450,7 +450,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
         </Button>
       </div>
     );
-  if(c.profile.disabled_at)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Gym account deleted</h1><p className="mt-2 text-muted-foreground">This account has been disabled by the administrator.</p><Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
+  if(c.profile.disabled_at)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Account deactivated</h1><p className="mt-2 text-muted-foreground">This account has been disabled by the administrator.</p><Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
   if (
     isClientPortalPath(path) ||
     path === "/subscription-request" ||
@@ -529,7 +529,7 @@ function OwnerGateBoundary({ children }: { children: ReactNode }) {
       </div>
     );
   if (!gate) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
-  if(gate.deleted)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Gym account deleted</h1><p className="mt-2 text-muted-foreground">This gym is disabled and can no longer be used.</p><Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
+  if(gate.deleted)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Account deactivated</h1><p className="mt-2 text-muted-foreground">This gym is disabled and can no longer be used.</p><Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
 
   const contact = (
     <p className="flex items-center gap-2 text-sm text-muted-foreground">
