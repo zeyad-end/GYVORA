@@ -21,7 +21,7 @@ export const listClients = createServerFn({method: 'POST'}).middleware([requireS
     if (memberError) throw new Error('Could not load client memberships');
     const ids = [...new Set((memberships ?? []).flatMap(m => m.client_id ? [m.client_id] : []))];
     if (data.gymId && !ids.length) return [];
-    let profiles = supabaseAdmin.from('profiles').select('id,full_name,email,phone,photo,disabled_at').in('account_type',['client','staff']);
+    let profiles = supabaseAdmin.from('profiles').select('id,gyvora_id,full_name,email,phone,photo,disabled_at').in('account_type',['client','staff']);
     if (data.gymId) profiles = profiles.in('id',ids);
     const {data: people,error} = await profiles.order('full_name');
     if (error) throw new Error('Could not load clients');

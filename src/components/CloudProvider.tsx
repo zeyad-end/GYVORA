@@ -239,12 +239,13 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         deleted_at: null,
         deletion_note: '',
         deletion_history: [],
+        gyvora_id: '',
       }));
       setGyms(
         demo === "owner"
           ? [
-              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null, deletion_note: '', deletion_history: [] },
-              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null, deletion_note: '', deletion_history: [] },
+              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null, deletion_note: '', deletion_history: [], gyvora_id:'' },
+              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null, deletion_note: '', deletion_history: [], gyvora_id:'' },
             ]
           : demo === "individual"
             ? memberGyms
