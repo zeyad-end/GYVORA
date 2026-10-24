@@ -28,7 +28,7 @@ function Members() {
   const members=storedMembers.map(m=>({...m,status:membershipStatus(m,localDate())}));
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
-  const rows = members.filter((m) => (f === "All" || m.status === f) && (m.name + m.phone).toLowerCase().includes(q.toLowerCase()));
+  const rows = members.filter((m) => (f === "All" || m.status === f) && (m.name + m.phone + (m.gyvoraId??'')).toLowerCase().includes(q.toLowerCase()));
   return (
     <>
       <MemberDialog open={open} onOpenChange={setOpen} member={editing} />
@@ -37,7 +37,7 @@ function Members() {
       <div className="mb-5"><GymSubscriptionStatus gymId={c.gymId}/></div>
       <Panel>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row">
-          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or phone" className="h-10 bg-surface sm:max-w-xs" />
+          <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, phone or GYVORA ID" className="h-10 bg-surface sm:max-w-xs" />
           <div className="flex gap-1 rounded-lg border bg-surface p-1">
             {["All", "Active", "Expiring", "Expired"].map((s) => (
               <button key={s} onClick={() => setF(s)} className={`rounded-md px-3 py-1.5 text-xs ${f === s ? "bg-secondary text-foreground" : "text-muted-foreground"}`}>{s}</button>
@@ -47,7 +47,7 @@ function Members() {
         <DataTable head={["Member", "Phone", "Plan", "Sessions left", "Expires", "Status", ""]}>
           {rows.map((m) => (
             <tr key={m.id}>
-              <td className={td}><div className="flex items-center gap-3"><Avatar initials={m.initials} size="sm" /><div><div className="font-medium">{m.name}</div><div className="text-xs text-muted-foreground">{m.id}</div></div></div></td>
+              <td className={td}><div className="flex items-center gap-3"><Avatar initials={m.initials} size="sm" /><div><div className="font-medium">{m.name}</div><div className="break-all text-xs text-muted-foreground">{m.gyvoraId??m.id}</div></div></div></td>
               <td className={`${td} text-muted-foreground`}>{m.phone}</td>
               <td className={td}>{m.plan}</td>
               <td className={td}>{m.type === "Limited" ? <span className={m.sessionsLeft === 0 ? "text-destructive" : "text-primary"}>{m.sessionsLeft} / {m.sessionsTotal}</span> : <span className="text-muted-foreground">Unlimited</span>}</td>
