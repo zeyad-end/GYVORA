@@ -7,7 +7,7 @@ import { gymEvents } from './gym-events';
 import { appendGymEvents } from './gym-notifications-demo';
 import { billingMonths, gymPrices, savePrices, platformPlanSchema, defaultPlatformPlans, gymDatesSchema, planDefaults, type PlatformPlan, type subscriptionPriceSchema } from './platform-subscriptions';
 import { generateId } from "./utils";
-import { demoIdentity, ensureDemoIdentity } from './demo-identities';
+import { demoIdentity, demoIdentityMatches, ensureDemoIdentity } from './demo-identities';
 import { normalizeAccountLookup } from './gyvora-id';
 import { assertUniqueClientMembership } from './membership-link';
 
@@ -324,7 +324,7 @@ export function lookupDemoClient(gymId:string,value:string) {
   if(account&&!demoOwnerHasAccess(account))throw new Error('Gym access unavailable');
   const input=normalizeAccountLookup(value).toLowerCase();
   const legacy=JSON.parse(localStorage.getItem('ironhaus-demo-member-identities') ?? '{}') as Record<string,string>;
-  const matches=localClients().filter(p=>p.id.toLowerCase()===input||demoMemberId(p.id).toLowerCase()===input||legacy[p.id]?.toLowerCase()===input||(p.email&&p.email.toLowerCase()===input)||p.full_name.toLowerCase()===input);
+  const matches=localClients().filter(p=>p.id.toLowerCase()===input||demoIdentityMatches('C',p.id,input)||legacy[p.id]?.toLowerCase()===input||(p.email&&p.email.toLowerCase()===input)||p.full_name.toLowerCase()===input);
   if(matches.length>1)throw new Error('More than one account has this name. Use the intended GYVORA ID or email.');
   const p=matches[0];
   if(!p)throw new Error('No existing Local demo client found on this browser. Saved accounts require your signed-in gym owner session.');

@@ -4,26 +4,35 @@ import { lookupDemoClient, prepareDemoIdentities, rememberDemoClient, setDemoSes
 import { demoMemberships } from '@/lib/client-portal';
 
 async function reserve(input: {data:{identities:{kind:'G'|'C';key:string}[]}}) {
-  return input.data.identities.map((e,i)=>({...e,id:`GYVORA-${e.kind}-${String(100000000000000+i)}`}));
+  return input.data.identities.map((e,i)=>({...e,id:`GYVORA-${e.kind}-${String(100+i)}`}));
 }
 describe('demo permanent identity and membership',()=>{
   beforeEach(()=>{localStorage.clear();setDemoSession(null);});
+  it('replaces a legacy cached ID exactly once, retaining its account key and QR alias',async()=>{
+    localStorage.setItem('gyvora-demo-permanent-identities-v1',JSON.stringify({installation:'fictional-installation',entries:[{kind:'C',localId:'fictional-client',key:'fictional-key',id:'GYVORA-C-123456789012345'}]}));
+    await syncDemoIdentities(reserve);
+    expect(demoIdentity('C','fictional-client')).toBe('GYVORA-C-100');
+    const cached=JSON.parse(localStorage.getItem('gyvora-demo-permanent-identities-v1') ?? '{}');
+    expect(cached.entries[0]).toMatchObject({localId:'fictional-client',key:'fictional-key',version:2,aliases:['GYVORA-C-123456789012345']});
+    await syncDemoIdentities(async()=>{throw new Error('Replacement IDs must stay permanent');});
+    expect(demoIdentity('C','fictional-client')).toBe('GYVORA-C-100');
+  });
   it('migrates legacy demo-user-f, keeps its account key and permanent QR after sign out',async()=>{
     localStorage.setItem('ironhaus-demo-member-identities',JSON.stringify({'demo-user-f':'demo-user-f'}));
     setDemoSession('individual','f',{name:'Fictional local F'});
     prepareDemoIdentities();await syncDemoIdentities(reserve);
     const id=demoIdentity('C','demo-user-f');
-    expect(id).toMatch(/^GYVORA-C-[0-9]{15}$/);
+    expect(id).toMatch(/^GYVORA-C-[1-9][0-9]{2,}$/);
     setDemoSession(null);setDemoSession('individual','f');
     expect(demoIdentity('C','demo-user-f')).toBe(id);
   });
   it('reserves both gym and client IDs together, preserving assigned numbers',async()=>{
     ensureDemoIdentity('G','gym');ensureDemoIdentity('C','client');
     await syncDemoIdentities(reserve);
-    expect(demoIdentity('G','gym')).toBe('GYVORA-G-100000000000000');
-    expect(demoIdentity('C','client')).toBe('GYVORA-C-100000000000001');
+    expect(demoIdentity('G','gym')).toBe('GYVORA-G-100');
+    expect(demoIdentity('C','client')).toBe('GYVORA-C-101');
     await syncDemoIdentities(async()=>{throw new Error('Already assigned IDs must not be regenerated');});
-    expect(demoIdentity('G','gym')).toBe('GYVORA-G-100000000000000');
+    expect(demoIdentity('G','gym')).toBe('GYVORA-G-100');
   });
   it('fills contacts by QR, name and email into the same account and exact-client membership',async()=>{
     const email='fictional-local-qr@example.invalid';const userId=demoUserId(email);

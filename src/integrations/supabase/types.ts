@@ -320,11 +320,27 @@ export type Database = {
           },
         ]
       }
+      gyvora_allocator_state: {
+        Row: {
+          lower_bound: string
+          singleton: boolean
+        }
+        Insert: {
+          lower_bound?: string
+          singleton?: boolean
+        }
+        Update: {
+          lower_bound?: string
+          singleton?: boolean
+        }
+        Relationships: []
+      }
       gyvora_id_registry: {
         Row: {
           account_id: string
           assigned_at: string
           gyvora_id: string | null
+          identity_version: number
           kind: string
           number: string
         }
@@ -332,6 +348,7 @@ export type Database = {
           account_id: string
           assigned_at?: string
           gyvora_id?: string | null
+          identity_version?: number
           kind: string
           number: string
         }
@@ -339,6 +356,7 @@ export type Database = {
           account_id?: string
           assigned_at?: string
           gyvora_id?: string | null
+          identity_version?: number
           kind?: string
           number?: string
         }
@@ -710,6 +728,7 @@ export type Database = {
       }
       gym_operational: { Args: { g: string }; Returns: boolean }
       gym_subscription_summary: { Args: { g: string }; Returns: Json }
+      gyvora_next_number: { Args: { value: string }; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }
       manage_client_lifecycle: {
         Args: { g?: string; target: string }

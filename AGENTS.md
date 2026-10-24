@@ -10,7 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
-- GYVORA IDs share an append-only database number registry; demo reservations accept opaque keys and return only IDs, never contacts or access. Demo records stay browser-local; legacy account and attendance keys remain compatible.
+- GYVORA IDs use a shared locked text allocator and append-only versioned registry; old reservations stay retired, demo caches migrate once, and opaque demo reservations return only IDs. Browser-local contacts and legacy account keys stay isolated.
 - Individual signup uses provider email/password with the existing signup profile trigger; saved client management uses authenticated server functions, gym-scoped removal and platform-only retained-profile deactivation. The separate client sign-in page preserves the destination-based Local demo login.
 - User gym browsing uses the existing safe content RPC and a dashboard-styled client workspace; public projections never include management data or grant membership. Personal workout saves keep source gym/plan keys with a per-user unique index, while editable definitions remain independent.
 - Persisted staff page names grant read access and page:create/edit/delete grant independent actions in existing invitation/role permission arrays; database record triggers enforce actions, and member gym discovery includes owner-added memberships without manual directory links.
