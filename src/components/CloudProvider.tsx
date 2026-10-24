@@ -17,6 +17,7 @@ import { getOwnerGate } from '@/lib/owner-gate.functions';
 import { trialActive, trialExpired, trialRemainingMs, formatRemaining, type OwnerGate } from '@/lib/trial';
 import { whatsappLink } from '@/lib/demo';
 import { MessageCircle } from 'lucide-react';
+import { DemoOwnerGate } from './DemoOwnerGate';
 import {
   getDemoSession,
   getDemoSessionInfo,
@@ -385,6 +386,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
   const c = useCloud();
   const path = useRouterState({ select: (s) => s.location.pathname });
   useDemoStore((s) => s.requests); // re-check gym access when request decisions load or change
+  useDemoStore((s) => s.gyms);
   const publicPaths = ["/", "/register", "/auth", "/reset-password"];
   if (publicPaths.includes(path)) return children;
   if (c.loading) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
@@ -415,6 +417,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     if (path.startsWith("/super-admin"))
       return <div className="p-12">Administrator access required.</div>;
     const acc = getDemoAccount();
+    if(acc?.deletedAt || getDemoState().gyms.some(g=>g.email===acc?.email&&g.status==='Frozen'))return <DemoOwnerGate logout={c.logout}>{children}</DemoOwnerGate>;
     if (
       acc &&
       !demoOwnerHasAccess(acc) &&
@@ -434,14 +437,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
         </div>
       );
     if (acc?.skipped && demoRequestStatus(acc.email) === "Pending" && !isClientPortalPath(path) && path !== "/subscription-request")
-      return (
-        <>
-          <div role="status" className="border-b bg-secondary px-4 py-2 text-center text-xs text-muted-foreground">
-            Prototype demo access · Your subscription request is still Pending — not approved or paid.
-          </div>
-          {children}
-        </>
-      );
+      return <DemoOwnerGate logout={c.logout}>{children}</DemoOwnerGate>;
     return children;
   }
   if (c.loading) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
