@@ -14,6 +14,7 @@ describe('Super Admin subscription rules',()=>{
   it('counts only annual price once for annual plans',()=>expect(projectedSubscriptions([{...gym,plan:'VIP',annualPrice:900}],from,to).map(r=>r.amount)).toEqual([900]));
   it('uses monthly price times three for quarterly plans',()=>expect(projectedSubscriptions([{...gym,plan:'Premium'}],from,to).map(r=>r.amount)).toEqual([300,300,300,300]));
   it('excludes frozen gyms',()=>expect(projectedSubscriptions([{...gym,status:'Frozen'}],from,to)).toEqual([]));
+  it('excludes deleted gyms without changing saved billing data',()=>expect(projectedSubscriptions([{...gym,deletedAt:'2026-01-01T00:00:00Z'}],from,to)).toEqual([]));
   it('filters scheduled billing by the selected reporting dates',()=>expect(projectedSubscriptions([gym],new Date(2026,1,1),new Date(2026,1,28)).map(r=>r.date)).toEqual(['2026-02-01']));
   it('does not project beyond saved subscription dates',()=>expect(projectedSubscriptions([{...gym,end:'2026-02-28'}],from,to)).toHaveLength(2));
   it('has an empty result with no gyms or no prices',()=>{expect(projectedSubscriptions([],from,to)).toEqual([]);expect(projectedSubscriptions([{...gym,monthlyPrice:0}],from,to)).toEqual([]);});
@@ -21,7 +22,7 @@ describe('Super Admin subscription rules',()=>{
   it('approval updates saved gym and pending counts, removal updates gym count',()=>{
     const before=getDemoState();const pending=before.requests.find(r=>r.status==='Pending');if(!pending)throw new Error('Pending fixture required');
     approveRequest(pending.id);const after=getDemoState();expect(after.gyms.length).toBe(before.gyms.length+1);expect(after.requests.filter(r=>r.status==='Pending').length).toBe(before.requests.filter(r=>r.status==='Pending').length-1);
-    const added=after.gyms.find(g=>!before.gyms.some(old=>old.id===g.id));if(!added)throw new Error('Approved gym required');deleteGym(added.id);expect(getDemoState().gyms.length).toBe(before.gyms.length);
+    const added=after.gyms.find(g=>!before.gyms.some(old=>old.id===g.id));if(!added)throw new Error('Approved gym required');setDemoSession('super');deleteGym(added.id);expect(getDemoState().gyms.filter(g=>!g.deletedAt).length).toBe(before.gyms.length);expect(getDemoState().gyms.length).toBe(after.gyms.length);
   });
   it('persists prices without changing gym contact, dates or identity',()=>{
     const current=getDemoState().gyms[0];if(!current)throw new Error('Gym fixture required');

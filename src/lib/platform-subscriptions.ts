@@ -48,7 +48,7 @@ export function projectedSubscriptions(gyms: ApprovedGym[], from: Date, to: Date
   const toDay = format(to, 'yyyy-MM-dd');
   const events: RevenueEvent[] = [];
   for (const gym of gyms) {
-    if (gym.status !== 'Active') continue;
+    if (gym.status !== 'Active' || gym.deletedAt) continue;
     const start = parseISO(gym.start);
     if (!Number.isFinite(start.getTime()) || gym.end < gym.start) continue;
     const months = gym.billingType ? (gym.billingType === 'Annual' ? 12 : 1) : billingMonths(gym.plan);
