@@ -5,6 +5,7 @@ import { invoiceSchema, scheduleSchema } from './gym-updates';
 import { productSchema, validateProductChanges } from './product-sales';
 import { planSchema, programSchema, recurringSchema, sessionSchema, text } from './validation';
 import { isGyvoraId, normalizeAccountLookup } from './gyvora-id';
+import { requireLookupSession } from './session-middleware';
 
 const areas: Record<string,string> = {gym:'Profile', members:'Members',plans:'Members',workouts:'Workout programs',sessions:'Sessions',attendance:'Attendance',staffAttendance:'Attendance',products:'Products',trainers:'Workout programs',recurring:'Finance',transactions:'Finance'};
 const memberSchema = z.object({id:text,name:text,email:z.union([z.string().email().max(255),z.literal('')]),phone:z.string().max(30),plan:text,type:z.enum(['Limited','Unlimited']),start:z.string().date(),expiry:z.string().date(),sessionsTotal:z.number().int().min(0).max(999),sessionsLeft:z.number().int().min(0).max(999),trainer:z.string().max(100),notes:z.string().max(1000),clientId:z.string().uuid().optional(),memberQrId:z.string().uuid().optional(),planPrice:z.number().min(0).optional(),createdByName:z.string().max(100).optional()}).passthrough().refine(m=>m.expiry>=m.start,'End date must not precede start date');
@@ -18,7 +19,7 @@ export const saveRecords = createServerFn({method:'POST'}).middleware([requireSu
   const {error}=await context.supabase.rpc('save_gym_records',{g:data.gymId,changes:data.changes as never}); if(error) throw new Error(error.message); const {data:records,error:readError}=await context.supabase.from('gym_records').select('kind,data').eq('gym_id',data.gymId);if(readError)throw new Error(readError.message);return {saved:true,records};
  });
 
-export const lookupClient = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
+export const lookupClient = createServerFn({method:'POST'}).middleware([requireLookupSession, requireSupabaseAuth])
  .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.string().trim().min(1).max(255)}).parse(input))
  .handler(async({data,context})=>{
   const {data:accessible}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Members'});if(!accessible)throw new Error('Gym access unavailable');

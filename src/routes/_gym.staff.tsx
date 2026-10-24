@@ -44,7 +44,7 @@ function Staff() {
   const [query,setQuery]=useState('');
   const [person,setPerson]=useState<{id:string;full_name:string;email:string}|null>(null);
   const [scan,setScan]=useState(false);
-  async function find(value:string){setPerson(null);try{setPerson(await lookup({data:{gymId:c.gymId,memberId:value.trim()}}));}catch(e){toast.error(e instanceof Error?e.message:'User lookup failed');}}
+  async function find(value:string, fromCamera=false){setPerson(null);try{setPerson(await lookup({data:{gymId:c.gymId,memberId:value.trim()}}));return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:'User lookup failed');return false;}}
   const edit = useServerFn(manageStaff);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
@@ -271,7 +271,7 @@ function Staff() {
               }
             }}
           >
-            {!editing&&!getDemoSession()&&<><QRScanner open={scan} onClose={()=>setScan(false)} onScan={value=>void find(value)}/><Field label="User ID, name, QR or email"><div className="flex gap-2"><Input aria-label="Staff user lookup" value={query} onChange={e=>{setQuery(e.target.value);setPerson(null);}}/><Button type="button" onClick={()=>void find(query)}>Look up</Button><Button type="button" variant="outline" onClick={()=>setScan(true)}>Scan QR</Button></div></Field>{person&&<p className="text-sm text-success">{person.full_name} · {person.email} · {person.id}</p>}</>}
+            {!editing&&!getDemoSession()&&<><QRScanner open={scan} onClose={()=>setScan(false)} onScan={value=>find(value,true)}/><Field label="User ID, name, QR or email"><div className="flex gap-2"><Input aria-label="Staff user lookup" value={query} onChange={e=>{setQuery(e.target.value);setPerson(null);}}/><Button type="button" onClick={()=>void find(query)}>Look up</Button><Button type="button" variant="outline" onClick={()=>setScan(true)}>Scan QR</Button></div></Field>{person&&<p className="text-sm text-success">{person.full_name} · {person.email} · {person.id}</p>}</>}
             <Field label="Full Name">
               <Input key={person?.id??editing?.id??'name'} name="name" required maxLength={100} defaultValue={editing?.name??person?.full_name} readOnly={!editing&&!getDemoSession()} />
             </Field>
