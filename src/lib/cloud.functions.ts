@@ -3,12 +3,12 @@ import { requireSupabaseAuth } from '@/integrations/supabase/auth-middleware';
 import { z } from 'zod';
 import { invoiceSchema, scheduleSchema } from './gym-updates';
 import { productSchema, validateProductChanges } from './product-sales';
-import { planSchema, programSchema, recurringSchema, sessionSchema, text } from './validation';
+import { membershipEmailSchema, planSchema, programSchema, recurringSchema, sessionSchema, text } from './validation';
 import { isGyvoraId, normalizeAccountLookup } from './gyvora-id';
 import { requireLookupSession } from './session-middleware';
 
 const areas: Record<string,string> = {gym:'Profile', members:'Members',plans:'Members',workouts:'Workout programs',sessions:'Sessions',attendance:'Attendance',staffAttendance:'Attendance',products:'Products',trainers:'Workout programs',recurring:'Finance',transactions:'Finance'};
-const memberSchema = z.object({id:text,name:text,email:z.union([z.string().email().max(255),z.literal('')]),phone:z.string().max(30),plan:text,type:z.enum(['Limited','Unlimited']),start:z.string().date(),expiry:z.string().date(),sessionsTotal:z.number().int().min(0).max(999),sessionsLeft:z.number().int().min(0).max(999),trainer:z.string().max(100),notes:z.string().max(1000),clientId:z.string().uuid().optional(),memberQrId:z.string().uuid().optional(),planPrice:z.number().min(0).optional(),createdByName:z.string().max(100).optional()}).passthrough().refine(m=>m.expiry>=m.start,'End date must not precede start date');
+const memberSchema = z.object({id:text,name:text,email:membershipEmailSchema,phone:z.string().max(30),plan:text,type:z.enum(['Limited','Unlimited']),start:z.string().date(),expiry:z.string().date(),sessionsTotal:z.number().int().min(0).max(999),sessionsLeft:z.number().int().min(0).max(999),trainer:z.string().max(100),notes:z.string().max(1000),clientId:z.string().uuid().optional(),memberQrId:z.string().uuid().optional(),planPrice:z.number().min(0).optional(),createdByName:z.string().max(100).optional()}).passthrough().refine(m=>m.expiry>=m.start,'End date must not precede start date');
 const attendanceSchema = z.object({id:text,name:text,role:z.string().max(100).optional(),date:z.string().date(),time:z.string().regex(/^\d{2}:\d{2}$/),memberId:z.string().optional(),staffId:z.string().uuid().optional(),method:z.enum(['QR','Manual'])});
 const schemas: Record<string,z.ZodTypeAny> = {products:productSchema,transactions:invoiceSchema,trainers:z.object({id:text,name:text,schedule:scheduleSchema.optional()}).passthrough(),plans:planSchema,workouts:programSchema,sessions:sessionSchema,recurring:recurringSchema,members:memberSchema,attendance:attendanceSchema,staffAttendance:attendanceSchema};
 
