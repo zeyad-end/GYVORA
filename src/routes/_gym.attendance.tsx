@@ -29,6 +29,8 @@ function Attendance() {
   const filtered = filterGymPeriod([...list, ...staffList], gymRange(period, new Date(), custom)).sort((a,b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
   const [q, setQ] = useState("");
   const [scan, setScan] = useState(false);
+  const [expired, setExpired] = useState<Member | null>(null);
+  const [renewOpen, setRenewOpen] = useState(false);
   async function check(m: Member, method: "QR" | "Manual") {
     if (new Date(m.expiry + "T23:59:59").getTime() < Date.now()) {
       toast.error("Membership has expired");
@@ -112,6 +114,10 @@ function Attendance() {
           if (!m) {
             toast.error("Member QR is not linked to this gym.");
             return false;
+          }
+          if (new Date(m.expiry + "T23:59:59").getTime() < Date.now()) {
+            setExpired(m);
+            return true;
           }
           return await check(m, "QR");
         }}
