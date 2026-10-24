@@ -35,14 +35,9 @@ function Notifications() {
   const rows = demo ? pendingDemoInvitations(c.profile?.email ?? "", all) : cloudRows;
   async function load() {
     if (demo || !c.profile) return;
-    const { data, error } = await supabase
-      .from("staff_invitations")
-      .select("*")
-      .eq("email", c.profile.email.toLowerCase())
-      .eq("status", "Pending")
-      .gt("expires_at", new Date().toISOString());
+    const { data, error } = await supabase.rpc('my_staff_invitations');
     if (error) toast.error(error.message);
-    else setCloudRows(data ?? []);
+    else setCloudRows((data ?? []) as unknown as Database['public']['Tables']['staff_invitations']['Row'][]);
   }
   useEffect(() => {
     setCloudRows([]);
