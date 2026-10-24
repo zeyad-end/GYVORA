@@ -7,6 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Download, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { seo } from "@/lib/seo";
+import { getDemoSession } from '@/lib/demo';
 export const Route = createFileRoute("/member/qr")({
   head: () =>
     seo("My permanent QR", "Share or download your permanent GYVORA account ID and private QR code."),
@@ -15,7 +16,7 @@ export const Route = createFileRoute("/member/qr")({
 function MemberQR() {
   const c = useCloud();
   const ref = useRef<HTMLDivElement>(null);
-  const id = c.profile?.gyvora_id ?? (c.gymId.startsWith('demo-') ? c.profile?.member_id : undefined);
+  const id = c.profile?.gyvora_id ?? (getDemoSession() ? c.profile?.member_id : undefined);
   const qrValue = c.profile?.gyvora_id ?? (id ? `ironhaus:member:${id}` : '');
   async function image() {
     const svg = ref.current?.querySelector("svg");
