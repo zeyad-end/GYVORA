@@ -204,6 +204,13 @@
       "when": 1792837926159,
       "tag": "0028_canonical_membership_gyvora_identity",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1792839423544,
+      "tag": "0029_gym_directory_permanent_id",
+      "breakpoints": true
     }
   ]
 }
