@@ -183,6 +183,13 @@
       "when": 1792804386594,
       "tag": "0025_safe_client_account_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1792836416870,
+      "tag": "0026_reversible_gym_suspension",
+      "breakpoints": true
     }
   ]
 }

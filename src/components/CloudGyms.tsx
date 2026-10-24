@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useServerFn } from '@tanstack/react-start';
-import { listAdminGyms, setGymFrozen, deleteGymAccount } from '@/lib/platform-admin.functions';
+import { listAdminGyms, setGymFrozen, changeGymDeletion } from '@/lib/platform-admin.functions';
 import { Button } from './ui/button';
 import { DataTable, PageHeader, td } from './kit';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
@@ -9,15 +9,18 @@ import { toast } from 'sonner';
 
 type AdminGym = Awaited<ReturnType<typeof listAdminGyms>>[number];
 
-export function CloudGyms() {
+export function CloudGyms({ deleted = false }: { deleted?: boolean }) {
   const list = useServerFn(listAdminGyms);
   const freeze = useServerFn(setGymFrozen);
-  const remove = useServerFn(deleteGymAccount);
+  const remove = useServerFn(changeGymDeletion);
   const [rows, setRows] = useState<AdminGym[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
   const [freezing, setFreezing] = useState<AdminGym | null>(null);
   const [note, setNote] = useState('');
+  const [deleting, setDeleting] = useState<AdminGym | null>(null);
+  const [restoring, setRestoring] = useState<AdminGym | null>(null);
+  const [deletionNote, setDeletionNote] = useState('');
 
   async function load() {
     try { setRows(await list({})); setError(''); }
@@ -48,38 +51,54 @@ export function CloudGyms() {
     finally { setBusy(false); }
   }
 
-  async function deleteAccount(g: AdminGym) {
-    if(!window.confirm(`Delete ${g.name}? Gym access will be permanently disabled. A dedicated owner's sign-in will also be disabled. Historical records and unrelated accounts are retained.`))return;
-    setBusy(true);setError('');
-    try {const result=await remove({data:{gymId:g.id}});toast.success(result.ownerDisabled?'Gym deleted and owner sign-in disabled.':'Gym deleted. The shared owner account retains unrelated access.');await load();}
-    catch(e){await load();setError(e instanceof Error?e.message:'Could not delete the gym.');}
-    finally{setBusy(false);}
+  async function confirmDeletion() {
+    const target = deleting ?? restoring;
+    if (!target) return;
+    setBusy(true); setError('');
+    try {
+      await remove({data:{gymId:target.id,deleted:!!deleting,note:deletionNote}});
+      toast.success(deleting ? 'Gym moved to Deleted Gyms.' : 'Gym restored to Approved Gyms.');
+      setDeleting(null); setRestoring(null); setDeletionNote(''); await load();
+    } catch(e) { setError(e instanceof Error ? e.message : 'Could not update the gym.'); }
+    finally { setBusy(false); }
   }
+  const visibleRows=rows.filter(g=>g.deleted===deleted);
 
   return (
     <div>
-      <PageHeader title="Approved Gyms" subtitle={`Total approved gyms: ${rows.filter(g=>!g.deleted).length}`} />
+      <PageHeader title={deleted ? "Deleted Gyms" : "Approved Gyms"} subtitle={`Total ${deleted ? "deleted" : "approved"} gyms: ${visibleRows.length}`} />
       {error && <p role="alert" className="mb-4 text-destructive">{error}</p>}
-      <DataTable head={['#', 'Gym Name', 'Owner', 'Plan', 'Status', 'Freeze note', 'Actions']}>
-        {rows.map((g, i) => (
+      <DataTable head={deleted ? ['#','Gym Name','Owner','Deletion date','Notes / Reason','Actions'] : ['#', 'Gym Name', 'Owner', 'Plan', 'Status', 'Freeze note', 'Actions']}>
+        {visibleRows.map((g, i) => (
           <tr key={g.id}>
             <td className={td}>{i + 1}</td>
             <td className={td}>{g.name}</td>
             <td className={td}>{g.ownerName || '—'}{g.ownerEmail ? <span className="block text-xs text-muted-foreground">{g.ownerEmail}</span> : null}</td>
-            <td className={td}>{g.plan || '—'}</td>
-             <td className={td}><span className={g.deleted||g.frozen ? 'text-destructive' : 'text-success'}>{g.deleted?'Deleted':g.frozen ? 'Frozen' : 'Active'}</span></td>
-            <td className={td}>{g.frozen && g.freezeNote ? g.freezeNote : '—'}</td>
-            <td className={td}>
-               <div className="flex flex-wrap gap-2">{!g.deleted && (g.frozen
-                ? <Button size="sm" variant="secondary" disabled={busy} onClick={() => void unfreeze(g)}>Unfreeze</Button>
-                 : <Button size="sm" variant="secondary" disabled={busy} onClick={() => { setFreezing(g); setNote(''); }}>Freeze</Button>)}
-                 <Button size="sm" variant="destructive" disabled={busy} onClick={()=>void deleteAccount(g)}>{g.deleted?'Retry deactivation':'Delete'}</Button></div>
-            </td>
+            {deleted ? <>
+              <td className={td}>{g.deletedAt ? new Date(g.deletedAt).toLocaleString() : '—'}</td>
+              <td className={`${td} max-w-sm whitespace-pre-wrap break-words`}>{g.deletionNote || '—'}</td>
+              <td className={td}><Button size="sm" variant="outline" disabled={busy} onClick={()=>setRestoring(g)}>Edit / Restore</Button></td>
+            </> : <>
+              <td className={td}>{g.plan || '—'}</td>
+              <td className={td}><span className={g.frozen ? 'text-destructive' : 'text-success'}>{g.frozen ? 'Frozen' : 'Active'}</span></td>
+              <td className={td}>{g.frozen && g.freezeNote ? g.freezeNote : '—'}</td>
+              <td className={td}><div className="flex flex-wrap gap-2">{g.frozen
+                ? <Button size="sm" variant="secondary" disabled={busy} onClick={()=>void unfreeze(g)}>Unfreeze</Button>
+                : <Button size="sm" variant="secondary" disabled={busy} onClick={()=>{setFreezing(g);setNote('');}}>Freeze</Button>}
+                <Button size="sm" variant="destructive" disabled={busy} onClick={()=>{setDeleting(g);setDeletionNote('');}}>Delete</Button>
+              </div></td>
+            </>}
           </tr>
         ))}
       </DataTable>
-      {!rows.length && <p className="py-6 text-muted-foreground">No approved gyms yet. Approve a request to add one.</p>}
+      {!visibleRows.length && <p className="py-6 text-muted-foreground">{deleted ? "No deleted gyms." : "No approved gyms yet. Approve a request to add one."}</p>}
 
+      <Dialog open={!!deleting || !!restoring} onOpenChange={open=>{if(!open){setDeleting(null);setRestoring(null);}}}>
+        <DialogContent><DialogHeader><DialogTitle>{deleting ? 'Delete' : 'Restore'} {(deleting ?? restoring)?.name}</DialogTitle></DialogHeader>
+          {deleting ? <><p className="text-sm text-muted-foreground">The gym will be suspended until restored. The owner can still sign in; all memberships and gym data are retained.</p><label className="text-sm">Notes / Reason<Textarea className="mt-2" rows={4} maxLength={1000} value={deletionNote} onChange={e=>setDeletionNote(e.target.value)}/></label></> : <><p className="text-sm text-muted-foreground">Restore this gym to Approved Gyms? Its previous deletion reason and history will be retained. Any separate Freeze restriction remains.</p><p className="whitespace-pre-wrap break-words text-sm">{restoring?.deletionNote || 'No deletion note recorded.'}</p></>}
+          <DialogFooter><Button variant="outline" disabled={busy} onClick={()=>{setDeleting(null);setRestoring(null);}}>Cancel</Button><Button variant={deleting ? 'destructive' : 'default'} disabled={busy} onClick={()=>void confirmDeletion()}>{busy ? 'Saving…' : deleting ? 'Confirm delete' : 'Restore to Approved'}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
       <Dialog open={!!freezing} onOpenChange={(open) => { if (!open) setFreezing(null); }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader><DialogTitle>Freeze {freezing?.name}</DialogTitle></DialogHeader>

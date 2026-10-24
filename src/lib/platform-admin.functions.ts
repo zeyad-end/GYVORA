@@ -25,13 +25,19 @@ export const getPlatformNotifications = createServerFn({method:'POST'}).middlewa
 });
 export const listAdminGyms=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).handler(async({context})=>{
   const {data:allowed}=await context.supabase.rpc('is_super_admin');if(!allowed)throw new Error('Administrator access required');
-  const {data:gyms,error}=await context.supabase.from('gyms').select('id,name,owner_id,created_at,frozen_at,freeze_note,deleted_at').order('created_at',{ascending:true});
+  const {data:gyms,error}=await context.supabase.from('gyms').select('id,name,owner_id,created_at,frozen_at,freeze_note,deleted_at,deletion_note').order('created_at',{ascending:true});
   if(error)throw new Error('Could not load gyms.');
   const ids=[...new Set((gyms??[]).map(g=>g.owner_id))];
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
   const {data:profiles}=ids.length?await supabaseAdmin.from('profiles').select('id,full_name,email').in('id',ids):{data:[] as {id:string;full_name:string;email:string}[]};
   const {data:requests}=await context.supabase.from('owner_requests').select('gym_id,plan,status');
-  return (gyms??[]).filter(g=>g.deleted_at || requests?.some(r=>r.gym_id===g.id&&r.status==='Approved')).map(g=>({id:g.id,name:g.name,ownerName:profiles?.find(p=>p.id===g.owner_id)?.full_name||'',ownerEmail:profiles?.find(p=>p.id===g.owner_id)?.email||'',plan:requests?.find(r=>r.gym_id===g.id)?.plan??'',deleted:!!g.deleted_at,frozen:!!g.frozen_at,freezeNote:g.freeze_note??''}));
+  return (gyms??[]).filter(g=>g.deleted_at || requests?.some(r=>r.gym_id===g.id&&r.status==='Approved')).map(g=>({id:g.id,name:g.name,ownerName:profiles?.find(p=>p.id===g.owner_id)?.full_name||'',ownerEmail:profiles?.find(p=>p.id===g.owner_id)?.email||'',plan:requests?.find(r=>r.gym_id===g.id)?.plan??'',deleted:!!g.deleted_at,deletedAt:g.deleted_at,deletionNote:g.deletion_note,frozen:!!g.frozen_at,freezeNote:g.freeze_note??''}));
+});
+
+export const changeGymDeletion=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({gymId:z.string().uuid(),deleted:z.boolean(),note:z.string().trim().max(1000).default('')}).strict().parse(input)).handler(async({data,context})=>{
+  const {error}=await context.supabase.rpc('set_gym_deleted',{g:data.gymId,deleted:data.deleted,note:data.note});
+  if(error)throw new Error(error.message);
+  return true;
 });
 
 export const deleteGymAccount=createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({gymId:z.string().uuid()}).parse(input)).handler(async({data,context})=>{

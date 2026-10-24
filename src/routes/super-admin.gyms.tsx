@@ -14,7 +14,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Textarea } from '@/components/ui/textarea';
 
 export const Route = createFileRoute('/super-admin/gyms')({
-  head: () => seo('Approved gyms', 'Manage fictional approved gyms and their subscriptions.'),
+   head: () => seo('Approved gyms', 'Manage approved gyms, freeze access or move gyms to reversible deletion.'),
   component: Gyms,
 });
 
@@ -23,11 +23,13 @@ function Gyms() {
 }
 
 function DemoGyms() {
-  const gyms = useDemoStore((s) => s.gyms);
+  const gyms = useDemoStore((s) => s.gyms).filter(g=>!g.deletedAt);
   const [editing, setEditing] = useState<ApprovedGym | null>(null);
   const [noteGymId,setNoteGymId]=useState<string|null>(null);
   const [freezing,setFreezing]=useState<ApprovedGym|null>(null);
   const [freezeNote,setFreezeNote]=useState('');
+  const [deleting,setDeleting]=useState<ApprovedGym|null>(null);
+  const [deletionNote,setDeletionNote]=useState('');
   const noteGym=gyms.find(g=>g.id===noteGymId&&g.notes?.trim());
 
   return (
@@ -55,7 +57,7 @@ function DemoGyms() {
                 ) : (
                   <Button size="sm" variant="secondary" onClick={() => {if(window.confirm(`Unfreeze ${g.name}?`)){setGymStatus(g.id, 'Active');toast.success(`${g.name} reactivated (demo).`);}}}>Unfreeze</Button>
                 )}
-                <Button size="sm" variant="destructive" onClick={() => { if (window.confirm(`Delete ${g.name}? This permanently disables its local demo owner access, including open sessions. It does not affect Cloud accounts.`)) { deleteGym(g.id); toast.success(`${g.name} deleted — local owner access disabled.`); } }}>Delete</Button>
+                <Button size="sm" variant="destructive" onClick={() => {setDeleting(g);setDeletionNote('');}}>Delete</Button>
               </div>
             </td>
           </tr>
@@ -64,6 +66,7 @@ function DemoGyms() {
       {!gyms.length && <p className="py-6 text-muted-foreground">No approved gyms yet. Approve a request to add one.</p>}
 
       {editing&&<PlatformGymEdit key={editing.id} gym={editing} onClose={()=>setEditing(null)}/>}
+      <Dialog open={!!deleting} onOpenChange={open=>{if(!open)setDeleting(null);}}><DialogContent><DialogHeader><DialogTitle>Delete {deleting?.name}</DialogTitle></DialogHeader><p className="text-sm text-muted-foreground">Suspend this gym until it is restored. Owner sign-in, memberships and gym data are retained.</p><label className="text-sm">Notes / Reason<Textarea className="mt-2" rows={4} maxLength={1000} value={deletionNote} onChange={e=>setDeletionNote(e.target.value)}/></label><DialogFooter><Button variant="outline" onClick={()=>setDeleting(null)}>Cancel</Button><Button variant="destructive" onClick={()=>{if(!deleting)return;try{deleteGym(deleting.id,deletionNote);setDeleting(null);toast.success('Gym moved to Deleted Gyms.');}catch(e){toast.error(e instanceof Error?e.message:'Could not delete gym.');}}}>Confirm delete</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!freezing} onOpenChange={open=>{if(!open)setFreezing(null);}}><DialogContent><DialogHeader><DialogTitle>Freeze {freezing?.name}</DialogTitle></DialogHeader><label className="text-sm">Notes (optional)<Textarea className="mt-2" rows={4} maxLength={1000} value={freezeNote} onChange={e=>setFreezeNote(e.target.value)}/></label><DialogFooter><Button variant="outline" onClick={()=>setFreezing(null)}>Cancel</Button><Button variant="destructive" onClick={()=>{if(!freezing)return;setGymStatus(freezing.id,'Frozen',freezeNote);toast.success(`${freezing.name} frozen (demo).`);setFreezing(null);}}>Freeze account</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!noteGym} onOpenChange={open=>{if(!open)setNoteGymId(null);}}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Notes · {noteGym?.name}</DialogTitle></DialogHeader><p className="whitespace-pre-wrap break-words text-sm">{noteGym?.notes}</p></DialogContent></Dialog>
     </div>

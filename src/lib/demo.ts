@@ -215,6 +215,9 @@ export type ApprovedGym = {
   durationDays?: number | undefined;
   notes?: string;
   freezeNote?: string;
+  deletedAt?: string | undefined;
+  deletionNote?: string;
+  deletionHistory?: {action:'deleted'|'restored';at:string;note:string}[];
 };
 
 export type DemoClient = { id: string; name: string; phone: string; photo: string; gyms: string[] };
@@ -533,6 +536,7 @@ export function demoRequestStatus(email: string): GymRequest["status"] | null {
 /** Owner may enter the dashboard after Skip (demo access) or Super Admin approval. */
 export function demoOwnerHasAccess(acc: Pick<DemoAccount, "email" | "skipped">) {
   if (getDemoAccounts().find(a=>a.email===acc.email)?.deletedAt) return false;
+  if (demoState.gyms.some(g=>g.email===acc.email && g.deletedAt)) return false;
   if (demoState.gyms.some(g=>g.email===acc.email && g.status==='Frozen')) return false;
   const status = demoRequestStatus(acc.email);
   if (status === "Rejected") return false;
@@ -923,13 +927,19 @@ export function setGymStatus(id: string, status: "Active" | "Frozen", note = '')
   commit({ ...demoState, gyms: demoState.gyms.map((g) => (g.id === id ? { ...g, status, freezeNote:status==='Frozen'?note.trim().slice(0,1000):'' } : g)) });
 }
 
-export function deleteGym(id: string) {
+export function deleteGym(id: string, note = '') {
+  if(getDemoSession()!=='super')throw new Error('Administrator prototype access required');
   const gym=demoState.gyms.find(g=>g.id===id);if(!gym)return;
+  if(gym.deletedAt)throw new Error('Gym is already deleted');
   const deletedAt=new Date().toISOString();
-  const account=getDemoAccounts().find(a=>a.email===gym.email);
-  if(account)updateDemoAccount(gym.email,{deletedAt});
-  else saveAccounts([...getDemoAccounts(),{name:gym.name,email:gym.email,password:'',type:'gym',skipped:false,requestPending:false,deletedAt}]);
-  commit({ ...demoState, gyms: demoState.gyms.filter((g) => g.id !== id),requests:demoState.requests.map(r=>r.email===gym.email?{...r,status:'Rejected',decidedAt:deletedAt.slice(0,10)}:r) });
+  const reason=z.string().trim().max(1000).parse(note);
+  commit({...demoState,gyms:demoState.gyms.map(g=>g.id===id?{...g,deletedAt,deletionNote:reason,deletionHistory:[...(g.deletionHistory??[]),{action:'deleted',at:deletedAt,note:reason}]}:g)});
+}
+
+export function restoreGym(id:string) {
+  if(getDemoSession()!=='super')throw new Error('Administrator prototype access required');
+  const gym=demoState.gyms.find(g=>g.id===id);if(!gym?.deletedAt)throw new Error('Gym is not deleted');
+  commit({...demoState,gyms:demoState.gyms.map(g=>g.id===id?{...g,deletedAt:undefined,deletionHistory:[...(g.deletionHistory??[]),{action:'restored',at:new Date().toISOString(),note:g.deletionNote??''}]}:g),requests:demoState.requests.map(r=>r.email===gym.email?{...r,status:'Approved'}:r)});
 }
 
 export function editClient(id: string, patch: { name: string; phone: string }) {
