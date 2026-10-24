@@ -7,6 +7,9 @@ import { gymEvents } from './gym-events';
 import { appendGymEvents } from './gym-notifications-demo';
 import { billingMonths, gymPrices, savePrices, platformPlanSchema, defaultPlatformPlans, gymDatesSchema, planDefaults, type PlatformPlan, type subscriptionPriceSchema } from './platform-subscriptions';
 import { generateId } from "./utils";
+import { demoIdentity, ensureDemoIdentity } from './demo-identities';
+import { normalizeAccountLookup } from './gyvora-id';
+import { assertUniqueClientMembership } from './membership-link';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -48,7 +51,11 @@ export function setDemoSession(
   details: Pick<DemoSessionInfo, "name" | "directAccess"> = {},
 ) {
   try {
-    if (s) localStorage.setItem(SESSION_KEY, JSON.stringify({ kind: s, email, ...details }));
+    if (s) {
+      email = email.trim().toLowerCase();
+      localStorage.setItem(SESSION_KEY, JSON.stringify({ kind: s, email, ...details }));
+      if(s==='individual') rememberDemoClient(demoUserId(email), details.name || 'Demo Member', email, getDemoAccounts().find(a=>a.email===email)?.phone || '');
+    }
     else localStorage.removeItem(SESSION_KEY);
   } catch {
     /* private mode */
@@ -283,25 +290,47 @@ export type DemoProgram = {
 };
 export const demoUserId = (email: string) =>
   `demo-user-${email.trim().toLowerCase() || "anonymous"}`;
-/** Identity registry survives sign-out and is never removed when gyms are left. */
+/** Canonical ID is reserved centrally; legacy QR keys remain aliases only. */
 export function demoMemberId(userId: string): string {
-  const key = "ironhaus-demo-member-identities";
-  let registry: Record<string, string> = {};
-  try {
-    registry = JSON.parse(localStorage.getItem(key) ?? "{}");
-  } catch {
-    /* retain a new registry */
+  return demoIdentity('C',userId) ?? '';
+}
+type LocalClient = {id:string;full_name:string;email:string;phone:string};
+function localClients(): LocalClient[] {
+  return JSON.parse(localStorage.getItem('gyvora-demo-client-directory') ?? '[]') as LocalClient[];
+}
+export function rememberDemoClient(id:string,name:string,email:string,phone:string) {
+  const rows=localClients();
+  const previous=rows.find(r=>r.id===id);
+  const row={id,full_name:name || previous?.full_name || 'Demo Member',email,phone:phone || previous?.phone || ''};
+  localStorage.setItem('gyvora-demo-client-directory',JSON.stringify([...rows.filter(r=>r.id!==id),row]));
+  ensureDemoIdentity('C',id);
+}
+export function prepareDemoIdentities() {
+  for(const gym of [{id:'demo-gym'},{id:'demo-gym-north'},...getDemoState().gyms]) ensureDemoIdentity('G',gym.id);
+  for(const client of getDemoState().clients) rememberDemoClient(client.id,client.name,'',client.phone);
+  for(const account of getDemoAccounts()) if(account.type==='individual') rememberDemoClient(demoUserId(account.email),account.name,account.email,account.phone || '');
+  const legacy=JSON.parse(localStorage.getItem('ironhaus-demo-member-identities') ?? '{}') as Record<string,string>;
+  for(const userId of Object.keys(legacy)) ensureDemoIdentity('C',userId);
+  const gymIds=new Set(['demo-gym','demo-gym-north',...getDemoState().gyms.map(g=>g.id)]);
+  for(let i=0;i<localStorage.length;i++) { const key=localStorage.key(i); if(key?.startsWith('ironhaus-demo-gym:'))gymIds.add(key.slice('ironhaus-demo-gym:'.length)); }
+  for(const gymId of gymIds) {
+    ensureDemoIdentity('G',gymId);
+    for(const member of readDemoGym(gymId,gymId==='demo-gym').members) rememberDemoClient(member.clientId ?? demoUserId(member.email),member.name,member.email,member.phone);
   }
-  const existing = registry[userId];
-  if (existing) return existing;
-  const membership = readDemoGym("demo-gym", true).members.find(
-    (m) => (m.clientId ?? demoUserId(m.email)) === userId,
-  );
-  const candidate = membership?.memberQrId ?? userId;
-  const id = Object.values(registry).includes(candidate) ? generateId() : candidate;
-  registry[userId] = id;
-  localStorage.setItem(key, JSON.stringify(registry));
-  return id;
+}
+export function lookupDemoClient(gymId:string,value:string) {
+  if(getDemoSession()!=='owner'||!['demo-gym','demo-gym-north'].includes(gymId)) throw new Error('Only the local gym owner can look up demo clients');
+  const account=getDemoAccount();
+  if(account&&!demoOwnerHasAccess(account))throw new Error('Gym access unavailable');
+  const input=normalizeAccountLookup(value).toLowerCase();
+  const legacy=JSON.parse(localStorage.getItem('ironhaus-demo-member-identities') ?? '{}') as Record<string,string>;
+  const matches=localClients().filter(p=>p.id.toLowerCase()===input||demoMemberId(p.id).toLowerCase()===input||legacy[p.id]?.toLowerCase()===input||(p.email&&p.email.toLowerCase()===input)||p.full_name.toLowerCase()===input);
+  if(matches.length>1)throw new Error('More than one account has this name. Use the intended GYVORA ID or email.');
+  const p=matches[0];
+  if(!p)throw new Error('No existing Local demo client found on this browser. Saved accounts require your signed-in gym owner session.');
+  const id=demoMemberId(p.id);
+  if(!id)throw new Error('Permanent demo ID is not ready. Refresh your account while online and try again.');
+  return {...p,member_id:id,gyvora_id:id};
 }
 export type DemoMembershipHistory = {
   userId: string;
@@ -776,6 +805,7 @@ export function readDemoGym(gymId: string, withSeed = false): State {
   const associations = demoState.staffRoles.filter((r) => r.gymId === gymId);
   return {
     ...base,
+    members: base.members.map(m=>({...m,clientId:m.clientId ?? demoUserId(m.email),gyvoraId:demoMemberId(m.clientId ?? demoUserId(m.email)) || undefined})),
     transactions:
       base.transactions ??
       (withSeed && gymId === "demo-gym" ? structuredClone(initialState.transactions) : []),
@@ -789,6 +819,8 @@ export function writeDemoGym(gymId: string, state: State) {
   const account=getDemoAccount();
   if(getDemoSession()==='owner'&&account&&!demoOwnerHasAccess(account))throw new Error('Gym access unavailable');
   const previous = readDemoGym(gymId, gymId === "demo-gym");
+  for(const member of state.members) assertUniqueClientMembership(state.members,member.clientId,member.id);
+  state={...state,members:state.members.map(m=>({...m,...(m.clientId?{gyvoraId:demoMemberId(m.clientId)||undefined}: {})}))};
   rememberDemoMemberships(gymId, previous.gym.name, previous.members);
   rememberDemoMemberships(gymId, state.gym.name, state.members);
   localStorage.setItem(`ironhaus-demo-gym:${gymId}`, JSON.stringify(state));

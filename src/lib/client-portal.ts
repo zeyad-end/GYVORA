@@ -9,10 +9,11 @@ import {
   rememberDemoMemberships,
 } from "./demo";
 import type { Member, Workout, Plan, Gym } from "./store";
+import { demoIdentity } from './demo-identities';
 
 export type ClientGym = {
   id: string;
-  gyvoraId?: string;
+  gyvoraId?: string | undefined;
   name: string;
   location: string;
   image: string;
@@ -56,6 +57,7 @@ export function demoDirectory(): ClientGym[] {
     const s = readDemoGym(g.id, g.id === "demo-gym");
     return {
       id: g.id,
+      gyvoraId: demoIdentity('G',g.id),
       name: g.name,
       location: s.gym.location,
       image: s.gym.cover,

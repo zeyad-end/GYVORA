@@ -18,6 +18,8 @@ import { trialActive, trialExpired, trialRemainingMs, formatRemaining, type Owne
 import { whatsappLink } from '@/lib/demo';
 import { MessageCircle } from 'lucide-react';
 import { DemoOwnerGate } from './DemoOwnerGate';
+import { reserveDemoIdentities } from '@/lib/demo-identities.functions';
+import { syncDemoIdentities, demoIdentity } from '@/lib/demo-identities';
 import {
   getDemoSession,
   getDemoSessionInfo,
@@ -31,6 +33,7 @@ import {
   getDemoState,
   readDemoGym,
   writeDemoGym,
+  prepareDemoIdentities,
 } from "@/lib/demo";
 
 type Profile = Database["public"]["Tables"]["profiles"]["Row"];
@@ -65,6 +68,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const save = useServerFn(saveRecords);
   const staffFetch = useServerFn(getStaff);
+  const reserveIds = useServerFn(reserveDemoIdentities);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [gyms, setGyms] = useState<GymRow[]>([]);
   const [gymId, setGymId] = useState("");
@@ -208,12 +212,15 @@ export function CloudProvider({ children }: { children: ReactNode }) {
     if (demo && info) {
       generation.current++;
       bindPersistence(undefined);
+      try { prepareDemoIdentities(); await syncDemoIdentities(reserveIds); }
+      catch(e) { toast.error(e instanceof Error ? e.message : 'Permanent demo IDs unavailable. Please refresh while online.'); }
       const acc = info.email ? getDemoAccount() : null;
       const id = demoUserId(info.email);
       const associations = getDemoState().staffRoles.filter((r) => r.userId === id);
       const p = {
         id,
         member_id: demoMemberId(id),
+        gyvora_id: demoMemberId(id) || null,
         full_name:
           info.name ||
           acc?.name ||
@@ -239,13 +246,13 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         deleted_at: null,
         deletion_note: '',
         deletion_history: [],
-        gyvora_id: '',
+        gyvora_id: demoIdentity('G',r.gymId) || '',
       }));
       setGyms(
         demo === "owner"
           ? [
-              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null, deletion_note: '', deletion_history: [], gyvora_id:'' },
-              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null, deletion_note: '', deletion_history: [], gyvora_id:'' },
+              { id: "demo-gym", name: "IRONHAUS Performance Club", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null, deletion_note: '', deletion_history: [], gyvora_id:demoIdentity('G','demo-gym') || '' },
+              { id: "demo-gym-north", name: "IRONHAUS North", owner_id: id, created_at: "", frozen_at: null, freeze_note: "", deleted_at: null, deletion_note: '', deletion_history: [], gyvora_id:demoIdentity('G','demo-gym-north') || '' },
             ]
           : demo === "individual"
             ? memberGyms
