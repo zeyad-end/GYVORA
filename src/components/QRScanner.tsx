@@ -141,7 +141,6 @@ export function QRScanner({
           <Field label={manualLabel}>
             <Input
               required
-              maxLength={150}
               value={value}
               onChange={(e) => setValue(e.target.value)}
             />
