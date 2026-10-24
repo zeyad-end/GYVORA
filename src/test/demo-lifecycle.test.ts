@@ -17,10 +17,19 @@ describe('local gym lifecycle',()=>{
   expect(getDemoState().gyms.find(g=>g.id===gym.id)?.freezeNote).toBe('Fictional reason');
   setGymStatus(gym.id,'Active');expect(demoOwnerHasAccess(account)).toBe(true);
  });
- it('deletion blocks an existing session and later owner entry',()=>{
+  it('soft deletion retains gym and account, blocks access, permits sign-in and restores with history',()=>{
   const gym=getDemoState().gyms.find(g=>g.email==='fictional-lifecycle@example.invalid');if(!gym)throw new Error('Test gym missing');
-  deleteGym(gym.id);expect(getDemoAccount()?.deletedAt).toBeTruthy();
-  const acc=getDemoAccount();if(!acc)throw new Error('Test account missing');expect(demoOwnerHasAccess(acc)).toBe(false);
-  setDemoSession(null);expect(()=>enterPrototype({destination:'gym',name:'Fictional lifecycle',email:acc.email},false)).toThrow('deleted');
+   const acc=getDemoAccount();if(!acc)throw new Error('Test account missing');
+   setDemoSession('super');deleteGym(gym.id,'Fictional suspension reason');
+   expect(getDemoState().gyms.find(g=>g.id===gym.id)?.deletionNote).toBe('Fictional suspension reason');
+   expect(demoOwnerHasAccess(acc)).toBe(false);
+   expect(()=>enterPrototype({destination:'gym',name:'Fictional lifecycle',email:acc.email},false)).not.toThrow();
+   expect(getDemoAccount()?.deletedAt).toBeUndefined();
+   expect(()=>restoreGym(gym.id)).toThrow('Administrator');
+   setDemoSession('super');restoreGym(gym.id);
+   expect(demoOwnerHasAccess(acc)).toBe(true);
+   expect(getDemoState().gyms.find(g=>g.id===gym.id)?.deletedAt).toBeUndefined();
+   expect(getDemoState().gyms.find(g=>g.id===gym.id)?.deletionHistory?.map(h=>h.action)).toEqual(['deleted','restored']);
+   expect(getDemoState().gyms.find(g=>g.id===gym.id)?.deletionNote).toBe('Fictional suspension reason');
  });
 });
