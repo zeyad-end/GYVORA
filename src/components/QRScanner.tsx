@@ -41,8 +41,9 @@ export function QRScanner({
       setStatus("Member selected");
       closeRef.current();
       return true;
-    } catch {
-      setError("Could not look up this member. Please try again.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Could not look up this member. Please try again.");
+      setStatus("Lookup unsuccessful");
       return false;
     } finally {
       setBusy(false);
@@ -72,6 +73,10 @@ export function QRScanner({
             if (ok) {
               stopped = true;
               controls?.stop();
+            } else {
+              // Permit the same QR to be scanned again, without flooding lookups.
+              reading = true;
+              setTimeout(() => { last = ""; reading = false; }, 2000);
             }
           });
         })
