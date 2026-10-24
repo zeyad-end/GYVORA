@@ -253,6 +253,7 @@ export type Database = {
           deletion_note: string
           freeze_note: string
           frozen_at: string | null
+          gyvora_id: string
           id: string
           name: string
           owner_id: string
@@ -264,6 +265,7 @@ export type Database = {
           deletion_note?: string
           freeze_note?: string
           frozen_at?: string | null
+          gyvora_id: string
           id?: string
           name: string
           owner_id: string
@@ -275,11 +277,19 @@ export type Database = {
           deletion_note?: string
           freeze_note?: string
           frozen_at?: string | null
+          gyvora_id?: string
           id?: string
           name?: string
           owner_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "gyms_gyvora_id_fkey"
+            columns: ["gyvora_id"]
+            isOneToOne: true
+            referencedRelation: "gyvora_id_registry"
+            referencedColumns: ["gyvora_id"]
+          },
           {
             foreignKeyName: "gyms_owner_id_fkey"
             columns: ["owner_id"]
@@ -288,6 +298,30 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      gyvora_id_registry: {
+        Row: {
+          account_id: string
+          assigned_at: string
+          gyvora_id: string | null
+          kind: string
+          number: string
+        }
+        Insert: {
+          account_id: string
+          assigned_at?: string
+          gyvora_id?: string | null
+          kind: string
+          number: string
+        }
+        Update: {
+          account_id?: string
+          assigned_at?: string
+          gyvora_id?: string | null
+          kind?: string
+          number?: string
+        }
+        Relationships: []
       }
       login_challenges: {
         Row: {
@@ -442,6 +476,7 @@ export type Database = {
           disabled_at: string | null
           email: string
           full_name: string
+          gyvora_id: string | null
           id: string
           member_id: string
           phone: string
@@ -452,6 +487,7 @@ export type Database = {
           disabled_at?: string | null
           email?: string
           full_name?: string
+          gyvora_id?: string | null
           id: string
           member_id?: string
           phone?: string
@@ -462,12 +498,21 @@ export type Database = {
           disabled_at?: string | null
           email?: string
           full_name?: string
+          gyvora_id?: string | null
           id?: string
           member_id?: string
           phone?: string
           photo?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_gyvora_id_fkey"
+            columns: ["gyvora_id"]
+            isOneToOne: true
+            referencedRelation: "gyvora_id_registry"
+            referencedColumns: ["gyvora_id"]
+          },
+        ]
       }
       staff_invitations: {
         Row: {
@@ -618,6 +663,7 @@ export type Database = {
           status: string
         }[]
       }
+      allocate_gyvora_id: { Args: { a: string; k: string }; Returns: string }
       can_read_image: { Args: { path: string }; Returns: boolean }
       client_gym_content: { Args: { g: string }; Returns: Json }
       client_gym_directory: { Args: never; Returns: Json }

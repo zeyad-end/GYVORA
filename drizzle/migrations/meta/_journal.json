@@ -190,6 +190,13 @@
       "when": 1792836416870,
       "tag": "0026_reversible_gym_suspension",
       "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1792837885051,
+      "tag": "0027_permanent_gyvora_account_ids",
+      "breakpoints": true
     }
   ]
 }
