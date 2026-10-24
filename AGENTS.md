@@ -11,7 +11,7 @@
 
 ## Application architecture
 - Gym lifecycle uses retained tombstones and a shared database entitlement predicate; dedicated owners are provider-banned after durable access revocation, while shared owners and membership history are preserved.
-- Account sign-in and local demo are explicitly separate modes; Cloud admin controls and contacts read durable shared records, never prototype snapshots.
+- Local demo login remains destination-based without a login-mode selector; Cloud admin controls and contacts read durable shared records, while local lifecycle controls never mutate Cloud accounts.
 - Existing-client memberships reuse gym_records/client_id and historical snapshots; database uniqueness and owner/approved-gym guards enforce linking, while client-owned directory links never grant access. Shared summaries expose only gym approval/plan, never billing credentials or receipts. Client portal path exceptions match /member or /member/ exactly, not /members or /memberships.
 - Shared app branding uses a reusable component backed by uploaded CDN asset pointers; gym identity and legacy storage/QR namespaces stay separate to preserve user records and permanent codes.
 - Super Admin plans, dates, notes, prices and branding extend existing prototype snapshots; assigning a plan copies its stable ID, billing type, duration and agreed prices into the gym, so catalog edits cannot change agreements. Projected billing uses saved billing types and anchored dates, with plan duration end dates exclusive, never payment receipts. Provider identities are read from authenticated accounts without substituting social sign-in for linking or fabricating demo connections.

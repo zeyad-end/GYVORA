@@ -62,14 +62,15 @@ function Requests() {
       {decided.length > 0 && (
         <>
           <h3 className="mb-3 mt-10 text-sm font-semibold">Decided</h3>
-          <DataTable head={['Gym Name', 'Plan', 'Request Date', 'Decision Date', 'Status']}>
+          <DataTable head={['Gym Name', 'Plan', 'Request Date', 'Decision Date', 'Status', 'Actions']}>
             {decided.map((r) => (
               <tr key={r.id}>
                 <td className={td}>{r.gymName}</td>
                 <td className={td}>{r.plan}</td>
                 <td className={td}>{r.requestDate}</td>
                 <td className={td}>{r.decidedAt ?? '—'}</td>
-                <td className={td}><StatusPill status={r.status === 'Approved' ? 'Active' : 'Expired'} /></td>
+                <td className={td}>{r.status}</td>
+                <td className={td}>{r.status==='Rejected'&&<Button size="sm" variant="outline" onClick={()=>decide(r.id,r.gymName,true)}>Edit — Approve</Button>}</td>
               </tr>
             ))}
           </DataTable>

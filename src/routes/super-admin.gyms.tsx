@@ -10,7 +10,8 @@ import { gymPrices } from '@/lib/platform-subscriptions';
 import { egp } from '@/lib/mock';
 import { StickyNote } from 'lucide-react';
 import { PlatformGymEdit } from '@/components/PlatformGymEdit';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 
 export const Route = createFileRoute('/super-admin/gyms')({
   head: () => seo('Approved gyms', 'Manage fictional approved gyms and their subscriptions.'),
@@ -25,6 +26,8 @@ function DemoGyms() {
   const gyms = useDemoStore((s) => s.gyms);
   const [editing, setEditing] = useState<ApprovedGym | null>(null);
   const [noteGymId,setNoteGymId]=useState<string|null>(null);
+  const [freezing,setFreezing]=useState<ApprovedGym|null>(null);
+  const [freezeNote,setFreezeNote]=useState('');
   const noteGym=gyms.find(g=>g.id===noteGymId&&g.notes?.trim());
 
   return (
@@ -48,11 +51,11 @@ function DemoGyms() {
               <div className="flex flex-wrap gap-2">
                 <Button size="sm" variant="outline" onClick={() => setEditing(g)}>Edit</Button>
                 {g.status === 'Active' ? (
-                  <Button size="sm" variant="secondary" onClick={() => { setGymStatus(g.id, 'Frozen'); toast.success(`${g.name} frozen (demo).`); }}>Freeze</Button>
+                  <Button size="sm" variant="secondary" onClick={() => {setFreezing(g);setFreezeNote('');}}>Freeze</Button>
                 ) : (
-                  <Button size="sm" variant="secondary" onClick={() => { setGymStatus(g.id, 'Active'); toast.success(`${g.name} reactivated (demo).`); }}>Reactivate</Button>
+                  <Button size="sm" variant="secondary" onClick={() => {if(window.confirm(`Unfreeze ${g.name}?`)){setGymStatus(g.id, 'Active');toast.success(`${g.name} reactivated (demo).`);}}}>Unfreeze</Button>
                 )}
-                <Button size="sm" variant="destructive" onClick={() => { if (window.confirm(`Delete ${g.name}? This removes the demo gym only.`)) { deleteGym(g.id); toast.success(`${g.name} deleted (demo).`); } }}>Delete</Button>
+                <Button size="sm" variant="destructive" onClick={() => { if (window.confirm(`Delete ${g.name}? This permanently disables its local demo owner access, including open sessions. It does not affect Cloud accounts.`)) { deleteGym(g.id); toast.success(`${g.name} deleted — local owner access disabled.`); } }}>Delete</Button>
               </div>
             </td>
           </tr>
@@ -61,6 +64,7 @@ function DemoGyms() {
       {!gyms.length && <p className="py-6 text-muted-foreground">No approved gyms yet. Approve a request to add one.</p>}
 
       {editing&&<PlatformGymEdit key={editing.id} gym={editing} onClose={()=>setEditing(null)}/>}
+      <Dialog open={!!freezing} onOpenChange={open=>{if(!open)setFreezing(null);}}><DialogContent><DialogHeader><DialogTitle>Freeze {freezing?.name}</DialogTitle></DialogHeader><label className="text-sm">Notes (optional)<Textarea className="mt-2" rows={4} maxLength={1000} value={freezeNote} onChange={e=>setFreezeNote(e.target.value)}/></label><DialogFooter><Button variant="outline" onClick={()=>setFreezing(null)}>Cancel</Button><Button variant="destructive" onClick={()=>{if(!freezing)return;setGymStatus(freezing.id,'Frozen',freezeNote);toast.success(`${freezing.name} frozen (demo).`);setFreezing(null);}}>Freeze account</Button></DialogFooter></DialogContent></Dialog>
       <Dialog open={!!noteGym} onOpenChange={open=>{if(!open)setNoteGymId(null);}}><DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-lg"><DialogHeader><DialogTitle>Notes · {noteGym?.name}</DialogTitle></DialogHeader><p className="whitespace-pre-wrap break-words text-sm">{noteGym?.notes}</p></DialogContent></Dialog>
     </div>
   );

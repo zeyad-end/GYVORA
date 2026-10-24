@@ -41,6 +41,7 @@ export function enterPrototype(details: PrototypeLoginDetails, remember: boolean
     const existing = getDemoAccounts().find((a) => a.email === key);
     // No password is stored: prototype Gym Accounts are display details only.
     const acc = existing ?? registerDemoAccount(details.name.trim() || "Gym owner", key, "", "gym");
+    if(acc.deletedAt){setDemoSession(null);throw new Error('This gym account has been deleted by the administrator.');}
     setDemoSession("owner", acc.email, { name: details.name.trim() || acc.name });
     return demoDestination(acc);
   }

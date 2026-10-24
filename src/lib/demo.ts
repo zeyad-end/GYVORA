@@ -94,6 +94,8 @@ export type DemoAccount = {
   skipped: boolean;
   /** Gym Account submitted a subscription request. */
   requestPending: boolean;
+  deletedAt?: string;
+  trialStartedAt?: string;
 };
 
 const ACCOUNTS_KEY = "ironhaus-demo-accounts-v1";
@@ -147,7 +149,7 @@ export function registerDemoAccount(
 
 export function updateDemoAccount(
   email: string,
-  patch: Partial<Pick<DemoAccount, "skipped" | "requestPending">>,
+  patch: Partial<Pick<DemoAccount, "skipped" | "requestPending" | "deletedAt" | "trialStartedAt">>,
 ) {
   saveAccounts(getDemoAccounts().map((a) => (a.email === email ? { ...a, ...patch } : a)));
 }
@@ -175,6 +177,7 @@ export function demoDestination(
 ): "/super-admin" | "/member" | "/dashboard" | "/subscription-request" {
   if (acc.type === "dashboard") return "/super-admin";
   if (acc.type === "individual") return "/member";
+  if (acc.email && getDemoAccounts().find(a=>a.email===acc.email)?.deletedAt) return '/subscription-request';
   const status = "email" in acc ? demoRequestStatus(String(acc.email)) : null;
   if (status === "Rejected") return "/subscription-request";
   return acc.skipped || status === "Approved" ? "/dashboard" : "/subscription-request";
@@ -211,6 +214,7 @@ export type ApprovedGym = {
   billingType?: 'Monthly' | 'Annual' | undefined;
   durationDays?: number | undefined;
   notes?: string;
+  freezeNote?: string;
 };
 
 export type DemoClient = { id: string; name: string; phone: string; photo: string; gyms: string[] };
@@ -503,7 +507,9 @@ export function useDemoStore<T>(sel: (s: DemoState) => T): T {
   return useSyncExternalStore(
     (l) => {
       listeners.add(l);
-      return () => listeners.delete(l);
+      const sync = (e: StorageEvent) => { if(e.key===DATA_KEY || e.key===ACCOUNTS_KEY){demoState=load();listeners.forEach(fn=>fn());} };
+      window.addEventListener('storage',sync);
+      return () => {listeners.delete(l);window.removeEventListener('storage',sync);};
     },
     () => sel(demoState),
     () => sel(demoState),
@@ -526,6 +532,8 @@ export function demoRequestStatus(email: string): GymRequest["status"] | null {
 }
 /** Owner may enter the dashboard after Skip (demo access) or Super Admin approval. */
 export function demoOwnerHasAccess(acc: Pick<DemoAccount, "email" | "skipped">) {
+  if (getDemoAccounts().find(a=>a.email===acc.email)?.deletedAt) return false;
+  if (demoState.gyms.some(g=>g.email===acc.email && g.status==='Frozen')) return false;
   const status = demoRequestStatus(acc.email);
   if (status === "Rejected") return false;
   return acc.skipped || status === "Approved";
@@ -558,6 +566,7 @@ export function deletePlatformPlan(id: string) {
 export function submitDemoGymRequest(gymName: string, plan: string) {
   const s = getDemoSessionInfo();
   if (s?.kind !== 'owner') throw new Error('Gym owner account required');
+  if (getDemoAccount()?.deletedAt) throw new Error('Gym account deleted');
   const name = z.string().trim().min(1).max(100).parse(gymName);
   const selected = z.enum(['Monthly Plan','3 Months Plan','Annual Plan']).parse(plan);
   const existing = demoState.requests.find(r => r.email === s.email && r.status === 'Pending' && r.submittedAt);
@@ -841,7 +850,9 @@ function addMonths(iso: string, months: number) {
 
 export function approveRequest(id: string) {
   const req = demoState.requests.find((r) => r.id === id);
-  if (!req || req.status !== "Pending") return;
+  if (!req || !['Pending','Rejected'].includes(req.status)) return;
+  if(getDemoAccounts().find(a=>a.email===req.email)?.deletedAt) throw new Error('Deleted gym accounts cannot be approved');
+  const existingGym=demoState.gyms.find(g=>g.email===req.email && g.name===req.gymName);
   const start = today();
   const offeredPlan=(demoState.platformPlans??defaultPlatformPlans).find(p=>p.name===req.plan);
   const gym: ApprovedGym = {
@@ -859,7 +870,7 @@ export function approveRequest(id: string) {
   commit({
     ...demoState,
     requests: demoState.requests.map((r) => (r.id === id ? { ...r, status: "Approved", decidedAt: start } : r)),
-    gyms: [gym, ...demoState.gyms],
+    gyms: existingGym?demoState.gyms:[gym, ...demoState.gyms],
     revenue: [
       { id: generateId(), date: start, amount: PLAN_PRICES[req.plan] ?? 0, gymName: req.gymName },
       ...demoState.revenue,
@@ -903,12 +914,17 @@ export function editGym(id: string, patch: { name: string; plan: string; start?:
   });
 }
 
-export function setGymStatus(id: string, status: "Active" | "Frozen") {
-  commit({ ...demoState, gyms: demoState.gyms.map((g) => (g.id === id ? { ...g, status } : g)) });
+export function setGymStatus(id: string, status: "Active" | "Frozen", note = '') {
+  commit({ ...demoState, gyms: demoState.gyms.map((g) => (g.id === id ? { ...g, status, freezeNote:status==='Frozen'?note.trim().slice(0,1000):'' } : g)) });
 }
 
 export function deleteGym(id: string) {
-  commit({ ...demoState, gyms: demoState.gyms.filter((g) => g.id !== id) });
+  const gym=demoState.gyms.find(g=>g.id===id);if(!gym)return;
+  const deletedAt=new Date().toISOString();
+  const account=getDemoAccounts().find(a=>a.email===gym.email);
+  if(account)updateDemoAccount(gym.email,{deletedAt});
+  else saveAccounts([...getDemoAccounts(),{name:gym.name,email:gym.email,password:'',type:'gym',skipped:false,requestPending:false,deletedAt}]);
+  commit({ ...demoState, gyms: demoState.gyms.filter((g) => g.id !== id),requests:demoState.requests.map(r=>r.email===gym.email?{...r,status:'Rejected',decidedAt:deletedAt.slice(0,10)}:r) });
 }
 
 export function editClient(id: string, patch: { name: string; phone: string }) {
