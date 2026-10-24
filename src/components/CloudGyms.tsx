@@ -52,7 +52,7 @@ export function CloudGyms() {
     if(!window.confirm(`Delete ${g.name}? Gym access will be permanently disabled. A dedicated owner's sign-in will also be disabled. Historical records and unrelated accounts are retained.`))return;
     setBusy(true);setError('');
     try {const result=await remove({data:{gymId:g.id}});toast.success(result.ownerDisabled?'Gym deleted and owner sign-in disabled.':'Gym deleted. The shared owner account retains unrelated access.');await load();}
-    catch(e){setError(e instanceof Error?e.message:'Could not delete the gym.');await load();}
+    catch(e){await load();setError(e instanceof Error?e.message:'Could not delete the gym.');}
     finally{setBusy(false);}
   }
 
