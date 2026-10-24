@@ -20,6 +20,7 @@ export const saveRecords = createServerFn({method:'POST'}).middleware([requireSu
 export const lookupClient = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
  .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.union([z.string().uuid(),z.string().trim().email().max(255)])}).parse(input))
  .handler(async({data,context})=>{
+  const {data:accessible}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Members'});if(!accessible)throw new Error('Gym access unavailable');
   const {data:owner,error:roleError}=await context.supabase.from('user_roles').select('id').eq('user_id',context.userId).eq('gym_id',data.gymId).eq('role','Owner').maybeSingle();
   if(roleError||!owner)throw new Error('Only gym owners can look up existing clients');
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
