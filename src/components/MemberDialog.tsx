@@ -33,7 +33,7 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
   useEffect(() => {
     if(open){setClientId(member?.clientId);setLegacyQrId(member?.memberQrId);setMemberId("");setError('');}
     if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: renew ? new Date().toISOString().slice(0, 10) : member.start, expiry: renew ? "" : member.expiry, trainer: member.trainer, notes: member.notes } : {...blank(),plan:plans[0]?.name??""});
-  }, [open, member]);
+  }, [open, member, renew]);
   const up = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
 
   const save = async (e: React.FormEvent) => {
