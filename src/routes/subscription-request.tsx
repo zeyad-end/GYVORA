@@ -81,7 +81,7 @@ function Request() {
     setBusy(true);
     setError('');
     try {
-      if (demoAcc) updateDemoAccount(demoAcc.email, { skipped: true });
+      if (demoAcc) updateDemoAccount(demoAcc.email, { skipped: true, trialStartedAt:demoAcc.trialStartedAt??new Date().toISOString() });
       else await startTrial({}); // server records the one-hour trial start; refresh/re-login cannot restart it
       setConfirmOpen(false);
       await c.refresh();
@@ -136,10 +136,7 @@ function Request() {
               ? 'Your subscription request was rejected, so the Gym Owner dashboard is unavailable. Contact the administrator.'
               : 'We received your request. The Gym Owner dashboard is unavailable while approval is pending — you’ll get access on your next sign-in once an administrator approves it.'}
           </p>
-          {isDemoOwner && demoAcc?.skipped && status === 'Pending' && (
-            <p className="text-sm text-muted-foreground">Prototype demo access is on. <Link to="/dashboard" className="text-primary">Open demo dashboard</Link></p>
-          )}
-          {!isDemoOwner && status === 'Pending' && (
+          {status === 'Pending' && (
             <div className="space-y-2">
               <Button type="button" variant="secondary" disabled={busy} onClick={() => void onSkip()}>{busy ? 'Starting…' : 'Skip — start a 1-hour trial'}</Button>
               <p className="text-xs text-muted-foreground">The trial gives one hour of dashboard access while your request waits for approval. It starts once and cannot be restarted.</p>
@@ -176,10 +173,10 @@ function Request() {
             <DialogTitle>Request sent</DialogTitle>
             <DialogDescription>{SENT}</DialogDescription>
           </DialogHeader>
-          {isDemoOwner ? <p className="text-xs text-muted-foreground">Skip opens the Gym Owner dashboard with prototype demo access. Your request stays Pending — it is not approved or paid.</p> : <p className="text-xs text-muted-foreground">Skip starts a one-hour trial of the Gym Owner dashboard. Your request stays Pending — it is not approved or paid.</p>}
+          <p className="text-xs text-muted-foreground">{isDemoOwner?'Local demo trial — saved in this browser, not a server-authorized account.':'Skip starts a one-hour trial of the Gym Owner dashboard.'} Your request stays Pending — it is not approved or paid.</p>
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setConfirmOpen(false)}>Done</Button>
-            <Button disabled={busy} onClick={() => void onSkip()}>{isDemoOwner ? 'Skip — Enter Demo Dashboard' : 'Skip — Start 1-Hour Trial'}</Button>
+            <Button disabled={busy} onClick={() => void onSkip()}>Skip — Start 1-Hour Trial</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
