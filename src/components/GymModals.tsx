@@ -77,8 +77,8 @@ export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenCha
   );
 }
 
-export function ShareGymDialog({ open, onOpenChange, code }: { open: boolean; onOpenChange: (o: boolean) => void; code: string }) {
-  const link = `https://ironhaus.gym/g/${code.toLowerCase()}`;
+export function ShareGymDialog({ open, onOpenChange, code, gyvoraId }: { open: boolean; onOpenChange: (o: boolean) => void; code: string; gyvoraId?: string | undefined }) {
+  const link = gyvoraId || `https://ironhaus.gym/g/${(code||'').toLowerCase()}`;
   const copy = () => { navigator.clipboard?.writeText(link); toast.success("Link copied"); };
   const enc = encodeURIComponent(link);
   return (

@@ -29,7 +29,7 @@ function GymProfile() {
   return (
     <div className="space-y-6">
       <EditGymDialog open={edit} onOpenChange={setEdit} />
-      <ShareGymDialog open={share} onOpenChange={setShare} code={gym.code} />
+      <ShareGymDialog open={share} onOpenChange={setShare} code={gym.code} gyvoraId={c.gyms.find(g=>g.id===c.gymId)?.gyvora_id} />
       <div className="panel relative overflow-hidden">
         <img src={heroCover} alt="Gym interior" className="h-64 w-full object-cover sm:h-80" width={1600} height={640} />
         <div className="hero-overlay absolute inset-0" />
