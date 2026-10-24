@@ -38,7 +38,7 @@ function GymProfile() {
       if (getDemoSession()) {
         if (active) setSaved(getDemoState().programs.filter(r => r.user_id === c.profile?.id).flatMap(r => {
           const d = r.definition as unknown as Record<string, unknown>;
-          return d.sourceGymId === id && typeof d.sourceWorkoutId === 'string' ? [d.sourceWorkoutId] : [];
+          return d['sourceGymId'] === id && typeof d['sourceWorkoutId'] === 'string' ? [d['sourceWorkoutId']] : [];
         }));
       } else {
         const result = await supabase.from('client_programs').select('source_workout_id,definition').eq('user_id', c.profile.id).eq('source_gym_id', id);

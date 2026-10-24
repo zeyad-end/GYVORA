@@ -4,7 +4,9 @@ describe('gym workout copies', () => {
   const original = { id: 'plan-1', name: 'Strength', trainer: '', notes: '', exercises: [{ name: 'Squat', sets: 3, reps: '10' }] };
   it('editing or adding personal exercises never changes gym source', () => {
     const copy = personalGymCopy(original, 'gym-1');
-    copy.exercises[0].sets = 5;
+    const exercise = copy.exercises[0];
+    if (!exercise) throw new Error("Missing exercise");
+    exercise.sets = 5;
     copy.exercises.push({ name: 'Press', sets: 2, reps: '8' });
     expect(original.exercises).toEqual([{ name: 'Squat', sets: 3, reps: '10' }]);
     expect(copy.id).not.toBe(original.id);

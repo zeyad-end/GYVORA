@@ -8,7 +8,7 @@ import {
   readDemoGym,
   rememberDemoMemberships,
 } from "./demo";
-import type { Member, Workout, Plan, Gym, Trainer } from "./store";
+import type { Member, Workout, Plan, Gym } from "./store";
 
 export type ClientGym = {
   id: string;
@@ -173,10 +173,11 @@ export type ClientGymContent = {
   plans: Plan[];
   workouts: Workout[];
   products: { id?: string; name: string; price: number; category?: string; image?: string | undefined }[];
-  trainers: Pick<Trainer, "name" | "specialty" | "bio" | "image" | "notes">[];
+  trainers: {name: string; specialty: string; bio: string; image?: string | undefined; notes?: string | undefined}[];
 };
 export async function clientGymContent(id: string): Promise<ClientGymContent> {
   if (getDemoSession()) {
+    if (!demoDirectory().some(g => g.id === id)) throw new Error("This gym is unavailable");
     const s = readDemoGym(id, id === "demo-gym");
     return {
       profile: s.gym,

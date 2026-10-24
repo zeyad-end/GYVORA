@@ -12,6 +12,7 @@ import type { Workout } from "@/lib/store";
 import { programSchema } from "@/lib/validation";
 import { toast } from "sonner";
 import { getDemoSession, getDemoState, saveDemoProgram, changeDemoProgram } from "@/lib/demo";
+import { hasGymSource } from "@/lib/workout-sources";
 import { seo } from "@/lib/seo";
 type Row = Database["public"]["Tables"]["client_programs"]["Row"];
 export const Route = createFileRoute("/member/workouts")({
@@ -174,7 +175,9 @@ function Workouts() {
         program={editing ? (editing.definition as unknown as Workout) : null}
         onSave={async (w) => {
           if (!c.profile) return;
-          const p = programSchema.parse(w);
+          const parsed = programSchema.parse(w);
+          const previous = editing?.definition as unknown as Record<string, unknown> | undefined;
+          const p = previous && typeof previous["sourceGymId"] === "string" && typeof previous["sourceWorkoutId"] === "string" && hasGymSource(previous,previous["sourceGymId"],previous["sourceWorkoutId"]) ? {...parsed,sourceGymId:previous["sourceGymId"],sourceWorkoutId:previous["sourceWorkoutId"]} : parsed;
           if (getDemoSession()) {
             saveDemoProgram(c.profile.id, p, editing?.id);
             toast.success("Program saved");
