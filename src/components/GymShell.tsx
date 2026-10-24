@@ -13,6 +13,7 @@ import { GymAccount } from './GymAccount';
 import { GymNotifications } from './GymNotifications';
 import { ExerciseImage } from './ProgramEditor';
 import { AppBrand } from './AppBrand';
+import { canView, routeAreas } from '@/lib/gym-permissions';
 
 const nav = [
   { to: "/gym", label: "Gym Profile", icon: Building2 },
@@ -48,7 +49,7 @@ export function GymShell({ children }: { children: ReactNode }) {
         </div>
       </div>
       <nav className="flex-1 space-y-0.5 overflow-y-auto px-3 pb-4">
-        {nav.map((n) => {
+        {nav.filter(n=>canView(c.role,c.permissions,routeAreas[n.to]??'')).map((n) => {
           const active = path === n.to || path.startsWith(n.to + "/");
           return (
             <Link key={n.to} to={n.to} onClick={() => setOpen(false)}
@@ -92,7 +93,7 @@ export function GymShell({ children }: { children: ReactNode }) {
             <span className="hidden min-w-0 text-left text-xs sm:block"><span className="block truncate font-semibold">{c.profile?.full_name}</span><span className="block text-muted-foreground">{c.role}</span></span>
           </Button>
         </header>
-        <main key={currencyOf(gym)} className="mx-auto max-w-7xl px-4 py-8 sm:px-8">{children}</main>
+        <main key={currencyOf(gym)} className="mx-auto max-w-7xl px-4 py-8 sm:px-8">{canView(c.role,c.permissions,routeAreas['/'+(path.split('/')[1]??'')]??'')?children:<p role="alert">You do not have permission to open this gym page.</p>}</main>
       </div>
     </div>
   );
