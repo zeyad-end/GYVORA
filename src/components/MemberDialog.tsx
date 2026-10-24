@@ -15,8 +15,10 @@ import { generateId } from "@/lib/utils";
 import { assertUniqueClientMembership } from '@/lib/membership-link';
 import { getDemoSession, lookupDemoClient } from '@/lib/demo';
 import { isGyvoraId } from '@/lib/gyvora-id';
+import { initialMembershipDates, membershipEnd, planMonths } from '@/lib/membership-dates';
+import { localDate } from '@/lib/gym-period';
 
-const blank = () => ({ name: "", phone: "", email: "", plan: "Basic", type: "Unlimited" as Member["type"], sessionsTotal: 20, start: new Date().toISOString().slice(0, 10), expiry: "", trainer: "", notes: "" });
+const blank = () => ({ name: "", phone: "", email: "", plan: "Basic", type: "Unlimited" as Member["type"], sessionsTotal: 20, start: localDate(), expiry: "", trainer: "", notes: "" });
 
 function statusFor(expiry: string): Member["status"] {
   const d = (new Date(expiry).getTime() - Date.now()) / 86400000;
@@ -32,9 +34,18 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
   const [f, setF] = useState(blank());
   useEffect(() => {
     if(open){setClientId(member?.clientId);setLegacyQrId(member?.memberQrId);setMemberId("");setError('');}
-    if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: renew ? new Date().toISOString().slice(0, 10) : member.start, expiry: renew ? "" : member.expiry, trainer: member.trainer, notes: member.notes } : {...blank(),plan:plans[0]?.name??""});
+    if (open) {
+      const plan = member ? plans.find(p => p.name === member.plan) : plans[0];
+      const dates = initialMembershipDates(member ?? undefined, Boolean(renew), planMonths(plan));
+      setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, ...dates, trainer: member.trainer, notes: member.notes } : {...blank(), plan:plan?.name??"", ...dates});
+    }
   }, [open, member, renew]);
   const up = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
+  const changeDates = (patch: { plan?: string; start?: string }) => setF(x => {
+    const next = { ...x, ...patch };
+    const months = planMonths(plans.find(p => p.name === next.plan));
+    return { ...next, expiry: months ? membershipEnd(next.start, months) : next.expiry };
+  });
 
   const save = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -77,7 +88,7 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
           <Field label="Full name" className="sm:col-span-2"><Input required maxLength={80} value={f.name} onChange={(e) => up({ name: e.target.value })} /></Field>
           <Field label="Phone number"><Input required={!clientId} maxLength={30} value={f.phone} onChange={(e) => up({ phone: e.target.value })} /></Field>
           <Field label="Email"><Input type="email" maxLength={120} value={f.email} onChange={(e) => up({ email: e.target.value })} /></Field>
-          <Field label="Membership plan"><select aria-label="Membership plan" required className={selectCls} value={f.plan} onChange={(e) => up({ plan: e.target.value })}>{plans.map((p) => <option key={p.id}>{p.name}</option>)}</select></Field>
+          <Field label="Membership plan"><select aria-label="Membership plan" required className={selectCls} value={f.plan} onChange={(e) => changeDates({ plan: e.target.value })}>{!plans.some(p=>p.name===f.plan)&&f.plan&&<option>{f.plan}</option>}{plans.map((p) => <option key={p.id}>{p.name}</option>)}</select></Field>
           <Field label="Membership type"><select className={selectCls} value={f.type} onChange={(e) => up({ type: e.target.value as Member["type"] })}><option value="Unlimited">Unlimited membership</option><option value="Limited">Limited sessions</option></select></Field>
           {f.type === "Limited" && (
             <Field label="Number of sessions" className="sm:col-span-2">
@@ -87,7 +98,7 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
               </div>
             </Field>
           )}
-          <Field label="Start date"><Input aria-label="Start date" type="date" required value={f.start} onChange={(e) => up({ start: e.target.value })} /></Field>
+          <Field label="Start date"><Input aria-label="Start date" type="date" required value={f.start} onChange={(e) => changeDates({ start: e.target.value })} /></Field>
           <Field label="End date"><Input aria-label="End date" type="date" required value={f.expiry} onChange={(e) => up({ expiry: e.target.value })} /></Field>
           <Field label="Trainer" className="sm:col-span-2"><select className={selectCls} value={f.trainer} onChange={(e) => up({ trainer: e.target.value })}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
           <Field label="Notes" className="sm:col-span-2"><Textarea maxLength={500} value={f.notes} onChange={(e) => up({ notes: e.target.value })} /></Field>

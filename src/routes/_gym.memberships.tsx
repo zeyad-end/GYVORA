@@ -18,6 +18,8 @@ import { seo } from "@/lib/seo";
 import { generateId } from "@/lib/utils";
 import { useCloud } from '@/components/CloudProvider';
 import { canChange } from '@/lib/gym-permissions';
+import { MonthDurationInput } from '@/components/MonthDurationInput';
+import { monthLabel, planMonths, positiveMonths } from '@/lib/membership-dates';
 
 export const Route = createFileRoute("/_gym/memberships")({
   head: () => seo("Membership plans", "Create and manage membership plans, durations and pricing."),
@@ -31,13 +33,13 @@ function Memberships() {
   const [editing, setEditing] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
-  const [duration, setDuration] = useState("1 month");
+  const [duration, setDuration] = useState("1");
   const [price, setPrice] = useState(0);
   const [features, setFeatures] = useState<string[]>([""]);
   const reset = () => {
     setEditing(null);
     setName("");
-    setDuration("1 month");
+    setDuration("1");
     setPrice(0);
     setFeatures([""]);
   };
@@ -67,7 +69,7 @@ function Memberships() {
             className={`panel flex flex-col p-6 ${p.featured ? "border-primary/50" : ""}`}
           >
             <div className="flex items-center justify-between">
-              <span className="eyebrow">{p.duration}</span>
+              <span className="eyebrow">{planMonths(p) ? monthLabel(planMonths(p) ?? 1) : p.duration}</span>
               {p.featured && (
                 <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground">
                   Most popular
@@ -95,7 +97,7 @@ function Memberships() {
                 onClick={() => {
                   setEditing(p.id);
                   setName(p.name);
-                  setDuration(p.duration);
+                  setDuration(String(planMonths(p) ?? 1));
                   setPrice(p.price);
                   setFeatures([...p.features]);
                   setOpen(true);
@@ -119,6 +121,8 @@ function Memberships() {
             onSubmit={async (e) => {
               e.preventDefault();
               try {
+                const durationMonths = Number(duration);
+                if (!positiveMonths(durationMonths)) throw new Error('Duration must be a positive whole number of months.');
                 await saveState((s) => ({
                   plans: editing
                     ? s.plans.map((p) =>
@@ -126,7 +130,8 @@ function Memberships() {
                           ? {
                               ...p,
                               name: name.trim(),
-                              duration,
+                              duration: monthLabel(durationMonths),
+                              durationMonths,
                               price,
                               features: features.map((f) => f.trim()).filter(Boolean),
                             }
@@ -137,7 +142,8 @@ function Memberships() {
                         {
                           id: generateId(),
                           name: name.trim(),
-                          duration,
+                          duration: monthLabel(durationMonths),
+                          durationMonths,
                           price,
                           features: features.map((f) => f.trim()).filter(Boolean),
                         },
@@ -160,13 +166,8 @@ function Memberships() {
               />
             </Field>
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Duration">
-                <Input
-                  required
-                  maxLength={30}
-                  value={duration}
-                  onChange={(e) => setDuration(e.target.value)}
-                />
+              <Field label="Duration in months">
+                <MonthDurationInput value={duration} onChange={setDuration} />
               </Field>
               <Field label={`Price (${currencyOf()})`}>
                 <Input

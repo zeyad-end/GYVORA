@@ -10,6 +10,9 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Field } from "@/components/kit";
 import { getState, readFile, saveState, type Gym, type Plan } from "@/lib/store";
 import { generateId } from "@/lib/utils";
+import { MonthDurationInput } from './MonthDurationInput';
+import { monthLabel, planMonths } from '@/lib/membership-dates';
+import { planSchema } from '@/lib/validation';
 
 export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenChange: (o: boolean) => void }) {
   const [g, setG] = useState<Gym>(getState().gym);
@@ -55,12 +58,12 @@ export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenCha
           {plans.map((p, i) => (
             <div key={p.id} className="grid grid-cols-[1fr_1fr_7rem_auto] gap-2">
               <Input value={p.name} onChange={(e) => setPlans(plans.map((x, j) => j === i ? { ...x, name: e.target.value } : x))} />
-              <Input value={p.duration} onChange={(e) => setPlans(plans.map((x, j) => j === i ? { ...x, duration: e.target.value } : x))} />
+              <MonthDurationInput value={p.durationMonths === 0 ? '' : String(planMonths(p) ?? 1)} onChange={value => setPlans(plans.map((x,j) => j === i ? { ...x, durationMonths: Number(value), duration: monthLabel(Number(value)) } : x))} />
               <Input type="number" min={0} value={p.price} onChange={(e) => setPlans(plans.map((x, j) => j === i ? { ...x, price: Number(e.target.value) } : x))} />
               <Button size="icon" variant="ghost" aria-label="Remove plan" onClick={() => setPlans(plans.filter((_, j) => j !== i))}><Trash2 className="h-4 w-4" /></Button>
             </div>
           ))}
-          <Button size="sm" variant="secondary" onClick={() => setPlans([...plans, { id: generateId(), name: "New plan", duration: "1 month", price: 0, features: [] }])}><Plus className="h-4 w-4" />Add plan</Button>
+          <Button size="sm" variant="secondary" onClick={() => setPlans([...plans, { id: generateId(), name: "New plan", duration: "1 month", durationMonths: 1, price: 0, features: [] }])}><Plus className="h-4 w-4" />Add plan</Button>
         </div>
 
         <Field label="Gallery images">
@@ -70,7 +73,7 @@ export function EditGymDialog({ open, onOpenChange }: { open: boolean; onOpenCha
 
         <DialogFooter>
           <Button variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-          <Button disabled={busy} onClick={async () => { if (!g.name.trim()) { toast.error('Gym name is required'); return; } setBusy(true); try { await saveState(() => ({ gym: { ...g, name: g.name.trim() }, plans })); toast.success("Profile saved"); onOpenChange(false); } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not save profile'); } finally { setBusy(false); } }}>{busy ? 'Saving…' : 'Save'}</Button>
+          <Button disabled={busy} onClick={async () => { if (!g.name.trim()) { toast.error('Gym name is required'); return; } setBusy(true); try { plans.forEach(p => planSchema.parse(p)); await saveState(() => ({ gym: { ...g, name: g.name.trim() }, plans })); toast.success("Profile saved"); onOpenChange(false); } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not save profile'); } finally { setBusy(false); } }}>{busy ? 'Saving…' : 'Save'}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
