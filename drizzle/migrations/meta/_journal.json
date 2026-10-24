@@ -162,6 +162,13 @@
       "when": 1792802196905,
       "tag": "0022_staff_snapshot_edit_action",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1792802979508,
+      "tag": "0023_read_only_gym_browsing_and_workout_sources",
+      "breakpoints": true
     }
   ]
 }
