@@ -657,6 +657,7 @@ export function createDemoInvitation(
     created_at: new Date().toISOString(),
     expires_at: new Date(Date.now() + 7 * 86400000).toISOString(),
     accepted_by: null,
+    invited_user_id: null,
     permissions:
       role === "Admin"
         ? ["Members", "Attendance", "Sessions", "Payments", "Finance", "Workout programs"]
