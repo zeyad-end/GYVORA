@@ -536,6 +536,8 @@ export function demoOwnerHasAccess(acc: Pick<DemoAccount, "email" | "skipped">) 
   if (demoState.gyms.some(g=>g.email===acc.email && g.status==='Frozen')) return false;
   const status = demoRequestStatus(acc.email);
   if (status === "Rejected") return false;
+  const saved=getDemoAccounts().find(a=>a.email===acc.email);
+  if(status==='Pending'&&saved?.trialStartedAt)return Date.now()<new Date(saved.trialStartedAt).getTime()+60*60*1000;
   return acc.skipped || status === "Approved";
 }
 export function savePlatformWhatsapp(input: string) {
@@ -779,6 +781,8 @@ export function readDemoGym(gymId: string, withSeed = false): State {
   };
 }
 export function writeDemoGym(gymId: string, state: State) {
+  const account=getDemoAccount();
+  if(getDemoSession()==='owner'&&account&&!demoOwnerHasAccess(account))throw new Error('Gym access unavailable');
   const previous = readDemoGym(gymId, gymId === "demo-gym");
   rememberDemoMemberships(gymId, previous.gym.name, previous.members);
   rememberDemoMemberships(gymId, state.gym.name, state.members);
