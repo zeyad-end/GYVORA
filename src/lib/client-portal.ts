@@ -116,7 +116,7 @@ export function useClientGyms() {
     return () => {
       active = false;
     };
-  }, [c.profile?.id]);
+  }, [c.profile?.id, c.gyms]);
   async function change(gymId: string, action: "join" | "leave" | "favorite") {
     if (!c.profile) throw new Error("Sign in first");
     const id = c.profile.id;
@@ -154,7 +154,7 @@ export function useClientGyms() {
     );
   }
   const joined = directory
-    .filter((g) => links.some((l) => l.gymId === g.id))
+    .filter((g) => links.some((l) => l.gymId === g.id) || memberships.some((m)=>m.gymId===g.id) || (!getDemoSession() && c.gyms.some((r)=>r.id===g.id)))
     .sort(
       (a, b) =>
         Number(links.find((l) => l.gymId === b.id)?.favorite ?? false) -

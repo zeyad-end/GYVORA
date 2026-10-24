@@ -1,0 +1,5 @@
+export const gymPages = ['Members','Attendance','Sessions','Finance','Workout programs','Settings','Products','Profile'] as const;
+export type GymAction = 'create' | 'edit' | 'delete';
+export const routeAreas: Record<string,string> = {'/members':'Members','/memberships':'Members','/attendance':'Attendance','/sessions':'Sessions','/trainers':'Workout programs','/workouts':'Workout programs','/products':'Products','/finance':'Finance','/gym':'Profile','/staff':'Settings','/settings':'Settings','/qr':'Members','/activity':'Settings','/dashboard':'Dashboard'};
+export function canView(role:string,permissions:string[],area:string) { return role==='Owner'||role==='super_admin'||permissions.includes(area); }
+export function canChange(role:string,permissions:string[],area:string,action:GymAction) { return role==='Owner'||role==='super_admin'||permissions.includes(`${area}:${action}`); }

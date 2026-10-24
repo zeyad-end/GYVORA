@@ -18,17 +18,22 @@ export const saveRecords = createServerFn({method:'POST'}).middleware([requireSu
  });
 
 export const lookupClient = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
- .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.union([z.string().uuid(),z.string().trim().email().max(255)])}).parse(input))
+ .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.string().trim().min(1).max(255)}).parse(input))
  .handler(async({data,context})=>{
   const {data:accessible}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Members'});if(!accessible)throw new Error('Gym access unavailable');
   const {data:owner,error:roleError}=await context.supabase.from('user_roles').select('id').eq('user_id',context.userId).eq('gym_id',data.gymId).eq('role','Owner').maybeSingle();
   if(roleError||!owner)throw new Error('Only gym owners can look up existing clients');
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
-  let query=supabaseAdmin.from('profiles').select('id,member_id,full_name,email,phone').in('account_type',['client','staff']);
-  query=data.memberId.includes('@')?query.eq('email',data.memberId.toLowerCase()):query.eq('member_id',data.memberId);
-  const {data:p,error}=await query.maybeSingle();
+  const value=data.memberId.replace(/^ironhaus:member:/,'');
+  let query=supabaseAdmin.from('profiles').select('id,member_id,full_name,email,phone').in('account_type',['client','staff']).is('disabled_at',null);
+  if(z.string().uuid().safeParse(value).success)query=query.or(`id.eq.${value},member_id.eq.${value}`);
+  else if(z.string().email().safeParse(value).success)query=query.ilike('email',value.replace(/[%_]/g,'\\$&'));
+  else query=query.ilike('full_name',value.replace(/[%_]/g,'\\$&'));
+  const {data:matches,error}=await query.limit(20);
   if(error)throw new Error('Client lookup failed. Please try again.');
-  if(!p)throw new Error('No existing client found with this Member ID or email');
+  if((matches?.length??0)>1)throw new Error('More than one account has this name. Use the intended user ID, QR code or email.');
+  const p=matches?.[0];
+  if(!p)throw new Error('No existing client found with this user ID, name, QR code or email');
   return p;
  });
 
