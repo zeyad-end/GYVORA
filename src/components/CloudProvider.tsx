@@ -136,7 +136,8 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       if (row.kind === "gym") base.gym = { ...base.gym, ...row.data as unknown as State["gym"] };
       else if (row.kind in base && row.kind !== "staff") {
         const key = row.kind as Exclude<keyof State, "gym">;
-        (base[key] as unknown[]).push(row.data);
+        const data = row.data as Record<string, unknown>;
+        (base[key] as unknown[]).push(key === 'members' ? { ...data, email: data['email'] ?? '' } : data);
       }
     }
     if (r?.role !== "Client") {
@@ -189,7 +190,10 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         savedRows = result.records as typeof savedRows;
         const next = { ...getState(), ...changes };
         for (const kind of Object.keys(changes)) {
-          const current = result.records?.filter((r) => r.kind === kind).map((r) => r.data) ?? [];
+          const current = result.records?.filter((r) => r.kind === kind).map((r) => {
+            const data = r.data as Record<string, unknown>;
+            return kind === 'members' ? { ...data, email: data['email'] ?? '' } : data;
+          }) ?? [];
           if (kind === "gym") {
             const first = current[0];
             if (first) next.gym = first as unknown as State["gym"];

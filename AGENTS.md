@@ -31,7 +31,7 @@
 - Prototype login uses isolated local demo sessions selected by destination, never provider authentication or account lookup; display preferences exclude passwords so fictional access cannot grant Cloud permissions.
 - Demo data stays isolated; member history follows changes; duplicate checks apply only to new/relinked record IDs, never edits/removals.
 
-- Locked gym writes compare prior snapshots and return canonical rows to prevent lost updates and preserve server history.
+- Locked gym writes compare snapshots and return canonical rows; nullable membership emails use shared validation and never update account profiles.
 - Pricing JSON keeps legacy labels plus numeric durationMonths; shared calendar helpers clamp dates and preserve ordinary-edit history.
 - Client gym joins and favorites are separate from paid memberships and staff roles; client-facing reads project only public gym details, while immutable membership snapshots retain history independently of gym associations.
 - Platform request notifications derive only from submitted requests, with per-admin read state; Cloud inserts fan out through an owner-request trigger and recipient/admin RLS, while prototype profiles use stable session keys and never update provider credentials.

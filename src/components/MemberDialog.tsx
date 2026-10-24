@@ -18,6 +18,7 @@ import { isGyvoraId } from '@/lib/gyvora-id';
 import { initialMembershipDates, membershipEnd, planMonths } from '@/lib/membership-dates';
 import { localDate } from '@/lib/gym-period';
 import { canChange } from '@/lib/gym-permissions';
+import { membershipEmailSchema } from '@/lib/validation';
 
 const blank = () => ({ name: "", phone: "", email: "", plan: "Basic", type: "Unlimited" as Member["type"], sessionsTotal: 20, start: localDate(), expiry: "", trainer: "", notes: "" });
 
@@ -42,7 +43,7 @@ export function MemberDialog({ open, onOpenChange, member: initialMember, renew:
     if (open) {
       const plan = member ? plans.find(p => p.name === member.plan) : plans[0];
       const dates = initialMembershipDates(member ?? undefined, Boolean(renew), planMonths(plan));
-      setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, ...dates, trainer: member.trainer, notes: member.notes } : {...blank(), plan:plan?.name??"", ...dates});
+      setF(member ? { name: member.name, phone: member.phone, email: member.email ?? '', plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, ...dates, trainer: member.trainer, notes: member.notes } : {...blank(), plan:plan?.name??"", ...dates});
     }
   }, [open, member, renew]);
   const up = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
@@ -65,7 +66,7 @@ export function MemberDialog({ open, onOpenChange, member: initialMember, renew:
     }
     if(member&&!getState().members.some(m=>m.id===member.id))throw new Error('This membership is no longer available. Refresh the Members page.');
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
-    const base = { ...f, ...(clientId?{clientId,memberQrId:legacyQrId||member?.memberQrId,...(isGyvoraId(memberId)?{gyvoraId:memberId}:{})}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
+    const base = { ...f, email: membershipEmailSchema.parse(f.email) ?? '', ...(clientId?{clientId,memberQrId:legacyQrId||member?.memberQrId,...(isGyvoraId(memberId)?{gyvoraId:memberId}:{})}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
       const left = renew ? total : (f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0);
       const updated = { ...member, ...base, sessionsLeft: Math.max(0, left) };
@@ -97,7 +98,7 @@ export function MemberDialog({ open, onOpenChange, member: initialMember, renew:
           {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="GYVORA ID, name, QR code or email"><div className="flex gap-2"><Input aria-label="GYVORA ID, name, QR code or email" value={memberId} onChange={e=>{setMemberId(e.target.value);setClientId(undefined);}}/><Button type="button" disabled={lookupBusy||busy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="break-words text-sm text-success">Confirm existing client · {f.name} · {f.email||'Email not provided'} · {f.phone||'Phone not provided'} · {memberId}</p>}</div>}
           <Field label="Full name" className="sm:col-span-2"><Input required maxLength={80} value={f.name} onChange={(e) => up({ name: e.target.value })} /></Field>
           <Field label="Phone number"><Input required={!clientId} maxLength={30} value={f.phone} onChange={(e) => up({ phone: e.target.value })} /></Field>
-          <Field label="Email"><Input type="email" maxLength={120} value={f.email} onChange={(e) => up({ email: e.target.value })} /></Field>
+          <Field label="Email (optional)"><Input aria-label="Email (optional)" type="email" maxLength={120} value={f.email} onChange={(e) => up({ email: e.target.value })} /></Field>
           <Field label="Membership plan"><select aria-label="Membership plan" required className={selectCls} value={f.plan} onChange={(e) => changeDates({ plan: e.target.value })}>{!plans.some(p=>p.name===f.plan)&&f.plan&&<option>{f.plan}</option>}{plans.map((p) => <option key={p.id}>{p.name}</option>)}</select></Field>
           <Field label="Membership type"><select className={selectCls} value={f.type} onChange={(e) => up({ type: e.target.value as Member["type"] })}><option value="Unlimited">Unlimited membership</option><option value="Limited">Limited sessions</option></select></Field>
           {f.type === "Limited" && (
