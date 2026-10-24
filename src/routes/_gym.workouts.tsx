@@ -18,6 +18,8 @@ import { DataTable, Field, PageHeader, Panel, selectCls, td } from "@/components
 import { saveState, useStore } from "@/lib/store";
 import { deleteProgram } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
+import { useCloud } from '@/components/CloudProvider';
+import { canChange } from '@/lib/gym-permissions';
 
 export const Route = createFileRoute("/_gym/workouts")({
   head: () =>
@@ -28,6 +30,7 @@ export const Route = createFileRoute("/_gym/workouts")({
 const emptyRow = () => ({ name: "", sets: 3, reps: "10" });
 
 function Workouts() {
+  const c=useCloud();const may=(action:'create'|'edit'|'delete')=>canChange(c.role,c.permissions,'Workout programs',action);
   const [editing, setEditing] = useState<Workout | null>(null);
   const workouts = useStore((s) => s.workouts);
   const trainers = useStore((s) => s.trainers);
@@ -43,11 +46,12 @@ function Workouts() {
         title="Workout programs"
         actions={
           <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setAssign(true)}>
+          {c.role==='Owner'&&<Button variant="secondary" onClick={() => setAssign(true)}>
             <Send className="h-4 w-4" />
             Assign Workout
-          </Button>
+          </Button>}
           <Button
+            disabled={!may('create')}
             onClick={() => {
               setEditing(null);
               setName("");
@@ -68,6 +72,7 @@ function Workouts() {
             title={w.name}
             action={
               <Button
+                disabled={!may('edit')}
                 size="sm"
                 variant="secondary"
                 onClick={() => {
@@ -115,7 +120,7 @@ function Workouts() {
           }));
           toast.success("Program saved");
         }}
-        onDelete={async () => {
+        onDelete={!may('delete')?undefined:async () => {
           if (!editing) return;
           await saveState((s) => ({ workouts: deleteProgram(s.workouts, editing) }));
           toast.success("Program deleted");

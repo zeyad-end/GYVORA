@@ -16,6 +16,8 @@ import { currencyOf, saveState, useStore } from "@/lib/store";
 import { deletePlan } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
 import { generateId } from "@/lib/utils";
+import { useCloud } from '@/components/CloudProvider';
+import { canChange } from '@/lib/gym-permissions';
 
 export const Route = createFileRoute("/_gym/memberships")({
   head: () => seo("Membership plans", "Create and manage membership plans, durations and pricing."),
@@ -23,6 +25,7 @@ export const Route = createFileRoute("/_gym/memberships")({
 });
 
 function Memberships() {
+  const c=useCloud();const may=(action:'create'|'edit'|'delete')=>canChange(c.role,c.permissions,'Members',action);
   const plans = useStore((s) => s.plans);
   const members = useStore((s) => s.members);
   const [editing, setEditing] = useState<string | null>(null);
@@ -46,6 +49,7 @@ function Memberships() {
         subtitle="Create and manage your plans"
         actions={
           <Button
+            disabled={!may('create')}
             onClick={() => {
               reset();
               setOpen(true);
@@ -85,6 +89,7 @@ function Memberships() {
             <div className="mt-6 flex items-center justify-between border-t pt-4 text-xs text-muted-foreground">
               <span>{members.filter((m) => m.plan === p.name).length} members</span>
               <Button
+                disabled={!may('edit')}
                 size="sm"
                 variant="secondary"
                 onClick={() => {
@@ -207,7 +212,7 @@ function Memberships() {
               </Button>
             </div>
             <DialogFooter>
-              {editing && (
+              {editing && may('delete') && (
                 <Button
                   type="button"
                   variant="destructive"
