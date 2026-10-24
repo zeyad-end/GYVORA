@@ -819,10 +819,14 @@ export function writeDemoGym(gymId: string, state: State) {
   const account=getDemoAccount();
   if(getDemoSession()==='owner'&&account&&!demoOwnerHasAccess(account))throw new Error('Gym access unavailable');
   const previous = readDemoGym(gymId, gymId === "demo-gym");
-  for(const member of state.members) assertUniqueClientMembership(state.members,member.clientId,member.id);
-  state={...state,members:state.members.map(m=>({...m,...(m.clientId?{gyvoraId:demoMemberId(m.clientId)||undefined}: {})}))};
-  rememberDemoMemberships(gymId, previous.gym.name, previous.members);
-  rememberDemoMemberships(gymId, state.gym.name, state.members);
+  // Pricing plans and other gym records must not run membership side effects.
+  const membersChanged = JSON.stringify(state.members) !== JSON.stringify(previous.members);
+  if (membersChanged) {
+    for(const member of state.members) assertUniqueClientMembership(state.members,member.clientId,member.id);
+    state={...state,members:state.members.map(m=>({...m,...(m.clientId?{gyvoraId:demoMemberId(m.clientId)||undefined}: {})}))};
+    rememberDemoMemberships(gymId, previous.gym.name, previous.members);
+    rememberDemoMemberships(gymId, state.gym.name, state.members);
+  }
   localStorage.setItem(`ironhaus-demo-gym:${gymId}`, JSON.stringify(state));
   if (gymId === "demo-gym") localStorage.setItem("ironhaus-demo-gym-state", JSON.stringify(state));
   appendGymEvents(gymId, gymEvents(previous, state));
