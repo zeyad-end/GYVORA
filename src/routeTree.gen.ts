@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as GymRouteImport } from './routes/_gym'
 import { Route as AuthRouteImport } from './routes/auth'
+import { Route as ClientSignInRouteImport } from './routes/client-sign-in'
 import { Route as GymsRouteImport } from './routes/gyms'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -62,6 +63,11 @@ const GymRoute = GymRouteImport.update({
 const AuthRoute = AuthRouteImport.update({
   id: '/auth',
   path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ClientSignInRoute = ClientSignInRouteImport.update({
+  id: '/client-sign-in',
+  path: '/client-sign-in',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GymsRoute = GymsRouteImport.update({
@@ -253,6 +259,7 @@ const MemberGymIdRoute = MemberGymIdRouteImport.update({
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/client-sign-in': typeof ClientSignInRoute
   '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -294,6 +301,7 @@ export interface FileRoutesByFullPath {
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
+  '/client-sign-in': typeof ClientSignInRoute
   '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -336,6 +344,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_gym': typeof GymRouteWithChildren
   '/auth': typeof AuthRoute
+  '/client-sign-in': typeof ClientSignInRoute
   '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -379,6 +388,7 @@ export interface FileRouteTypes {
   fullPaths:
     | '/'
     | '/auth'
+    | '/client-sign-in'
     | '/gyms'
     | '/register'
     | '/reset-password'
@@ -420,6 +430,7 @@ export interface FileRouteTypes {
   to:
     | '/'
     | '/auth'
+    | '/client-sign-in'
     | '/gyms'
     | '/register'
     | '/reset-password'
@@ -461,6 +472,7 @@ export interface FileRouteTypes {
     | '/'
     | '/_gym'
     | '/auth'
+    | '/client-sign-in'
     | '/gyms'
     | '/register'
     | '/reset-password'
@@ -504,6 +516,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   GymRoute: typeof GymRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ClientSignInRoute: typeof ClientSignInRoute
   GymsRoute: typeof GymsRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -542,6 +555,13 @@ declare module '@tanstack/react-router' {
       path: '/auth'
       fullPath: '/auth'
       preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/client-sign-in': {
+      id: '/client-sign-in'
+      path: '/client-sign-in'
+      fullPath: '/client-sign-in'
+      preLoaderRoute: typeof ClientSignInRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gyms': {
@@ -872,6 +892,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   GymRoute: GymRouteWithChildren,
   AuthRoute: AuthRoute,
+  ClientSignInRoute: ClientSignInRoute,
   GymsRoute: GymsRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,

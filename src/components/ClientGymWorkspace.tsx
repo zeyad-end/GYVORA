@@ -1,15 +1,16 @@
 import { Link } from '@tanstack/react-router';
 import { useState, type ReactNode } from 'react';
 import { Building2, CreditCard, Package, ClipboardList, Menu, X, ArrowLeft } from 'lucide-react';
+import { ExerciseImage } from './ProgramEditor';
 import { AppBrand } from './AppBrand';
 import { Button } from './ui/button';
 import { cn } from '@/lib/utils';
 import { initials } from '@/lib/mock';
 import type { ClientGym } from '@/lib/client-portal';
 
-export const clientGymPages = ['Memberships', 'Profile', 'Products', 'Workouts'] as const;
+export const clientGymPages = ['Memberships', 'Workouts', 'Products', 'Profile'] as const;
 export type ClientGymPage = typeof clientGymPages[number];
-const icons = [CreditCard, Building2, Package, ClipboardList];
+const icons = [CreditCard, ClipboardList, Package, Building2];
 export function ClientGymWorkspace({ gym, logo, page, onPage, children }: {
   gym: ClientGym; logo?: string | undefined; page: ClientGymPage; onPage: (page: ClientGymPage) => void; children: ReactNode;
 }) {
@@ -17,7 +18,7 @@ export function ClientGymWorkspace({ gym, logo, page, onPage, children }: {
   const sidebar = <aside className="flex h-full w-64 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
     <AppBrand className="border-b border-sidebar-border px-5 py-3" />
     <div className="flex items-center gap-3 px-5 py-6">
-      {logo ? <img src={logo} alt={`${gym.name} logo`} className="h-9 w-9 shrink-0 rounded-lg object-cover" /> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary font-display text-sm font-bold text-primary-foreground">{initials(gym.name)}</span>}
+      {logo ? <ExerciseImage path={logo} alt={`${gym.name} logo`} className="h-9 w-9 shrink-0 rounded-lg object-cover" /> : <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-primary font-display text-sm font-bold text-primary-foreground">{initials(gym.name)}</span>}
       <div className="min-w-0 break-words font-display text-sm font-semibold">{gym.name}</div>
     </div>
     <nav aria-label="Gym pages" className="flex-1 space-y-0.5 px-3 pb-4">

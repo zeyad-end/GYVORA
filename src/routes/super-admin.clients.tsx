@@ -6,6 +6,8 @@ import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { initials } from '@/lib/mock';
 import { useDemoStore, editClient, deleteClient, removeClientGym, type DemoClient } from '@/lib/demo';
+import { CloudClients } from '@/components/CloudClients';
+import { getDemoSession } from '@/lib/demo';
 import { seo } from '@/lib/seo';
 
 export const Route = createFileRoute('/super-admin/clients')({
@@ -14,6 +16,9 @@ export const Route = createFileRoute('/super-admin/clients')({
 });
 
 function Clients() {
+  return getDemoSession() ? <DemoClients /> : <CloudClients />;
+}
+function DemoClients() {
   const clients = useDemoStore((s) => s.clients);
   const [editing, setEditing] = useState<DemoClient | null>(null);
   const [name, setName] = useState('');
