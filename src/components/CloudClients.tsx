@@ -9,14 +9,16 @@ import { ExerciseImage } from './ProgramEditor';
 import { initials } from '@/lib/mock';
 import { uploadImage } from '@/lib/images';
 import { toast } from 'sonner';
+import { useCloud } from './CloudProvider';
 type Client = Awaited<ReturnType<typeof listClients>>[number];
 export function CloudClients({gymId}: {gymId?: string}) {
+  const cloud = useCloud();
   const fetch = useServerFn(listClients); const update = useServerFn(updateClient); const remove = useServerFn(deleteClientAccount);
   const [rows,setRows] = useState<Client[]>([]); const [error,setError] = useState(''); const [loading,setLoading] = useState(true);
   const [editing,setEditing] = useState<Client | null>(null); const [deleting,setDeleting] = useState<Client | null>(null);
   const [details,setDetails] = useState({name:'',email:'',phone:'',photo:''}); const [busy,setBusy] = useState(false);
   const input = gymId ? {gymId} : {};
-  async function refresh() {setLoading(true);try {setRows(await fetch({data:input}));setError('');} catch(e){setError(e instanceof Error ? e.message : 'Could not load clients');} finally{setLoading(false);}}
+  async function refresh() {setLoading(true);try {setRows(await fetch({data:input}));if(gymId)await cloud.refresh();setError('');} catch(e){setError(e instanceof Error ? e.message : 'Could not load clients');} finally{setLoading(false);}}
   useEffect(() => {void refresh();},[gymId]);
   return <div className="space-y-4">
     <PageHeader title={gymId ? 'Client accounts' : 'Clients'} subtitle={loading ? 'Loading clients…' : `${rows.length} saved client accounts`} />

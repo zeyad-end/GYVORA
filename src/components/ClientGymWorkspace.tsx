@@ -8,9 +8,9 @@ import { cn } from '@/lib/utils';
 import { initials } from '@/lib/mock';
 import type { ClientGym } from '@/lib/client-portal';
 
-export const clientGymPages = ['Memberships', 'Workouts', 'Products', 'Profile'] as const;
+export const clientGymPages = ['Profile', 'Memberships', 'Workouts', 'Products'] as const;
 export type ClientGymPage = typeof clientGymPages[number];
-const icons = [CreditCard, ClipboardList, Package, Building2];
+const icons = [Building2, CreditCard, ClipboardList, Package];
 export function ClientGymWorkspace({ gym, logo, page, onPage, children }: {
   gym: ClientGym; logo?: string | undefined; page: ClientGymPage; onPage: (page: ClientGymPage) => void; children: ReactNode;
 }) {
