@@ -29,7 +29,7 @@
 - Store gym records under a gym ID with permission-enforced access; keep account profiles, gym role associations, invitations and approval requests in separate tables so editable profile data never grants access.
 - Real authentication uses provider password auth without OTP; `otp_verified()` remains an authenticated-session compatibility shim so existing RLS policies stay intact.
 - Prototype login uses isolated local demo sessions selected by destination, never provider authentication or account lookup; display preferences exclude passwords so fictional access cannot grant Cloud permissions.
-- Demo data stays Cloud-isolated; validate/capture membership history only when members change, never on plan-only saves.
+- Demo data stays isolated; member history follows changes; duplicate checks apply only to new/relinked record IDs, never edits/removals.
 
 - Locked gym writes compare prior snapshots and return canonical rows to prevent lost updates and preserve server history.
 - Pricing JSON keeps legacy labels plus numeric durationMonths; shared calendar helpers clamp dates and preserve ordinary-edit history.

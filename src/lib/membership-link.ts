@@ -10,6 +10,17 @@ export function assertUniqueClientMembership(rows: Member[], clientId: string | 
   }
 }
 
+// Validate creation/relinking only. Legacy duplicates must not block edits,
+// renewals or deletion of an existing record (including unrelated records).
+export function validateMembershipChanges(previous: Member[], next: Member[]) {
+  for (const row of next) {
+    const existing = previous.find(old => old.id === row.id);
+    if (!existing || existing.clientId !== row.clientId) {
+      assertUniqueClientMembership(next, row.clientId, row.id);
+    }
+  }
+}
+
 export function membershipStatus(m: Pick<Member, 'start' | 'expiry'>, today: string): Member['status'] | 'Upcoming' {
   if (m.start > today) return 'Upcoming';
   if (m.expiry < today) return 'Expired';

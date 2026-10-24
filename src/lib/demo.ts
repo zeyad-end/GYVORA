@@ -9,7 +9,7 @@ import { billingMonths, gymPrices, savePrices, platformPlanSchema, defaultPlatfo
 import { generateId } from "./utils";
 import { demoIdentity, demoIdentityMatches, ensureDemoIdentity } from './demo-identities';
 import { normalizeAccountLookup } from './gyvora-id';
-import { assertUniqueClientMembership } from './membership-link';
+import { validateMembershipChanges } from './membership-link';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -822,7 +822,7 @@ export function writeDemoGym(gymId: string, state: State) {
   // Pricing plans and other gym records must not run membership side effects.
   const membersChanged = JSON.stringify(state.members) !== JSON.stringify(previous.members);
   if (membersChanged) {
-    for(const member of state.members) assertUniqueClientMembership(state.members,member.clientId,member.id);
+    validateMembershipChanges(previous.members, state.members);
     state={...state,members:state.members.map(m=>({...m,...(m.clientId?{gyvoraId:demoMemberId(m.clientId)||undefined}: {})}))};
     rememberDemoMemberships(gymId, previous.gym.name, previous.members);
     rememberDemoMemberships(gymId, state.gym.name, state.members);

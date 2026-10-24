@@ -17,6 +17,7 @@ import { getDemoSession, lookupDemoClient } from '@/lib/demo';
 import { isGyvoraId } from '@/lib/gyvora-id';
 import { initialMembershipDates, membershipEnd, planMonths } from '@/lib/membership-dates';
 import { localDate } from '@/lib/gym-period';
+import { canChange } from '@/lib/gym-permissions';
 
 const blank = () => ({ name: "", phone: "", email: "", plan: "Basic", type: "Unlimited" as Member["type"], sessionsTotal: 20, start: localDate(), expiry: "", trainer: "", notes: "" });
 
@@ -25,10 +26,14 @@ function statusFor(expiry: string): Member["status"] {
   return d < 0 ? "Expired" : d <= 14 ? "Expiring" : "Active";
 }
 
-export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null; renew?: boolean; onSaved?: (m: Member) => void }) {
+export function MemberDialog({ open, onOpenChange, member: initialMember, renew: initialRenew, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null; renew?: boolean; onSaved?: (m: Member) => void }) {
+  const [member,setMember]=useState(initialMember);
+  const [renew,setRenew]=useState(initialRenew);
+  const [duplicate,setDuplicate]=useState<Member|null>(null);
+  useEffect(()=>{if(open){setMember(initialMember);setRenew(initialRenew);setDuplicate(null);}},[open,initialMember,initialRenew]);
   const c=useCloud();const lookup=useServerFn(lookupClient);const [scan,setScan]=useState(false);const [memberId,setMemberId]=useState("");const [clientId,setClientId]=useState<string|undefined>();const [lookupBusy,setLookupBusy]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   const [legacyQrId,setLegacyQrId]=useState<string>();
-  async function findClient(value:string, fromCamera=false){const id=value.trim().replace(/^ironhaus:member:/,"");if(!id){toast.error("Enter a GYVORA ID, name, QR code or email");return false;}setLookupBusy(true);setClientId(undefined);try{const p=getDemoSession()?lookupDemoClient(c.gymId,id):await lookup({data:{gymId:c.gymId,memberId:id}});assertUniqueClientMembership(getState().members,p.id,member?.id);up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setLegacyQrId(p.member_id);setMemberId(p.gyvora_id??p.member_id);toast.success("Client found. Confirm their details before saving.");return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:"Client not found");return false;}finally{setLookupBusy(false);}}
+  async function findClient(value:string, fromCamera=false){const id=value.trim().replace(/^ironhaus:member:/,"");if(!id){toast.error("Enter a GYVORA ID, name, QR code or email");return false;}setLookupBusy(true);setClientId(undefined);setDuplicate(null);setError('');try{const p=getDemoSession()?lookupDemoClient(c.gymId,id):await lookup({data:{gymId:c.gymId,memberId:id}});const existing=getState().members.find(m=>m.clientId===p.id&&m.id!==member?.id);if(existing){setDuplicate(existing);setScan(false);setError('This client already has a membership at this gym. Edit their existing membership instead.');return false;}up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setLegacyQrId(p.member_id);setMemberId(p.gyvora_id??p.member_id);toast.success("Client found. Confirm their details before saving.");return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:"Client not found");return false;}finally{setLookupBusy(false);}}
   const plans = useStore((s) => s.plans);
   const trainers = useStore((s) => s.trainers);
   const [f, setF] = useState(blank());
@@ -53,7 +58,12 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
     setBusy(true);setError('');
     try {
     if(!c.gymId.startsWith('demo-')&&!clientId)throw new Error('Look up and confirm an existing user before saving their membership.');
-    assertUniqueClientMembership(getState().members,clientId,member?.id);
+    if (!member || clientId !== member.clientId) {
+      const existing=getState().members.find(m=>m.clientId===clientId&&m.id!==member?.id);
+      if(existing&&clientId)setDuplicate(existing);
+      assertUniqueClientMembership(getState().members,clientId,member?.id);
+    }
+    if(member&&!getState().members.some(m=>m.id===member.id))throw new Error('This membership is no longer available. Refresh the Members page.');
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
     const base = { ...f, ...(clientId?{clientId,memberQrId:legacyQrId||member?.memberQrId,...(isGyvoraId(memberId)?{gyvoraId:memberId}:{})}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
@@ -105,9 +115,10 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
           <DialogFooter className="gap-2 sm:col-span-2">
             {member && !renew && <Button type="button" disabled={busy} variant="destructive" className="sm:mr-auto" onClick={()=>void remove()}>Delete member</Button>}
             <Button type="button" disabled={busy} variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={busy||lookupBusy||!plans.length}>{busy?'Saving…':renew ? "Renew" : member ? "Save changes" : "Save"}</Button>
+            <Button type="submit" disabled={busy||lookupBusy||!plans.length||Boolean(duplicate)}>{busy?'Saving…':renew ? "Renew" : member ? "Save changes" : "Save"}</Button>
           </DialogFooter>
           {error&&<p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p>}
+          {duplicate&&canChange(c.role,c.permissions,'Members','edit')&&<div className="flex flex-wrap gap-2 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>{setMember(duplicate);setRenew(false);setDuplicate(null);}}>Edit existing membership</Button>{duplicate.expiry<localDate()&&<Button type="button" onClick={()=>{setMember(duplicate);setRenew(true);setDuplicate(null);}}>Renew existing membership</Button>}</div>}
         </form>
       </DialogContent>
     </Dialog>

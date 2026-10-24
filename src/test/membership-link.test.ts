@@ -1,5 +1,5 @@
 import {describe,it,expect} from 'vitest';
-import {assertUniqueClientMembership,membershipStatus,isClientPortalPath} from '@/lib/membership-link';
+import {assertUniqueClientMembership,validateMembershipChanges,membershipStatus,isClientPortalPath} from '@/lib/membership-link';
 import {initialState} from '@/lib/store';
 
 describe('owner-added client memberships',()=>{
@@ -17,6 +17,24 @@ describe('owner-added client memberships',()=>{
  });
  it('allows editing the existing linked membership',()=>{
   expect(()=>assertUniqueClientMembership([member],'fictional-client','fictional-membership')).not.toThrow();
+ });
+ it('allows selected edits with legacy duplicates without validating them as new links',()=>{
+  const duplicate={...member,id:'fictional-legacy-duplicate'};
+  expect(()=>validateMembershipChanges([member,duplicate],[{...member,notes:'Edited'},duplicate])).not.toThrow();
+ });
+ it('renews the selected existing record while retaining its client link',()=>{
+  const duplicate={...member,id:'fictional-legacy-duplicate'};
+  expect(()=>validateMembershipChanges([member,duplicate],[{...member,start:'2026-10-24',expiry:'2027-01-24'},duplicate])).not.toThrow();
+ });
+ it('allows deletion without creation validation on remaining legacy duplicates',()=>{
+  const duplicate={...member,id:'fictional-legacy-duplicate'};
+  const other={...member,id:'fictional-other',clientId:'fictional-other-client'};
+  expect(()=>validateMembershipChanges([member,duplicate,other],[member,duplicate])).not.toThrow();
+ });
+ it('still rejects a new or relinked record for an existing client',()=>{
+  expect(()=>validateMembershipChanges([member],[member,{...member,id:'fictional-new'}])).toThrow('already has a membership');
+  const other={...member,id:'fictional-other',clientId:'fictional-other-client'};
+  expect(()=>validateMembershipChanges([member,other],[member,{...other,clientId:member.clientId}])).toThrow('already has a membership');
  });
  it('allows another gym to add the same client independently',()=>{
   expect(()=>assertUniqueClientMembership([],'fictional-client')).not.toThrow();

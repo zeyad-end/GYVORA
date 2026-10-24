@@ -47,4 +47,26 @@ describe('gym pricing plans are independent from client memberships', () => {
     expect(reloaded.plans).toEqual(saved.plans);
     expect(() => writeDemoGym('demo-gym', { ...reloaded, members: [renewed, { ...renewed, id: 'duplicate' }] })).toThrow('already has a membership');
   });
+  it('persists selected edit, renewal and deletion despite unrelated legacy duplicate links', () => {
+    const gym=readDemoGym('demo-gym',true), fixture=gym.members[0];
+    if(!fixture)throw new Error('Membership fixture required');
+    const selected={...fixture,id:'fictional-selected',clientId:'fictional-selected-client',name:'Fictional Selected'};
+    const a={...fixture,id:'fictional-legacy-a',clientId:'fictional-legacy-client'};
+    const b={...a,id:'fictional-legacy-b'};
+    localStorage.setItem('ironhaus-demo-gym:demo-gym',JSON.stringify({...gym,members:[selected,a,b]}));
+    let saved=readDemoGym('demo-gym',true);
+    const others=saved.members.filter(m=>m.id!==selected.id);
+    writeDemoGym('demo-gym',{...saved,members:saved.members.map(m=>m.id===selected.id?{...m,notes:'Selected edit'}:m)});
+    saved=readDemoGym('demo-gym',true);
+    expect(saved.members.find(m=>m.id===selected.id)?.notes).toBe('Selected edit');
+    writeDemoGym('demo-gym',{...saved,members:saved.members.map(m=>m.id===selected.id?{...m,start:'2026-10-24',expiry:'2027-01-24'}:m)});
+    saved=readDemoGym('demo-gym',true);
+    expect(saved.members.find(m=>m.id===selected.id)).toMatchObject({clientId:selected.clientId,start:'2026-10-24',expiry:'2027-01-24'});
+    expect(saved.members.filter(m=>m.id!==selected.id)).toEqual(others);
+    expect(()=>writeDemoGym('demo-gym',{...saved,members:[...saved.members,{...selected,id:'fictional-second'}]})).toThrow('already has a membership');
+    writeDemoGym('demo-gym',{...saved,members:saved.members.filter(m=>m.id!==selected.id)});
+    const after=readDemoGym('demo-gym',true);
+    expect(after.members).toEqual(others);
+    expect(after.plans).toEqual(gym.plans);
+  });
 });
