@@ -23,7 +23,7 @@ function statusFor(expiry: string): Member["status"] {
   return d < 0 ? "Expired" : d <= 14 ? "Expiring" : "Active";
 }
 
-export function MemberDialog({ open, onOpenChange, member }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null }) {
+export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null; renew?: boolean; onSaved?: (m: Member) => void }) {
   const c=useCloud();const lookup=useServerFn(lookupClient);const [scan,setScan]=useState(false);const [memberId,setMemberId]=useState("");const [clientId,setClientId]=useState<string|undefined>();const [lookupBusy,setLookupBusy]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   const [legacyQrId,setLegacyQrId]=useState<string>();
   async function findClient(value:string, fromCamera=false){const id=value.trim().replace(/^ironhaus:member:/,"");if(!id){toast.error("Enter a GYVORA ID, name, QR code or email");return false;}setLookupBusy(true);setClientId(undefined);try{const p=getDemoSession()?lookupDemoClient(c.gymId,id):await lookup({data:{gymId:c.gymId,memberId:id}});assertUniqueClientMembership(getState().members,p.id,member?.id);up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setLegacyQrId(p.member_id);setMemberId(p.gyvora_id??p.member_id);toast.success("Client found. Confirm their details before saving.");return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:"Client not found");return false;}finally{setLookupBusy(false);}}
