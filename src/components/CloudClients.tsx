@@ -18,7 +18,7 @@ export function CloudClients({gymId}: {gymId?: string}) {
   const [editing,setEditing] = useState<Client | null>(null); const [deleting,setDeleting] = useState<Client | null>(null);
   const [details,setDetails] = useState({name:'',email:'',phone:'',photo:''}); const [busy,setBusy] = useState(false);
   const input = gymId ? {gymId} : {};
-  async function refresh() {setLoading(true);try {setRows(await fetch({data:input}));if(gymId)await cloud.refresh();setError('');} catch(e){setError(e instanceof Error ? e.message : 'Could not load clients');} finally{setLoading(false);}}
+  async function refresh() {setLoading(true);try {setRows(await fetch({data:input}));setError('');} catch(e){setError(e instanceof Error ? e.message : 'Could not load clients');} finally{setLoading(false);}}
   useEffect(() => {void refresh();},[gymId]);
   return <div className="space-y-4">
     <PageHeader title={gymId ? 'Client accounts' : 'Clients'} subtitle={loading ? 'Loading clients…' : `${rows.length} saved client accounts`} />

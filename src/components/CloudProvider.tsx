@@ -129,7 +129,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       transactions: [],
     };
     for (const row of rows ?? []) {
-      if (row.kind === "gym") base.gym = row.data as unknown as State["gym"];
+      if (row.kind === "gym") base.gym = { ...base.gym, ...row.data as unknown as State["gym"] };
       else if (row.kind in base && row.kind !== "staff") {
         const key = row.kind as Exclude<keyof State, "gym">;
         (base[key] as unknown[]).push(row.data);
