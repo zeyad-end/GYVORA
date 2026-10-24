@@ -4,7 +4,7 @@ import { lookupDemoClient, prepareDemoIdentities, rememberDemoClient, setDemoSes
 import { demoMemberships } from '@/lib/client-portal';
 
 async function reserve(input: {data:{identities:{kind:'G'|'C';key:string}[]}}) {
-  return input.data.identities.map((e,i)=>({...e,id:`GYVORA-${e.kind}-${String(100000000000000+i)}`}));
+  return input.data.identities.map((e,i)=>({...e,id:`GYVORA-${e.kind}-${String(100+i)}`}));
 }
 describe('demo permanent identity and membership',()=>{
   beforeEach(()=>{localStorage.clear();setDemoSession(null);});
@@ -13,17 +13,17 @@ describe('demo permanent identity and membership',()=>{
     setDemoSession('individual','f',{name:'Fictional local F'});
     prepareDemoIdentities();await syncDemoIdentities(reserve);
     const id=demoIdentity('C','demo-user-f');
-    expect(id).toMatch(/^GYVORA-C-[0-9]{15}$/);
+    expect(id).toMatch(/^GYVORA-C-[1-9][0-9]{2,}$/);
     setDemoSession(null);setDemoSession('individual','f');
     expect(demoIdentity('C','demo-user-f')).toBe(id);
   });
   it('reserves both gym and client IDs together, preserving assigned numbers',async()=>{
     ensureDemoIdentity('G','gym');ensureDemoIdentity('C','client');
     await syncDemoIdentities(reserve);
-    expect(demoIdentity('G','gym')).toBe('GYVORA-G-100000000000000');
-    expect(demoIdentity('C','client')).toBe('GYVORA-C-100000000000001');
+    expect(demoIdentity('G','gym')).toBe('GYVORA-G-100');
+    expect(demoIdentity('C','client')).toBe('GYVORA-C-101');
     await syncDemoIdentities(async()=>{throw new Error('Already assigned IDs must not be regenerated');});
-    expect(demoIdentity('G','gym')).toBe('GYVORA-G-100000000000000');
+    expect(demoIdentity('G','gym')).toBe('GYVORA-G-100');
   });
   it('fills contacts by QR, name and email into the same account and exact-client membership',async()=>{
     const email='fictional-local-qr@example.invalid';const userId=demoUserId(email);
