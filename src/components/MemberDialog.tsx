@@ -55,7 +55,7 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
       await saveState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
       
     }
-    toast.success(member?'Membership updated':'Membership saved');onOpenChange(false);
+    toast.success(renew?'Membership renewed':member?'Membership updated':'Membership saved');onOpenChange(false);
     } catch(e) {setError(e instanceof Error?e.message:'Could not save membership. Please try again.');} finally {setBusy(false);}
   };
 
@@ -70,7 +70,7 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
-        <DialogHeader><DialogTitle>{member ? "Edit member" : "Add member"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{renew ? "Renew membership" : member ? "Edit member" : "Add member"}</DialogTitle></DialogHeader>
         <QRScanner open={scan} onClose={()=>setScan(false)} onScan={v=>findClient(v,true)}/>
         <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
           {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="GYVORA ID, name, QR code or email"><div className="flex gap-2"><Input aria-label="GYVORA ID, name, QR code or email" value={memberId} onChange={e=>{setMemberId(e.target.value);setClientId(undefined);}}/><Button type="button" disabled={lookupBusy||busy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="break-words text-sm text-success">Confirm existing client · {f.name} · {f.email||'Email not provided'} · {f.phone||'Phone not provided'} · {memberId}</p>}</div>}
@@ -92,9 +92,9 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
           <Field label="Trainer" className="sm:col-span-2"><select className={selectCls} value={f.trainer} onChange={(e) => up({ trainer: e.target.value })}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
           <Field label="Notes" className="sm:col-span-2"><Textarea maxLength={500} value={f.notes} onChange={(e) => up({ notes: e.target.value })} /></Field>
           <DialogFooter className="gap-2 sm:col-span-2">
-            {member && <Button type="button" disabled={busy} variant="destructive" className="sm:mr-auto" onClick={()=>void remove()}>Delete member</Button>}
+            {member && !renew && <Button type="button" disabled={busy} variant="destructive" className="sm:mr-auto" onClick={()=>void remove()}>Delete member</Button>}
             <Button type="button" disabled={busy} variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={busy||lookupBusy||!plans.length}>{busy?'Saving…':member ? "Save changes" : "Save"}</Button>
+            <Button type="submit" disabled={busy||lookupBusy||!plans.length}>{busy?'Saving…':renew ? "Renew" : member ? "Save changes" : "Save"}</Button>
           </DialogFooter>
           {error&&<p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p>}
         </form>
