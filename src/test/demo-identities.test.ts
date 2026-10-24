@@ -8,6 +8,15 @@ async function reserve(input: {data:{identities:{kind:'G'|'C';key:string}[]}}) {
 }
 describe('demo permanent identity and membership',()=>{
   beforeEach(()=>{localStorage.clear();setDemoSession(null);});
+  it('replaces a legacy cached ID exactly once, retaining its account key and QR alias',async()=>{
+    localStorage.setItem('gyvora-demo-permanent-identities-v1',JSON.stringify({installation:'fictional-installation',entries:[{kind:'C',localId:'fictional-client',key:'fictional-key',id:'GYVORA-C-123456789012345'}]}));
+    await syncDemoIdentities(reserve);
+    expect(demoIdentity('C','fictional-client')).toBe('GYVORA-C-100');
+    const cached=JSON.parse(localStorage.getItem('gyvora-demo-permanent-identities-v1') ?? '{}');
+    expect(cached.entries[0]).toMatchObject({localId:'fictional-client',key:'fictional-key',version:2,aliases:['GYVORA-C-123456789012345']});
+    await syncDemoIdentities(async()=>{throw new Error('Replacement IDs must stay permanent');});
+    expect(demoIdentity('C','fictional-client')).toBe('GYVORA-C-100');
+  });
   it('migrates legacy demo-user-f, keeps its account key and permanent QR after sign out',async()=>{
     localStorage.setItem('ironhaus-demo-member-identities',JSON.stringify({'demo-user-f':'demo-user-f'}));
     setDemoSession('individual','f',{name:'Fictional local F'});
