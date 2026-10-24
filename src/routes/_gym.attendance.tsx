@@ -95,6 +95,27 @@ function Attendance() {
           <p className="py-6 text-sm text-muted-foreground">No check-ins in this period.</p>
         )}
       </Panel>
+      <Dialog open={!!expired && !renewOpen} onOpenChange={(v) => { if (!v) setExpired(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Membership expired</DialogTitle></DialogHeader>
+          <p className="break-words">{expired?.name}'s membership expired on {expired?.expiry}. Renew it to record their check-in.</p>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setExpired(null)}>Cancel</Button>
+            <Button onClick={() => setRenewOpen(true)}>Renew</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <MemberDialog
+        open={renewOpen && !!expired}
+        onOpenChange={(v) => { setRenewOpen(v); if (!v) setExpired(null); }}
+        member={expired}
+        renew
+        onSaved={(updated) => {
+          setRenewOpen(false);
+          setExpired(null);
+          void check(updated, "QR");
+        }}
+      />
       <QRScanner
         open={scan}
         onClose={() => setScan(false)}
