@@ -1,118 +1,96 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
+import { Check, MapPin, Clock, Phone, Save, CheckCheck } from 'lucide-react';
+import { toast } from 'sonner';
 import { useCloud } from '@/components/CloudProvider';
+import { ClientShell } from '@/components/ClientShell';
+import { ClientGymWorkspace, type ClientGymPage } from '@/components/ClientGymWorkspace';
+import { Button } from '@/components/ui/button';
+import { PageHeader, Panel, DataTable, td, StatusPill } from '@/components/kit';
+import { ExerciseImage } from '@/components/ProgramEditor';
+import { TrainerAvatar } from '@/components/TrainerAvatar';
+import { clientGymContent, useClientGyms, type ClientGymContent } from '@/lib/client-portal';
+import { personalGymCopy, workoutSourceId, hasGymSource } from '@/lib/workout-sources';
+import { getDemoSession, getDemoState, saveDemoProgram } from '@/lib/demo';
 import { supabase } from '@/integrations/supabase/client';
 import type { Json } from '@/integrations/supabase/types';
-import { copyProgram } from '@/lib/programs';
-import { saveDemoProgram, getDemoSession } from '@/lib/demo';
-import { toast } from 'sonner';
-import { useEffect, useState } from "react";
-import { ClientShell } from "@/components/ClientShell";
-import { Button } from "@/components/ui/button";
-import { ExerciseImage } from "@/components/ProgramEditor";
-import { clientGymContent, useClientGyms, type ClientGymContent } from "@/lib/client-portal";
-import { seo } from "@/lib/seo";
-import { egp } from "@/lib/mock";
-export const Route = createFileRoute("/member/gym/$id")({
-  head: () =>
-    seo(
-      "Gym client profile",
-      "View your gym profile, available workout programs, products and trainers.",
-    ),
+import { fmt12, type Workout } from '@/lib/store';
+import { initials } from '@/lib/mock';
+import { seo } from '@/lib/seo';
+import cover from '@/assets/gym-cover.jpg';
+
+export const Route = createFileRoute('/member/gym/$id')({
+  head: () => seo('Gym pages — member view', 'Browse gym memberships, profile, products and workouts, and save independent personal workout plans.'),
   component: GymProfile,
 });
 function GymProfile() {
-  const c=useCloud();const navigate=useNavigate();const [busy,setBusy]=useState('');const [saved,setSaved]=useState<string[]>([]);
-  const { id } = Route.useParams();
-  const p = useClientGyms();
-  const gym = p.accessible.find((g) => g.id === id);
-  const [tab, setTab] = useState("Gym Profile");
+  const c = useCloud(); const { id } = Route.useParams(); const p = useClientGyms();
+  const gym = p.directory.find(g => g.id === id);
+  const [page, setPage] = useState<ClientGymPage>('Profile');
   const [content, setContent] = useState<ClientGymContent | null>(null);
-  const [error, setError] = useState("");
+  const [error, setError] = useState(''); const [saved, setSaved] = useState<string[]>([]); const [busy, setBusy] = useState('');
   useEffect(() => {
-    if (!gym) return;
-    let active = true;
-    void clientGymContent(id)
-      .then((x) => {
-        if (active) setContent(x);
-      })
-      .catch((e) => {
-        if (active) setError(String(e));
-      });
-    return () => {
-      active = false;
-    };
-  }, [id, !!gym]);
-  return (
-    <ClientShell title={gym?.name ?? "Gym"}>
-      {!gym ? (
-        <p>Join this gym to open its client pages.</p>
-      ) : (
-        <>
-          <div className="mb-6 flex flex-wrap gap-2">
-            {["Memberships", "Gym Profile", "Workout Programs", "Products", "Trainers"].map((t) => (
-              <Button key={t} variant={tab === t ? "default" : "outline"} onClick={() => setTab(t)}>
-                {t}
-              </Button>
-            ))}
-          </div>
-          {error && <p role="alert">{error}</p>}
-          {c.gyms.some(g=>g.id===id)&&c.role!=='Client'&&<Button className="mb-5" variant="outline" onClick={async()=>{await c.selectGym(id);await navigate({to:'/workouts'});}}>Open staff workspace</Button>}
-          {tab==='Memberships'&&<div className="space-y-4">{p.memberships.filter(m=>m.gymId===id).map(m=><section key={m.id} className="border-b pb-4"><h2 className="font-semibold">{m.plan}</h2><p>{m.status} · {m.start} — {m.expiry}</p></section>)}{!p.memberships.some(m=>m.gymId===id)&&<p>No regular membership at this gym.</p>}</div>}
-          {tab === "Gym Profile" && (
-            <div className="space-y-4">
-              <ExerciseImage path={gym.image} />
-              <p>{gym.description}</p>
-              <p className="text-muted-foreground">{gym.location}</p>
-            </div>
-          )}
-          {tab === "Workout Programs" && (
-            <div className="space-y-5">
-              {content?.workouts.map((w, i) => (
-                <section key={i} className="border-b pb-4">
-                  <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{w.name}</h2><Button disabled={busy===String(i)||saved.includes(String(i))} onClick={async()=>{if(!c.profile)return;setBusy(String(i));try{const copy=copyProgram(w);if(getDemoSession())saveDemoProgram(c.profile.id,copy);else{const {error}=await supabase.from('client_programs').insert({user_id:c.profile.id,definition:copy as unknown as Json});if(error)throw error;}setSaved(s=>[...s,String(i)]);toast.success('Saved to your personal workouts');}catch(e){toast.error(e instanceof Error?e.message:'Could not save workout');}finally{setBusy('');}}}>{saved.includes(String(i))?'Saved':'Save'}</Button></div>
-                  {w.exercises.map((e, j) => (
-                    <div key={j} className="flex items-center justify-between gap-3 py-2">
-                      <div>
-                        {e.name}
-                        <p className="text-sm text-muted-foreground">
-                          {e.sets} sets · {e.reps} reps
-                        </p>
-                      </div>
-                      <ExerciseImage path={e.image} />
-                    </div>
-                  ))}
-                </section>
-              ))}
-              {!content?.workouts.length && <p>No programs available.</p>}
-            </div>
-          )}
-          {tab === "Products" && (
-            <div className="grid gap-4 sm:grid-cols-2">
-              {content?.products.map((x, i) => (
-                <article key={i} className="rounded-lg border p-4">
-                  <ExerciseImage path={x.image} />
-                  <h2>{x.name}</h2>
-                  <p className="text-primary">{egp(x.price)}</p>
-                </article>
-              ))}
-              {!content?.products.length && <p>No products available.</p>}
-            </div>
-          )}
-          {tab === "Trainers" && (
-            <div className="space-y-5">
-              {content?.trainers.map((x, i) => (
-                <section key={i} className="border-b pb-4">
-                  <ExerciseImage path={x.image} />
-                  <h2 className="text-lg font-semibold">{x.name}</h2>
-                  <p className="text-primary">{x.specialty}</p>
-                  <p>{x.bio}</p>
-                </section>
-              ))}
-              {!content?.trainers.length && <p>No trainers available.</p>}
-            </div>
-          )}
-        </>
-      )}
-    </ClientShell>
-  );
+    let active = true; setContent(null); setError(''); setSaved([]);
+    if (!c.profile) return;
+    void clientGymContent(id).then(value => { if (active) setContent(value); }).catch(() => { if (active) setError('This gym is unavailable. Please return to Join a Gym.'); });
+    void (async () => {
+      if (!c.profile) return;
+      if (getDemoSession()) {
+        if (active) setSaved(getDemoState().programs.filter(r => r.user_id === c.profile?.id).flatMap(r => {
+          const d = r.definition as unknown as Record<string, unknown>;
+          return d.sourceGymId === id && typeof d.sourceWorkoutId === 'string' ? [d.sourceWorkoutId] : [];
+        }));
+      } else {
+        const result = await supabase.from('client_programs').select('source_workout_id,definition').eq('user_id', c.profile.id).eq('source_gym_id', id);
+        if (result.error) { if (active) setError('Could not check saved workouts. Please refresh before saving.'); return; }
+        if (active) setSaved((result.data ?? []).flatMap(r => r.source_workout_id ? [r.source_workout_id] : []));
+      }
+    })();
+    return () => { active = false; };
+  }, [id, c.profile?.id]);
+  async function save(workout: Workout) {
+    if (!c.profile || busy) return;
+    const source = workoutSourceId(workout); if (saved.includes(source)) return;
+    setBusy(source);
+    try {
+      const copy = personalGymCopy(workout, id);
+      if (getDemoSession()) {
+        const exists = getDemoState().programs.some(r => r.user_id === c.profile?.id && hasGymSource(r.definition, id, source));
+        if (!exists) saveDemoProgram(c.profile.id, copy);
+      } else {
+        const { error: failure } = await supabase.from('client_programs').insert({ user_id: c.profile.id, definition: copy as unknown as Json, source_gym_id: id, source_workout_id: source });
+        if (failure && failure.code !== '23505') throw failure;
+      }
+      setSaved(values => [...values, source]); toast.success('Saved to your personal workouts');
+    } catch { toast.error('Could not save workout. Please try again.'); } finally { setBusy(''); }
+  }
+  if (!gym || !content) return <ClientShell title={gym?.name ?? 'Gym'}><p role={error ? 'alert' : 'status'}>{error || p.error || 'Loading gym…'}</p><Button asChild variant="outline" className="mt-4"><Link to="/member/join">Join a Gym</Link></Button></ClientShell>;
+  const profile = content.profile; const currency = profile.currency || profile.preferences?.currency || 'EGP';
+  return <ClientGymWorkspace gym={gym} logo={profile.logo} page={page} onPage={setPage}>
+    {error && <p role="alert" className="mb-4 text-destructive">{error}</p>}
+    {page === 'Memberships' && <>
+      <PageHeader title="Membership plans" />
+      <div className="grid gap-5 md:grid-cols-3">{content.plans.map(plan => <article key={plan.id} className={`panel flex flex-col p-6 ${plan.featured ? 'border-primary/50' : ''}`}>
+        <div className="flex flex-wrap items-center justify-between gap-2"><span className="eyebrow">{plan.duration}</span>{plan.featured && <span className="rounded-full bg-primary px-2.5 py-0.5 text-[11px] font-semibold text-primary-foreground">Most popular</span>}</div>
+        <h2 className="mt-3 break-words text-2xl font-semibold">{plan.name}</h2><div className="mt-4 font-display text-3xl text-primary">{currency} {plan.price.toLocaleString()}</div>
+        <ul className="mt-6 space-y-2.5 text-sm text-muted-foreground">{(plan.features ?? []).map(feature => <li key={feature} className="flex gap-2"><Check className="h-4 w-4 shrink-0 text-primary" />{feature}</li>)}</ul>
+      </article>)}</div>
+      {!content.plans.length && <p className="text-muted-foreground">No membership plans available.</p>}
+      {p.memberships.filter(m => m.gymId === id).map(m => <div key={m.id} className="mt-6 flex flex-wrap items-center gap-3 border-t pt-4"><h2 className="font-semibold">{m.plan}</h2><StatusPill status={m.status} /><p className="text-sm text-muted-foreground">{m.start} — {m.expiry}</p></div>)}
+    </>}
+    {page === 'Profile' && <div className="space-y-6">
+      <div className="panel relative overflow-hidden"><ExerciseImage path={profile.cover || gym.image || cover} className="h-64 w-full object-cover sm:h-80" /><div className="hero-overlay absolute inset-0" /><div className="absolute inset-x-0 bottom-0 flex items-end gap-4 p-6 sm:p-8">
+        {profile.logo ? <ExerciseImage path={profile.logo} className="h-20 w-20 shrink-0 rounded-lg border-4 border-card object-cover" /> : <span className="grid h-16 w-16 shrink-0 place-items-center rounded-lg border-4 border-card bg-primary font-display text-xl font-bold text-primary-foreground">{initials(gym.name)}</span>}
+        <div className="min-w-0"><h1 className="break-words text-2xl font-semibold sm:text-3xl">{gym.name}</h1>{profile.tagline && <p className="mt-1 text-sm text-muted-foreground">{profile.tagline}</p>}<p className="mt-2 flex items-center gap-2 text-xs text-muted-foreground"><MapPin className="h-3.5 w-3.5 shrink-0 text-primary" />{gym.location || 'Location not provided'}</p></div>
+      </div></div>
+      <div className="grid gap-6 lg:grid-cols-3"><Panel title="About the gym" className="lg:col-span-2"><p className="text-sm leading-relaxed text-muted-foreground">{gym.description || 'No description provided.'}</p><div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-4">{(profile.facilities ?? []).map(f => <div key={f} className="flex gap-2 rounded-lg bg-secondary px-3 py-2 text-xs"><Check className="h-3.5 w-3.5 shrink-0 text-primary" />{f}</div>)}</div></Panel>
+      <div className="space-y-6"><Panel title="Services"><div className="flex flex-wrap gap-2">{(profile.services ?? []).map(s => <span key={s} className="rounded-full border px-3 py-1.5 text-xs">{s}</span>)}</div>{!profile.services?.length && <p className="text-sm text-muted-foreground">No services listed.</p>}</Panel><Panel title="Working hours"><ul className="space-y-2 text-sm">{(profile.hoursByDay ?? []).map(d => <li key={d.day} className="flex justify-between gap-2"><span>{d.day}</span><span className="text-muted-foreground">{d.closed ? 'Closed' : `${fmt12(d.open)} – ${fmt12(d.close)}`}</span></li>)}</ul>{!profile.hoursByDay?.length && <p className="flex gap-2 text-sm text-muted-foreground"><Clock className="h-4 w-4" />Hours not provided.</p>}</Panel></div></div>
+      <Panel title="Trainers"><div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{content.trainers.map((t, i) => <article key={i} className="min-w-0 rounded-lg bg-surface p-5"><TrainerAvatar t={t} size="h-14 w-14" /><h2 className="mt-4 break-words font-semibold">{t.name || 'Trainer'}</h2><p className="text-xs text-primary">{t.specialty}</p>{t.notes && <p className="mt-3 whitespace-pre-wrap break-words text-xs text-muted-foreground">{t.notes}</p>}</article>)}</div>{!content.trainers.length && <p className="text-sm text-muted-foreground">No trainers listed.</p>}</Panel>
+      <div className="grid gap-6 lg:grid-cols-3">{!!profile.gallery?.length && <Panel title="Gallery" className="lg:col-span-2"><div className="grid grid-cols-2 gap-3">{profile.gallery.map((src, i) => <ExerciseImage key={i} path={src} className="aspect-[4/3] w-full rounded-lg object-cover" />)}</div></Panel>}<Panel title="Contact"><p className="flex gap-2 text-sm text-muted-foreground"><Phone className="h-4 w-4 shrink-0 text-primary" />{profile.phone || 'Contact not provided.'}</p></Panel></div>
+    </div>}
+    {page === 'Products' && <><PageHeader title="Products & Inventory" /><div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">{content.products.map((product, i) => <article key={product.id ?? i} className="panel overflow-hidden"><ExerciseImage path={product.image} className="aspect-[4/3] w-full object-cover" /><div className="p-5"><span className="eyebrow">{product.category}</span><h2 className="mt-2 break-words text-lg font-semibold">{product.name}</h2><p className="mt-3 font-display text-xl text-primary">{currency} {product.price.toLocaleString()}</p></div></article>)}</div>{!content.products.length && <p className="text-muted-foreground">No products available.</p>}</>}
+    {page === 'Workouts' && <><PageHeader title="Workout programs" /><div className="grid gap-6 lg:grid-cols-2">{content.workouts.map(w => { const key = workoutSourceId(w); return <Panel key={key} title={w.name} action={<Button size="sm" variant="secondary" disabled={!!busy || saved.includes(key)} onClick={() => void save(w)}>{saved.includes(key) ? <CheckCheck className="h-4 w-4" /> : <Save className="h-4 w-4" />}{saved.includes(key) ? 'Saved' : busy === key ? 'Saving…' : 'Save'}</Button>}>
+      {w.trainer && <p className="mb-4 text-sm text-muted-foreground">Trainer · {w.trainer}</p>}<DataTable head={['Exercise', 'Sets', 'Reps', 'Image']}>{w.exercises.map((e, i) => <tr key={i}><td className={td}>{e.name}</td><td className={td}>{e.sets}</td><td className={td}>{e.reps}</td><td className={td}><ExerciseImage path={e.image} /></td></tr>)}</DataTable>{w.notes && <div className="mt-4 whitespace-pre-wrap break-words rounded-lg bg-surface p-3 text-sm text-muted-foreground"><span className="eyebrow mr-2">Trainer notes</span>{w.notes}</div>}
+    </Panel>; })}</div>{!content.workouts.length && <p className="text-muted-foreground">No programs available.</p>}</>}
+  </ClientGymWorkspace>;
 }
