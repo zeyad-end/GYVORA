@@ -141,6 +141,13 @@
       "when": 1792800213871,
       "tag": "0019_allow_admin_account_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1792800633316,
+      "tag": "0020_close_lifecycle_privileged_gaps",
+      "breakpoints": true
     }
   ]
 }
