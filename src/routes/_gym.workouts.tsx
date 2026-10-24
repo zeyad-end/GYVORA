@@ -18,6 +18,8 @@ import { DataTable, Field, PageHeader, Panel, selectCls, td } from "@/components
 import { saveState, useStore } from "@/lib/store";
 import { deleteProgram } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
+import { useCloud } from '@/components/CloudProvider';
+import { canChange } from '@/lib/gym-permissions';
 
 export const Route = createFileRoute("/_gym/workouts")({
   head: () =>
@@ -28,6 +30,7 @@ export const Route = createFileRoute("/_gym/workouts")({
 const emptyRow = () => ({ name: "", sets: 3, reps: "10" });
 
 function Workouts() {
+  const c=useCloud();const may=(action:'create'|'edit'|'delete')=>canChange(c.role,c.permissions,'Workout programs',action);
   const [editing, setEditing] = useState<Workout | null>(null);
   const workouts = useStore((s) => s.workouts);
   const trainers = useStore((s) => s.trainers);
@@ -43,11 +46,11 @@ function Workouts() {
         title="Workout programs"
         actions={
           <div className="flex gap-2">
-          <Button variant="secondary" onClick={() => setAssign(true)}>
+          {c.role==='Owner'&&<Button variant="secondary" onClick={() => setAssign(true)}>
             <Send className="h-4 w-4" />
             Assign Workout
-          </Button>
-          <Button
+          </Button>}
+          {may('create')&&<Button
             onClick={() => {
               setEditing(null);
               setName("");
@@ -57,7 +60,7 @@ function Workouts() {
           >
             <Plus className="h-4 w-4" />
             New program
-          </Button>
+          </Button>}
           </div>
         }
       />
@@ -67,7 +70,7 @@ function Workouts() {
             key={w.name}
             title={w.name}
             action={
-              <Button
+              may('edit')?<Button
                 size="sm"
                 variant="secondary"
                 onClick={() => {
@@ -77,7 +80,7 @@ function Workouts() {
               >
                 <Pencil className="h-4 w-4" />
                 Edit program
-              </Button>
+              </Button>:null
             }
           >
             {w.trainer && <p className="mb-4 text-sm text-muted-foreground">Trainer · {w.trainer}</p>}
@@ -115,7 +118,7 @@ function Workouts() {
           }));
           toast.success("Program saved");
         }}
-        onDelete={async () => {
+        onDelete={!may('delete')?undefined:async () => {
           if (!editing) return;
           await saveState((s) => ({ workouts: deleteProgram(s.workouts, editing) }));
           toast.success("Program deleted");

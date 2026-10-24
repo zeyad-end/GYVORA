@@ -10,6 +10,8 @@ import { seo } from "@/lib/seo";
 import cover from "@/assets/gym-cover.jpg";
 import g1 from "@/assets/gallery-1.jpg";
 import g2 from "@/assets/gallery-2.jpg";
+import { useCloud } from '@/components/CloudProvider';
+import { canChange } from '@/lib/gym-permissions';
 
 export const Route = createFileRoute("/_gym/gym")({
   head: () => seo("Gym profile", "Manage your gym's public profile, plans, trainers and gallery."),
@@ -17,6 +19,7 @@ export const Route = createFileRoute("/_gym/gym")({
 });
 
 function GymProfile() {
+  const c=useCloud();
   const gym = useStore((s) => s.gym);
   const plans = useStore((s) => s.plans);
   const trainers = useStore((s) => s.trainers);
@@ -43,7 +46,7 @@ function GymProfile() {
             </div>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
-            <Button onClick={() => setEdit(true)}><Pencil className="h-4 w-4" />Edit Profile</Button>
+            {canChange(c.role,c.permissions,'Profile','edit')&&<Button onClick={() => setEdit(true)}><Pencil className="h-4 w-4" />Edit Profile</Button>}
             <Button variant="secondary" onClick={() => setShare(true)}><Share2 className="h-4 w-4" />Share</Button>
             <Button variant="secondary"><ExternalLink className="h-4 w-4" />Public page</Button>
           </div>

@@ -41,7 +41,7 @@ export function ProgramEditor({
   onClose: () => void;
   program?: Workout | null;
   onSave: (p: Workout) => Promise<void> | void;
-  onDelete?: () => Promise<void> | void;
+  onDelete?: (() => Promise<void> | void) | undefined;
   trainers?: Trainer[];
 }) {
   const [name, setName] = useState("");

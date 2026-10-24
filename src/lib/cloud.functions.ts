@@ -5,7 +5,7 @@ import { invoiceSchema, scheduleSchema } from './gym-updates';
 import { productSchema, validateProductChanges } from './product-sales';
 import { planSchema, programSchema, recurringSchema, sessionSchema, text } from './validation';
 
-const areas: Record<string,string> = {gym:'Settings', members:'Members',plans:'Members',workouts:'Workout programs',sessions:'Sessions',attendance:'Attendance',staffAttendance:'Attendance',products:'Finance',trainers:'Workout programs',recurring:'Finance',transactions:'Finance'};
+const areas: Record<string,string> = {gym:'Profile', members:'Members',plans:'Members',workouts:'Workout programs',sessions:'Sessions',attendance:'Attendance',staffAttendance:'Attendance',products:'Products',trainers:'Workout programs',recurring:'Finance',transactions:'Finance'};
 const memberSchema = z.object({id:text,name:text,email:z.union([z.string().email().max(255),z.literal('')]),phone:z.string().max(30),plan:text,type:z.enum(['Limited','Unlimited']),start:z.string().date(),expiry:z.string().date(),sessionsTotal:z.number().int().min(0).max(999),sessionsLeft:z.number().int().min(0).max(999),trainer:z.string().max(100),notes:z.string().max(1000),clientId:z.string().uuid().optional(),memberQrId:z.string().uuid().optional(),planPrice:z.number().min(0).optional(),createdByName:z.string().max(100).optional()}).passthrough().refine(m=>m.expiry>=m.start,'End date must not precede start date');
 const attendanceSchema = z.object({id:text,name:text,role:z.string().max(100).optional(),date:z.string().date(),time:z.string().regex(/^\d{2}:\d{2}$/),memberId:z.string().optional(),staffId:z.string().uuid().optional(),method:z.enum(['QR','Manual'])});
 const schemas: Record<string,z.ZodTypeAny> = {products:productSchema,transactions:invoiceSchema,trainers:z.object({id:text,name:text,schedule:scheduleSchema.optional()}).passthrough(),plans:planSchema,workouts:programSchema,sessions:sessionSchema,recurring:recurringSchema,members:memberSchema,attendance:attendanceSchema,staffAttendance:attendanceSchema};
@@ -18,30 +18,46 @@ export const saveRecords = createServerFn({method:'POST'}).middleware([requireSu
  });
 
 export const lookupClient = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
- .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.union([z.string().uuid(),z.string().trim().email().max(255)])}).parse(input))
+ .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.string().trim().min(1).max(255)}).parse(input))
  .handler(async({data,context})=>{
   const {data:accessible}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Members'});if(!accessible)throw new Error('Gym access unavailable');
   const {data:owner,error:roleError}=await context.supabase.from('user_roles').select('id').eq('user_id',context.userId).eq('gym_id',data.gymId).eq('role','Owner').maybeSingle();
   if(roleError||!owner)throw new Error('Only gym owners can look up existing clients');
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
-  let query=supabaseAdmin.from('profiles').select('id,member_id,full_name,email,phone').in('account_type',['client','staff']);
-  query=data.memberId.includes('@')?query.eq('email',data.memberId.toLowerCase()):query.eq('member_id',data.memberId);
-  const {data:p,error}=await query.maybeSingle();
+  const value=data.memberId.replace(/^ironhaus:member:/,'');
+  let query=supabaseAdmin.from('profiles').select('id,member_id,full_name,email,phone').in('account_type',['client','staff']).is('disabled_at',null);
+  if(z.string().uuid().safeParse(value).success)query=query.or(`id.eq.${value},member_id.eq.${value}`);
+  else if(z.string().email().safeParse(value).success)query=query.ilike('email',value.replace(/[%_]/g,'\\$&'));
+  else query=query.ilike('full_name',value.replace(/[%_]/g,'\\$&'));
+  const {data:matches,error}=await query.limit(20);
   if(error)throw new Error('Client lookup failed. Please try again.');
-  if(!p)throw new Error('No existing client found with this Member ID or email');
+  if((matches?.length??0)>1)throw new Error('More than one account has this name. Use the intended user ID, QR code or email.');
+  const p=matches?.[0];
+  if(!p)throw new Error('No existing client found with this user ID, name, QR code or email');
   return p;
  });
 
 export const manageInvitation = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
- .inputValidator(input=>z.object({gymId:z.string().uuid(),action:z.enum(['create','resend','cancel']),id:z.string().uuid().optional(),name:text.optional(),email:z.string().trim().email().max(255).optional(),role:z.enum(['Admin','Reception','Trainer']).optional()}).parse(input))
+ .inputValidator(input=>z.object({gymId:z.string().uuid(),action:z.enum(['create','resend','cancel']),id:z.string().uuid().optional(),name:text.optional(),email:z.string().trim().email().max(255).optional(),userId:z.string().uuid().optional(),permissions:z.array(z.string().max(50)).optional(),role:z.enum(['Admin','Reception','Trainer']).optional()}).parse(input))
  .handler(async({data,context})=>{const {data:allowed}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Settings'}); const {data:owner}=await context.supabase.from('user_roles').select('id').eq('user_id',context.userId).eq('gym_id',data.gymId).eq('role','Owner').maybeSingle(); if(!allowed||!owner)throw new Error('Only gym owners can manage invitations'); const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
-  if(data.action==='create'){if(!data.name||!data.email||!data.role)throw new Error('Complete all invitation fields');const permissions=data.role==='Admin'?['Members','Attendance','Sessions','Payments','Finance','Workout programs']:data.role==='Reception'?['Members','Attendance','Sessions','Payments']:['Members','Workout programs']; const {error}=await supabaseAdmin.from('staff_invitations').upsert({gym_id:data.gymId,full_name:data.name,email:data.email.toLowerCase(),role:data.role,permissions}, {onConflict:'id'});if(error)throw new Error(error.code==='23505'?'An active invitation already exists for this email.':error.message);}
+  if(data.action==='create'){
+   if(!data.userId||!data.role)throw new Error('Look up and confirm an existing user');
+   const {data:person,error:personError}=await supabaseAdmin.from('profiles').select('id,full_name,email').eq('id',data.userId).in('account_type',['client','staff']).is('disabled_at',null).single();
+   if(personError||!person)throw new Error('Existing user unavailable');
+   const {data:existing}=await supabaseAdmin.from('user_roles').select('id').eq('gym_id',data.gymId).eq('user_id',person.id).maybeSingle();
+   if(existing)throw new Error('This user already has a role at this gym');
+   const pages=['Members','Attendance','Sessions','Finance','Workout programs','Settings','Products','Profile'];
+   const permissions=data.permissions??[];
+   if(permissions.some(p=>!pages.includes(p)&&!pages.some(a=>['create','edit','delete'].some(x=>p===`${a}:${x}`))))throw new Error('Invalid permission');
+   if(permissions.some(p=>p.includes(':')&&!permissions.includes(p.split(':')[0]??'')))throw new Error('Select page access before its actions');
+   const {error}=await supabaseAdmin.from('staff_invitations').insert({gym_id:data.gymId,full_name:person.full_name,email:person.email.toLowerCase(),invited_user_id:person.id,role:data.role,permissions});if(error)throw new Error(error.code==='23505'?'An active invitation already exists for this user.':error.message);
+  }
   else {if(!data.id)throw new Error('Invitation required');const {error}=await supabaseAdmin.from('staff_invitations').update(data.action==='cancel'?{status:'Cancelled'}:{expires_at:new Date(Date.now()+7*86400000).toISOString()}).eq('id',data.id).eq('gym_id',data.gymId).eq('status','Pending');if(error)throw new Error(error.message);}
   return {emailSent:false};
  });
 
 export const manageStaff = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
- .inputValidator(input=>z.object({gymId:z.string().uuid(),id:z.string().uuid(),remove:z.boolean(),role:z.enum(['Admin','Reception','Trainer']),permissions:z.array(z.enum(['Members','Attendance','Sessions','Payments','Finance','Workout programs','Settings'])),name:text,phone:z.string().max(30)}).parse(input))
+ .inputValidator(input=>z.object({gymId:z.string().uuid(),id:z.string().uuid(),remove:z.boolean(),role:z.enum(['Admin','Reception','Trainer']),permissions:z.array(z.string().refine(p=>['Members','Attendance','Sessions','Finance','Workout programs','Settings','Products','Profile'].some(a=>p===a||['create','edit','delete'].some(x=>p===`${a}:${x}`)))),name:text,phone:z.string().max(30)}).parse(input))
  .handler(async({data,context})=>{const {data:allowed}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Settings'});const {data:owner}=await context.supabase.from('user_roles').select('id').eq('user_id',context.userId).eq('gym_id',data.gymId).eq('role','Owner').maybeSingle(); if(!allowed||!owner)throw new Error('Only gym owners can manage staff');const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {error}=data.remove?await supabaseAdmin.from('user_roles').delete().eq('id',data.id).eq('gym_id',data.gymId).in('role',['Admin','Reception','Trainer']):await supabaseAdmin.from('user_roles').update({role:data.role,permissions:data.permissions,display_name:data.name,phone:data.phone}).eq('id',data.id).eq('gym_id',data.gymId).in('role',['Admin','Reception','Trainer']);if(error)throw new Error(error.message);return true;});
 
 export const getStaff = createServerFn({method:'POST'}).middleware([requireSupabaseAuth]).inputValidator(input=>z.object({gymId:z.string().uuid()}).parse(input)).handler(async({data,context})=>{const {data:ok}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Attendance'});const {data:owner}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Settings'});if(!ok&&!owner)throw new Error('Staff access required');const {supabaseAdmin}=await import('@/integrations/supabase/client.server');const {data:roles,error}=await supabaseAdmin.from('user_roles').select('*').eq('gym_id',data.gymId).neq('role','Client');if(error)throw new Error(error.message); const ids=(roles??[]).map(r=>r.user_id);if(!ids.length)return [];const {data:profiles}=await supabaseAdmin.from('profiles').select('id,full_name,email,phone').in('id',ids);return (roles??[]).map(r=>({id:r.id,userId:r.user_id,role:r.role,permissions:r.permissions,name:r.display_name||profiles?.find(p=>p.id===r.user_id)?.full_name||'',email:profiles?.find(p=>p.id===r.user_id)?.email??'',phone:r.phone||profiles?.find(p=>p.id===r.user_id)?.phone||''}));});

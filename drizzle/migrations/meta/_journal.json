@@ -148,6 +148,20 @@
       "when": 1792800633316,
       "tag": "0020_close_lifecycle_privileged_gaps",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1792802070611,
+      "tag": "0021_membership_staff_action_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1792802196905,
+      "tag": "0022_staff_snapshot_edit_action",
+      "breakpoints": true
     }
   ]
 }

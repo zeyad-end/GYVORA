@@ -5,7 +5,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { useStore, type StaffMember } from "@/lib/store";
 import { useCloud } from "@/components/CloudProvider";
-import { manageInvitation, manageStaff } from "@/lib/cloud.functions";
+import { manageInvitation, manageStaff, lookupClient } from "@/lib/cloud.functions";
+import { gymPages } from '@/lib/gym-permissions';
+import { QRScanner } from '@/components/QRScanner';
 import { invitationStatus } from "@/lib/validation";
 import { StaffAttendance } from "@/components/StaffAttendance";
 import { Button } from "@/components/ui/button";
@@ -33,19 +35,16 @@ export const Route = createFileRoute("/_gym/staff")({
   head: () => seo("Staff & roles", "Manage gym staff invitations, permissions and attendance."),
   component: Staff,
 });
-const areas = [
-  "Members",
-  "Attendance",
-  "Sessions",
-  "Payments",
-  "Finance",
-  "Workout programs",
-  "Settings",
-] as const;
+const areas = gymPages;
 function Staff() {
   const c = useCloud();
   const staff = useStore((s) => s.staff);
   const invite = useServerFn(manageInvitation);
+  const lookup = useServerFn(lookupClient);
+  const [query,setQuery]=useState('');
+  const [person,setPerson]=useState<{id:string;full_name:string;email:string}|null>(null);
+  const [scan,setScan]=useState(false);
+  async function find(value:string){setPerson(null);try{setPerson(await lookup({data:{gymId:c.gymId,memberId:value.trim()}}));}catch(e){toast.error(e instanceof Error?e.message:'User lookup failed');}}
   const edit = useServerFn(manageStaff);
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<StaffMember | null>(null);
@@ -106,6 +105,7 @@ function Staff() {
             <Button
               onClick={() => {
                 setEditing(null);
+                setPermissions([]);setPerson(null);setQuery('');
                 setOpen(true);
               }}
             >
@@ -254,10 +254,12 @@ function Staff() {
                         name: String(d.get("name")),
                         email: String(d.get("email")),
                         role: String(d.get("role")) as "Admin" | "Reception" | "Trainer",
+                        userId: person?.id,
+                        permissions,
                       },
                     });
                   toast.success(
-                    "Prototype invitation saved — no email sent. Staff access requires acceptance.",
+                    getDemoSession()?"Prototype invitation saved — no email sent.":"Invitation saved. Staff access requires acceptance.",
                   );
                   await load();
                 }
@@ -269,8 +271,9 @@ function Staff() {
               }
             }}
           >
+            {!editing&&!getDemoSession()&&<><QRScanner open={scan} onClose={()=>setScan(false)} onScan={value=>void find(value)}/><Field label="User ID, name, QR or email"><div className="flex gap-2"><Input aria-label="Staff user lookup" value={query} onChange={e=>{setQuery(e.target.value);setPerson(null);}}/><Button type="button" onClick={()=>void find(query)}>Look up</Button><Button type="button" variant="outline" onClick={()=>setScan(true)}>Scan QR</Button></div></Field>{person&&<p className="text-sm text-success">{person.full_name} · {person.email} · {person.id}</p>}</>}
             <Field label="Full Name">
-              <Input name="name" required maxLength={100} defaultValue={editing?.name} />
+              <Input key={person?.id??editing?.id??'name'} name="name" required maxLength={100} defaultValue={editing?.name??person?.full_name} readOnly={!editing&&!getDemoSession()} />
             </Field>
             <Field label="Email">
               <Input
@@ -278,8 +281,8 @@ function Staff() {
                 type="email"
                 required
                 maxLength={255}
-                defaultValue={editing?.email}
-                readOnly={Boolean(editing)}
+                key={person?.id??editing?.id??'email'} defaultValue={editing?.email??person?.email}
+                readOnly={Boolean(editing)||!getDemoSession()}
               />
             </Field>
             {editing && (
@@ -294,24 +297,25 @@ function Staff() {
                 ))}
               </select>
             </Field>
-            {editing && (
+            {(editing || !getDemoSession()) && (
               <fieldset className="grid grid-cols-2 gap-2">
                 <legend className="mb-2 text-sm">Permissions</legend>
                 {areas.map((a) => (
-                  <label key={a} className="flex items-center gap-2 text-sm">
+                  <div key={a} className="flex items-start gap-2 text-sm">
                     <input
                       type="checkbox"
+                      aria-label={a}
                       checked={permissions.includes(a)}
                       onChange={(e) =>
                         setPermissions(
                           e.target.checked
                             ? [...permissions, a]
-                            : permissions.filter((p) => p !== a),
+                            : permissions.filter((p) => p !== a && !p.startsWith(a+':')),
                         )
                       }
                     />
-                    {a}
-                  </label>
+                    <span>{a}<span className="mt-1 flex flex-wrap gap-2">{['create','edit','delete'].map(action=><label key={action} className="flex gap-1 text-xs"><input type="checkbox" aria-label={`${a} ${action}`} disabled={!permissions.includes(a)} checked={permissions.includes(`${a}:${action}`)} onChange={e=>setPermissions(e.target.checked?[...permissions,`${a}:${action}`]:permissions.filter(p=>p!==`${a}:${action}`))}/>{action}</label>)}</span></span>
+                  </div>
                 ))}
               </fieldset>
             )}
@@ -329,7 +333,7 @@ function Staff() {
               <Button type="button" variant="outline" onClick={() => setOpen(false)}>
                 Cancel
               </Button>
-              <Button disabled={busy}>
+              <Button disabled={busy||(!editing&&!getDemoSession()&&!person)}>
                 {busy ? "Saving…" : editing ? "Save" : "Send Invitation"}
               </Button>
             </DialogFooter>

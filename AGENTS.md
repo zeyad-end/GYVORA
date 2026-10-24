@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- Persisted staff page names grant read access and page:create/edit/delete grant independent actions in existing invitation/role permission arrays; database record triggers enforce actions, and member gym discovery includes owner-added memberships without manual directory links.
 - Gym lifecycle uses retained tombstones and a shared database entitlement predicate; dedicated owners are provider-banned after durable access revocation, while shared owners and membership history are preserved.
 - Local demo login remains destination-based without a login-mode selector; Cloud admin controls and contacts read durable shared records, while local lifecycle controls never mutate Cloud accounts.
 - Existing-client memberships reuse gym_records/client_id and historical snapshots; database uniqueness and owner/approved-gym guards enforce linking, while client-owned directory links never grant access. Shared summaries expose only gym approval/plan, never billing credentials or receipts. Client portal path exceptions match /member or /member/ exactly, not /members or /memberships.

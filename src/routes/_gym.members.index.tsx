@@ -11,6 +11,7 @@ import { useCloud } from '@/components/CloudProvider';
 import { GymSubscriptionStatus } from '@/components/GymSubscriptionStatus';
 import { membershipStatus } from '@/lib/membership-link';
 import { localDate } from '@/lib/gym-period';
+import { canChange } from '@/lib/gym-permissions';
 
 export const Route = createFileRoute("/_gym/members/")({
   head: () => seo("Members", "Search, filter and manage every member of your gym."),
@@ -30,7 +31,7 @@ function Members() {
     <>
       <MemberDialog open={open} onOpenChange={setOpen} member={editing} />
       <PageHeader title="Members" subtitle={`${members.length} members`}
-        actions={<><Button variant="secondary"><Download className="h-4 w-4" />Export</Button><Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Add Member</Button></>} />
+        actions={<><Button variant="secondary"><Download className="h-4 w-4" />Export</Button>{c.role==='Owner'&&<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Add Member</Button>}</>} />
       <div className="mb-5"><GymSubscriptionStatus gymId={c.gymId}/></div>
       <Panel>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row">
@@ -53,7 +54,7 @@ function Members() {
               <td className={`${td} text-right`}>
                 <div className="flex justify-end gap-1">
                   <Button asChild size="icon" variant="ghost"><Link to="/members/$id" params={{ id: m.id }} aria-label="View"><Eye className="h-4 w-4" /></Link></Button>
-                  <Button size="icon" variant="ghost" aria-label="Edit" onClick={() => { setEditing(storedMembers.find(x=>x.id===m.id)??null); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>
+                  {canChange(c.role,c.permissions,'Members','edit')&&<Button size="icon" variant="ghost" aria-label="Edit" onClick={() => { setEditing(storedMembers.find(x=>x.id===m.id)??null); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>}
                 </div>
               </td>
             </tr>

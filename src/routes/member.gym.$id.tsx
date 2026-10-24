@@ -1,4 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { useCloud } from '@/components/CloudProvider';
+import { supabase } from '@/integrations/supabase/client';
+import type { Json } from '@/integrations/supabase/types';
+import { copyProgram } from '@/lib/programs';
+import { saveDemoProgram, getDemoSession } from '@/lib/demo';
+import { toast } from 'sonner';
 import { useEffect, useState } from "react";
 import { ClientShell } from "@/components/ClientShell";
 import { Button } from "@/components/ui/button";
@@ -15,6 +21,7 @@ export const Route = createFileRoute("/member/gym/$id")({
   component: GymProfile,
 });
 function GymProfile() {
+  const c=useCloud();const navigate=useNavigate();const [busy,setBusy]=useState('');const [saved,setSaved]=useState<string[]>([]);
   const { id } = Route.useParams();
   const p = useClientGyms();
   const gym = p.accessible.find((g) => g.id === id);
@@ -42,13 +49,15 @@ function GymProfile() {
       ) : (
         <>
           <div className="mb-6 flex flex-wrap gap-2">
-            {["Gym Profile", "Workout Programs", "Products", "Trainers"].map((t) => (
+            {["Memberships", "Gym Profile", "Workout Programs", "Products", "Trainers"].map((t) => (
               <Button key={t} variant={tab === t ? "default" : "outline"} onClick={() => setTab(t)}>
                 {t}
               </Button>
             ))}
           </div>
           {error && <p role="alert">{error}</p>}
+          {c.gyms.some(g=>g.id===id)&&c.role!=='Client'&&<Button className="mb-5" variant="outline" onClick={async()=>{await c.selectGym(id);await navigate({to:'/workouts'});}}>Open staff workspace</Button>}
+          {tab==='Memberships'&&<div className="space-y-4">{p.memberships.filter(m=>m.gymId===id).map(m=><section key={m.id} className="border-b pb-4"><h2 className="font-semibold">{m.plan}</h2><p>{m.status} · {m.start} — {m.expiry}</p></section>)}{!p.memberships.some(m=>m.gymId===id)&&<p>No regular membership at this gym.</p>}</div>}
           {tab === "Gym Profile" && (
             <div className="space-y-4">
               <ExerciseImage path={gym.image} />
@@ -60,7 +69,7 @@ function GymProfile() {
             <div className="space-y-5">
               {content?.workouts.map((w, i) => (
                 <section key={i} className="border-b pb-4">
-                  <h2 className="text-lg font-semibold">{w.name}</h2>
+                  <div className="flex items-center justify-between gap-3"><h2 className="text-lg font-semibold">{w.name}</h2><Button disabled={busy===String(i)||saved.includes(String(i))} onClick={async()=>{if(!c.profile)return;setBusy(String(i));try{const copy=copyProgram(w);if(getDemoSession())saveDemoProgram(c.profile.id,copy);else{const {error}=await supabase.from('client_programs').insert({user_id:c.profile.id,definition:copy as unknown as Json});if(error)throw error;}setSaved(s=>[...s,String(i)]);toast.success('Saved to your personal workouts');}catch(e){toast.error(e instanceof Error?e.message:'Could not save workout');}finally{setBusy('');}}}>{saved.includes(String(i))?'Saved':'Save'}</Button></div>
                   {w.exercises.map((e, j) => (
                     <div key={j} className="flex items-center justify-between gap-3 py-2">
                       <div>

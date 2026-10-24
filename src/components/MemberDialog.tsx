@@ -1,5 +1,4 @@
 import { useServerFn } from "@tanstack/react-start";
-import { z } from "zod";
 import { lookupClient } from "@/lib/cloud.functions";
 import { useCloud } from "./CloudProvider";
 import { QRScanner } from "./QRScanner";
@@ -24,13 +23,13 @@ function statusFor(expiry: string): Member["status"] {
 
 export function MemberDialog({ open, onOpenChange, member }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null }) {
   const c=useCloud();const lookup=useServerFn(lookupClient);const [scan,setScan]=useState(false);const [memberId,setMemberId]=useState("");const [clientId,setClientId]=useState<string|undefined>();const [lookupBusy,setLookupBusy]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
-  async function findClient(value:string){const id=value.trim().replace(/^ironhaus:member:/,"");const v=z.union([z.string().uuid(),z.string().email()]).safeParse(id);if(!v.success){toast.error("Enter a valid Member ID, member QR or existing client email");return;}setLookupBusy(true);setClientId(undefined);try{const p=await lookup({data:{gymId:c.gymId,memberId:v.data}});assertUniqueClientMembership(getState().members,p.id,member?.id);up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setMemberId(p.member_id);toast.success("Client found. Confirm their details before saving.");}catch(e){toast.error(e instanceof Error?e.message:"Client not found");}finally{setLookupBusy(false);}}
+  async function findClient(value:string){const id=value.trim().replace(/^ironhaus:member:/,"");if(!id){toast.error("Enter a user ID, name, QR code or email");return;}setLookupBusy(true);setClientId(undefined);try{const p=await lookup({data:{gymId:c.gymId,memberId:id}});assertUniqueClientMembership(getState().members,p.id,member?.id);up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setMemberId(p.member_id);toast.success("Client found. Confirm their details before saving.");}catch(e){toast.error(e instanceof Error?e.message:"Client not found");}finally{setLookupBusy(false);}}
   const plans = useStore((s) => s.plans);
   const trainers = useStore((s) => s.trainers);
   const [f, setF] = useState(blank());
   useEffect(() => {
     if(open){setClientId(member?.clientId);setMemberId("");setError('');}
-    if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: member.start, expiry: member.expiry, trainer: member.trainer, notes: member.notes } : blank());
+    if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: member.start, expiry: member.expiry, trainer: member.trainer, notes: member.notes } : {...blank(),plan:plans[0]?.name??""});
   }, [open, member]);
   const up = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
 
@@ -39,6 +38,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
     if (f.expiry < f.start) { toast.error("End date must be after start date"); return; }
     setBusy(true);setError('');
     try {
+    if(!c.gymId.startsWith('demo-')&&!clientId)throw new Error('Look up and confirm an existing user before saving their membership.');
     assertUniqueClientMembership(getState().members,clientId,member?.id);
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
     const base = { ...f, ...(clientId?{clientId,memberQrId:memberId||member?.memberQrId}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
@@ -69,7 +69,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
         <DialogHeader><DialogTitle>{member ? "Edit member" : "Add member"}</DialogTitle></DialogHeader>
         <QRScanner open={scan} onClose={()=>setScan(false)} onScan={v=>void findClient(v)}/>
         <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
-          {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="Member ID or existing client email"><div className="flex gap-2"><Input aria-label="Member ID or existing client email" maxLength={255} value={memberId} onChange={e=>{setMemberId(e.target.value);setClientId(undefined);}}/><Button type="button" disabled={lookupBusy||busy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="text-sm text-success">Existing client linked · {f.name}</p>}</div>}
+          {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="User ID, name, QR code or email"><div className="flex gap-2"><Input aria-label="User ID, name, QR code or email" maxLength={255} value={memberId} onChange={e=>{setMemberId(e.target.value);setClientId(undefined);}}/><Button type="button" disabled={lookupBusy||busy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="text-sm text-success">Existing client linked · {f.name} · {f.email} · {clientId}</p>}</div>}
           <Field label="Full name" className="sm:col-span-2"><Input required maxLength={80} value={f.name} onChange={(e) => up({ name: e.target.value })} /></Field>
           <Field label="Phone number"><Input required={!clientId} maxLength={30} value={f.phone} onChange={(e) => up({ phone: e.target.value })} /></Field>
           <Field label="Email"><Input type="email" maxLength={120} value={f.email} onChange={(e) => up({ email: e.target.value })} /></Field>
