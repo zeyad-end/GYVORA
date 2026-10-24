@@ -13,6 +13,8 @@ import { initials } from "@/lib/mock";
 import { getState, saveState, useStore, type Member } from "@/lib/store";
 import { generateId } from "@/lib/utils";
 import { assertUniqueClientMembership } from '@/lib/membership-link';
+import { getDemoSession, lookupDemoClient } from '@/lib/demo';
+import { isGyvoraId } from '@/lib/gyvora-id';
 
 const blank = () => ({ name: "", phone: "", email: "", plan: "Basic", type: "Unlimited" as Member["type"], sessionsTotal: 20, start: new Date().toISOString().slice(0, 10), expiry: "", trainer: "", notes: "" });
 
@@ -24,7 +26,7 @@ function statusFor(expiry: string): Member["status"] {
 export function MemberDialog({ open, onOpenChange, member }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null }) {
   const c=useCloud();const lookup=useServerFn(lookupClient);const [scan,setScan]=useState(false);const [memberId,setMemberId]=useState("");const [clientId,setClientId]=useState<string|undefined>();const [lookupBusy,setLookupBusy]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   const [legacyQrId,setLegacyQrId]=useState<string>();
-  async function findClient(value:string, fromCamera=false){const id=value.trim().replace(/^ironhaus:member:/,"");if(!id){toast.error("Enter a GYVORA ID, name, QR code or email");return false;}setLookupBusy(true);setClientId(undefined);try{const p=await lookup({data:{gymId:c.gymId,memberId:id}});assertUniqueClientMembership(getState().members,p.id,member?.id);up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setLegacyQrId(p.member_id);setMemberId(p.gyvora_id??p.member_id);toast.success("Client found. Confirm their details before saving.");return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:"Client not found");return false;}finally{setLookupBusy(false);}}
+  async function findClient(value:string, fromCamera=false){const id=value.trim().replace(/^ironhaus:member:/,"");if(!id){toast.error("Enter a GYVORA ID, name, QR code or email");return false;}setLookupBusy(true);setClientId(undefined);try{const p=getDemoSession()?lookupDemoClient(c.gymId,id):await lookup({data:{gymId:c.gymId,memberId:id}});assertUniqueClientMembership(getState().members,p.id,member?.id);up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setLegacyQrId(p.member_id);setMemberId(p.gyvora_id??p.member_id);toast.success("Client found. Confirm their details before saving.");return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:"Client not found");return false;}finally{setLookupBusy(false);}}
   const plans = useStore((s) => s.plans);
   const trainers = useStore((s) => s.trainers);
   const [f, setF] = useState(blank());
@@ -42,7 +44,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
     if(!c.gymId.startsWith('demo-')&&!clientId)throw new Error('Look up and confirm an existing user before saving their membership.');
     assertUniqueClientMembership(getState().members,clientId,member?.id);
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
-    const base = { ...f, ...(clientId?{clientId,memberQrId:legacyQrId||member?.memberQrId}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
+    const base = { ...f, ...(clientId?{clientId,memberQrId:legacyQrId||member?.memberQrId,...(isGyvoraId(memberId)?{gyvoraId:memberId}:{})}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
       const left = f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0;
       await saveState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
