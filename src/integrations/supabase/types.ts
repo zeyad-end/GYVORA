@@ -466,6 +466,7 @@ export type Database = {
           full_name: string
           gym_id: string
           id: string
+          invited_user_id: string | null
           permissions: string[]
           role: string
           status: string
@@ -478,6 +479,7 @@ export type Database = {
           full_name: string
           gym_id: string
           id?: string
+          invited_user_id?: string | null
           permissions?: string[]
           role: string
           status?: string
@@ -490,6 +492,7 @@ export type Database = {
           full_name?: string
           gym_id?: string
           id?: string
+          invited_user_id?: string | null
           permissions?: string[]
           role?: string
           status?: string
@@ -507,6 +510,13 @@ export type Database = {
             columns: ["gym_id"]
             isOneToOne: false
             referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "staff_invitations_invited_user_id_fkey"
+            columns: ["invited_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -615,9 +625,14 @@ export type Database = {
         Returns: boolean
       }
       gym_access: { Args: { area?: string; g: string }; Returns: boolean }
+      gym_can_change: {
+        Args: { action: string; area: string; g: string }
+        Returns: boolean
+      }
       gym_operational: { Args: { g: string }; Returns: boolean }
       gym_subscription_summary: { Args: { g: string }; Returns: Json }
       is_super_admin: { Args: never; Returns: boolean }
+      my_staff_invitations: { Args: never; Returns: Json }
       otp_verified: { Args: never; Returns: boolean }
       owner_gate_state: { Args: never; Returns: Json }
       refresh_gym_expiration_events: {
