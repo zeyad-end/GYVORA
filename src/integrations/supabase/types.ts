@@ -249,6 +249,8 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
+          deletion_history: Json
+          deletion_note: string
           freeze_note: string
           frozen_at: string | null
           id: string
@@ -258,6 +260,8 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
+          deletion_history?: Json
+          deletion_note?: string
           freeze_note?: string
           frozen_at?: string | null
           id?: string
@@ -267,6 +271,8 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
+          deletion_history?: Json
+          deletion_note?: string
           freeze_note?: string
           frozen_at?: string | null
           id?: string
@@ -655,6 +661,10 @@ export type Database = {
       }
       save_gym_records: {
         Args: { changes: Json; g: string }
+        Returns: undefined
+      }
+      set_gym_deleted: {
+        Args: { deleted: boolean; g: string; note?: string }
         Returns: undefined
       }
       set_gym_frozen: {
