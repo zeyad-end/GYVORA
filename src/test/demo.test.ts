@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   matchDemoAccount, approveRequest, rejectRequest, editGym, setGymStatus, deleteGym,
   editClient, removeClientGym, deleteClient, getDemoState, periodRange, inRange,
-  registerDemoAccount, findDemoAccount, updateDemoAccount, getDemoAccounts, demoDestination, sessionKindFor,
+  registerDemoAccount, findDemoAccount, updateDemoAccount, getDemoAccounts, demoDestination, sessionKindFor, setDemoSession,
 } from "@/lib/demo";
 
 describe("demo accounts", () => {
@@ -62,12 +62,15 @@ describe("demo platform store", () => {
     editGym(gym.id, { name: gym.name, plan: gym.plan });
   });
 
-  it("deleting a gym removes only that gym", () => {
-    const gym = getDemoState().gyms[getDemoState().gyms.length - 1]!;
+  it("deleting a gym retains records and suspends only that gym", () => {
+    const gym = getDemoState().gyms.at(-1);
+    if(!gym)throw new Error('Missing test gym');
     const count = getDemoState().gyms.length;
+    setDemoSession('super');
     deleteGym(gym.id);
-    expect(getDemoState().gyms.length).toBe(count - 1);
-    expect(getDemoState().gyms.some((g) => g.id === gym.id)).toBe(false);
+    expect(getDemoState().gyms.length).toBe(count);
+    expect(getDemoState().gyms.find((g) => g.id === gym.id)?.deletedAt).toBeTruthy();
+    expect(getDemoState().gyms.filter(g=>g.deletedAt)).toHaveLength(1);
   });
 
   it("removing a client from one gym keeps their other memberships", () => {

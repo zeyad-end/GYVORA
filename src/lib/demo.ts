@@ -215,7 +215,7 @@ export type ApprovedGym = {
   durationDays?: number | undefined;
   notes?: string;
   freezeNote?: string;
-  deletedAt?: string;
+  deletedAt?: string | undefined;
   deletionNote?: string;
   deletionHistory?: {action:'deleted'|'restored';at:string;note:string}[];
 };
