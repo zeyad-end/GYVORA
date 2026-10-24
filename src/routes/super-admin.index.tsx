@@ -5,7 +5,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { Building2, CreditCard, Users, Wallet, TrendingUp, UserPlus } from 'lucide-react';
-import { useDemoStore, PERIODS, periodRange, inRange, platformTotals, type Period } from '@/lib/demo';
+import { useDemoStore, getDemoSession, PERIODS, periodRange, inRange, platformTotals, type Period } from '@/lib/demo';
+import { CloudGymRequests } from '@/components/CloudGymRequests';
 import { egp } from '@/lib/mock';
 import { seo } from '@/lib/seo';
 import { projectedSubscriptions } from '@/lib/platform-subscriptions';
@@ -16,6 +17,9 @@ export const Route = createFileRoute('/super-admin/')({
 });
 
 function PlatformDashboard() {
+  return getDemoSession()?<DemoPlatformDashboard/>:<CloudGymRequests/>;
+}
+function DemoPlatformDashboard() {
   const gyms = useDemoStore((s) => s.gyms);
   const clients = useDemoStore((s) => s.clients);
   const expenses = useDemoStore((s) => s.expenses);

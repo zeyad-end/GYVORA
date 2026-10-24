@@ -31,6 +31,7 @@ function Request() {
   const submit = useServerFn(requestSubscription);
   const startTrial = useServerFn(startOwnerTrial);
   const whatsapp = useDemoStore((s) => s.platformWhatsapp);
+  const [cloudWhatsapp,setCloudWhatsapp]=useState('');
   const requests = useDemoStore((s) => s.requests);
   const [cloudReq, setCloudReq] = useState<{ status: string; plan: string; gym: string; date: string } | null>(null);
   const [plan, setPlan] = useState('');
@@ -52,6 +53,7 @@ function Request() {
       void supabase.from('owner_requests').select('*').eq('user_id', c.profile.id).maybeSingle()
         .then(({ data }) => { const d = data as Record<string, unknown> | null; setCloudReq(d ? { status: String(d['status'] ?? ''), plan: String(d['plan'] ?? ''), gym: String(d['gym_name'] ?? d['name'] ?? ''), date: String(d['created_at'] ?? '').slice(0, 10) } : null); });
   }, [c.profile?.id]);
+  useEffect(()=>{if(!isDemoOwner&&c.profile)void supabase.from('platform_settings').select('whatsapp').eq('id',true).maybeSingle().then(({data})=>setCloudWhatsapp(data?.whatsapp??''));},[c.profile?.id,isDemoOwner]);
 
   async function onSend(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -101,8 +103,8 @@ function Request() {
   const contact = (
     <p className="flex items-center gap-2 text-sm text-muted-foreground">
       <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
-      {whatsapp ? (
-        <span>Questions about your request? <a className="text-primary" href={whatsappLink(whatsapp, waText)} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp.</a></span>
+      {(isDemoOwner?whatsapp:cloudWhatsapp) ? (
+        <span>Questions about your request? <a className="text-primary" href={whatsappLink(isDemoOwner?whatsapp:cloudWhatsapp, waText)} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp.</a></span>
       ) : (
         <span>Questions about your request? WhatsApp contact isn't set yet — the platform administrator can add the number in Platform Settings.</span>
       )}
