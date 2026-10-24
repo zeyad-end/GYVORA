@@ -417,7 +417,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     if (path.startsWith("/super-admin"))
       return <div className="p-12">Administrator access required.</div>;
     const acc = getDemoAccount();
-    if(acc?.deletedAt || getDemoState().gyms.some(g=>g.email===acc?.email&&g.status==='Frozen'))return <DemoOwnerGate logout={c.logout}>{children}</DemoOwnerGate>;
+    if(acc?.deletedAt || getDemoState().gyms.some(g=>g.email===acc?.email&&(g.deletedAt||g.status==='Frozen')))return <DemoOwnerGate logout={c.logout}>{children}</DemoOwnerGate>;
     if (
       acc &&
       !demoOwnerHasAccess(acc) &&
@@ -529,7 +529,7 @@ function OwnerGateBoundary({ children }: { children: ReactNode }) {
       </div>
     );
   if (!gate) return <div className="p-12 text-muted-foreground">Loading your account…</div>;
-  if(gate.deleted)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Account deactivated</h1><p className="mt-2 text-muted-foreground">This gym is disabled and can no longer be used.</p><Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
+  if(gate.deleted)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Gym account suspended</h1><p className="mt-2 text-muted-foreground">Your gym has been banned or suspended by the administrator. Gym features are unavailable until it is restored.</p>{gate.deletionNote?.trim()&&<p className="mt-4 whitespace-pre-wrap break-words text-sm">Reason: {gate.deletionNote}</p>}<Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
 
   const contact = (
     <p className="flex items-center gap-2 text-sm text-muted-foreground">
