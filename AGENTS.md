@@ -25,7 +25,7 @@
 - Product sales reuse gym product snapshots: stable IDs identify edits, stock-only forms preserve `sales`, sales controls change `qty` by the sold delta, totals are derived, and transition validation blocks insufficient stock and deletion of recorded sales.
 - Keep gym invoice records in the existing transaction snapshots and archive deletions; retained numbered records preserve the per-gym sequence while database guards prevent duplicate or changed numbers. Trainer schedules use optional weekly rows so legacy trainer details remain compatible.
 - Keep platform expenses, gym-scoped prototype invitations and workout assignment snapshots in the existing demo store, and session client selections keyed by gym; this preserves local persistence without granting Cloud access or mixing platform and gym finances.
-- Preserve the existing TanStack routes and UI kit; extend the existing store with authenticated Cloud persistence to avoid replacing working screens.
+- Preserve TanStack routes and the UI kit; project RPC middleware attaches refreshed provider tokens, private QR lookup requires a session, and scanners await lookup results so failures stay visible.
 - Store gym records under a gym ID with permission-enforced access; keep account profiles, gym role associations, invitations and approval requests in separate tables so editable profile data never grants access.
 - Real authentication uses provider password auth without OTP; `otp_verified()` remains an authenticated-session compatibility shim so existing RLS policies stay intact.
 - Prototype login uses isolated local demo sessions selected by destination, never provider authentication or account lookup; display preferences exclude passwords so fictional access cannot grant Cloud permissions.
