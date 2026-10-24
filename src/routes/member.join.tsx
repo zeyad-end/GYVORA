@@ -24,7 +24,7 @@ function Join() {
   const [scan, setScan] = useState(false);
   const [busy, setBusy] = useState("");
   const results = p.directory.filter(
-    (g) => !query || g.id === query || g.name.toLowerCase().includes(query.toLowerCase()),
+    (g) => !query || g.id === query || g.gyvoraId === query || g.name.toLowerCase().includes(query.toLowerCase()),
   );
   async function change(id: string, action: "join" | "leave") {
     if (
@@ -102,7 +102,7 @@ function Join() {
         onClose={() => setScan(false)}
         onScan={(value) => {
           const id = value.replace(/^ironhaus:gym:/, "");
-          if (!p.directory.some((g) => g.id === id)) {
+          if (!p.directory.some((g) => g.id === id || g.gyvoraId === id)) {
             toast.error("No matching Gym ID");
             return false;
           }

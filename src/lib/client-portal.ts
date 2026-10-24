@@ -12,6 +12,7 @@ import type { Member, Workout, Plan, Gym } from "./store";
 
 export type ClientGym = {
   id: string;
+  gyvoraId?: string;
   name: string;
   location: string;
   image: string;
