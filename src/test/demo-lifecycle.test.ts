@@ -32,4 +32,12 @@ describe('local gym lifecycle',()=>{
    expect(getDemoState().gyms.find(g=>g.id===gym.id)?.deletionHistory?.map(h=>h.action)).toEqual(['deleted','restored']);
    expect(getDemoState().gyms.find(g=>g.id===gym.id)?.deletionNote).toBe('Fictional suspension reason');
  });
+  it('restoration does not remove a separate Freeze restriction',()=>{
+   const gym=getDemoState().gyms.find(g=>g.email==='fictional-lifecycle@example.invalid');if(!gym)throw new Error('Test gym missing');
+   setDemoSession('super');setGymStatus(gym.id,'Frozen','Separate freeze reason');deleteGym(gym.id);restoreGym(gym.id);
+   expect(getDemoState().gyms.find(g=>g.id===gym.id)?.status).toBe('Frozen');
+   expect(getDemoState().gyms.find(g=>g.id===gym.id)?.freezeNote).toBe('Separate freeze reason');
+   expect(getDemoState().gyms.find(g=>g.id===gym.id)?.deletionHistory).toHaveLength(4);
+   setGymStatus(gym.id,'Active');
+  });
 });
