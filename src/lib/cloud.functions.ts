@@ -20,7 +20,7 @@ export const saveRecords = createServerFn({method:'POST'}).middleware([requireSu
  });
 
 export const lookupClient = createServerFn({method:'POST'}).middleware([requireLookupSession, requireSupabaseAuth])
- .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.string().trim().min(1).max(255)}).parse(input))
+ .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.string().trim().min(1).refine(v=>isGyvoraId(normalizeAccountLookup(v))||v.length<=255,'Lookup text is too long')}).parse(input))
  .handler(async({data,context})=>{
   const {data:accessible}=await context.supabase.rpc('gym_access',{g:data.gymId,area:'Members'});if(!accessible)throw new Error('Gym access unavailable');
   const {data:owner,error:roleError}=await context.supabase.from('user_roles').select('id').eq('user_id',context.userId).eq('gym_id',data.gymId).eq('role','Owner').maybeSingle();
@@ -28,7 +28,12 @@ export const lookupClient = createServerFn({method:'POST'}).middleware([requireL
   const {supabaseAdmin}=await import('@/integrations/supabase/client.server');
   const value=normalizeAccountLookup(data.memberId);
   let query=supabaseAdmin.from('profiles').select('id,member_id,gyvora_id,full_name,email,phone').in('account_type',['client','staff']).is('disabled_at',null);
-  if(isGyvoraId(value))query=query.eq('gyvora_id',value);
+  if(isGyvoraId(value)) {
+    const {data:reservation,error:reservationError}=await supabaseAdmin.from('gyvora_id_registry').select('account_id').eq('gyvora_id',value).eq('kind','C').maybeSingle();
+    if(reservationError)throw new Error('Client lookup failed. Please try again.');
+    if(!reservation)throw new Error('No existing client found with this GYVORA ID');
+    query=query.eq('id',reservation.account_id);
+  }
   else if(z.string().uuid().safeParse(value).success)query=query.or(`id.eq.${value},member_id.eq.${value}`);
   else if(z.string().email().safeParse(value).success)query=query.ilike('email',value.replace(/[%_]/g,'\\$&'));
   else query=query.ilike('full_name',value.replace(/[%_]/g,'\\$&'));
