@@ -20,7 +20,7 @@ function PlatformDashboard() {
   return getDemoSession()?<DemoPlatformDashboard/>:<CloudGymRequests/>;
 }
 function DemoPlatformDashboard() {
-  const gyms = useDemoStore((s) => s.gyms);
+  const gyms = useDemoStore((s) => s.gyms).filter(g=>!g.deletedAt);
   const clients = useDemoStore((s) => s.clients);
   const expenses = useDemoStore((s) => s.expenses);
   const [period, setPeriod] = useState<Period>('year');
