@@ -301,20 +301,21 @@ function Staff() {
               <fieldset className="grid grid-cols-2 gap-2">
                 <legend className="mb-2 text-sm">Permissions</legend>
                 {areas.map((a) => (
-                  <label key={a} className="flex items-center gap-2 text-sm">
+                  <div key={a} className="flex items-start gap-2 text-sm">
                     <input
                       type="checkbox"
+                      aria-label={a}
                       checked={permissions.includes(a)}
                       onChange={(e) =>
                         setPermissions(
                           e.target.checked
                             ? [...permissions, a]
-                            : permissions.filter((p) => p !== a),
+                            : permissions.filter((p) => p !== a && !p.startsWith(a+':')),
                         )
                       }
                     />
-                    <span>{a}<span className="mt-1 flex flex-wrap gap-2">{['create','edit','delete'].map(action=><label key={action} className="flex gap-1 text-xs"><input type="checkbox" disabled={!permissions.includes(a)} checked={permissions.includes(`${a}:${action}`)} onChange={e=>setPermissions(e.target.checked?[...permissions,`${a}:${action}`]:permissions.filter(p=>p!==`${a}:${action}`))}/>{action}</label>)}</span></span>
-                  </label>
+                    <span>{a}<span className="mt-1 flex flex-wrap gap-2">{['create','edit','delete'].map(action=><label key={action} className="flex gap-1 text-xs"><input type="checkbox" aria-label={`${a} ${action}`} disabled={!permissions.includes(a)} checked={permissions.includes(`${a}:${action}`)} onChange={e=>setPermissions(e.target.checked?[...permissions,`${a}:${action}`]:permissions.filter(p=>p!==`${a}:${action}`))}/>{action}</label>)}</span></span>
+                  </div>
                 ))}
               </fieldset>
             )}
