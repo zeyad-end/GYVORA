@@ -41,8 +41,8 @@ function Register() {
       if (p.account_type === 'individual') {
         if (!p.email) throw new Error('Email is required for a saved client account.');
         const file=d.get('photo');
-        const photo=file instanceof File && file.size ? await readFile(file) : '';
         if (file instanceof File && file.size && (!['image/jpeg','image/png','image/webp'].includes(file.type) || file.size > 750000)) throw new Error('Choose a JPG, PNG or WebP photo under 750 KB.');
+        const photo=file instanceof File && file.size ? await readFile(file) : '';
         const {data,error}=await supabase.auth.signUp({email:p.email,password:p.password,options:{emailRedirectTo:window.location.origin+'/client-sign-in',data:{full_name:p.full_name,phone:p.phone,photo,account_type:'client'}}});
         if(error)throw new Error(error.message);
         setDemoSession(null);

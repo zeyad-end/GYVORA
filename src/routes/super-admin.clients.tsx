@@ -11,7 +11,7 @@ import { getDemoSession } from '@/lib/demo';
 import { seo } from '@/lib/seo';
 
 export const Route = createFileRoute('/super-admin/clients')({
-  head: () => seo('Clients', 'Fictional client accounts across platform gyms.'),
+  head: () => seo('Clients', 'Review and manage saved GYVORA client profiles and account access.'),
   component: Clients,
 });
 
