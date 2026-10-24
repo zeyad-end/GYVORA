@@ -10,8 +10,8 @@ import { Button } from "@/components/ui/button";
 import type { Workout } from "@/lib/store";
 import { toast } from "sonner";
 import { seo } from "@/lib/seo";
-import { getDemoSession, saveDemoProgram } from "@/lib/demo";
-import { copyProgram } from "@/lib/programs";
+import { getDemoSession, getDemoState, saveDemoProgram } from "@/lib/demo";
+import { personalGymCopy, workoutSourceId, hasGymSource } from "@/lib/workout-sources";
 import { clientGymContent, useClientGyms } from "@/lib/client-portal";
 export const Route = createFileRoute("/member/browse")({
   head: () =>
@@ -63,7 +63,8 @@ function Browse() {
           </h2>
           <div className="space-y-8">
             {rows.map((w, i) => {
-              const key = selected + ":" + i;
+              const source = workoutSourceId(w);
+              const key = selected + ":" + source;
               return (
                 <section key={key} className="border-b pb-6">
                   <h3 className="text-lg font-semibold">{w.name}</h3>
@@ -86,16 +87,20 @@ function Browse() {
                       if (!c.profile) return;
                       setBusy(key);
                       try {
-                        const independent = copyProgram(w);
-                        if (getDemoSession()) saveDemoProgram(c.profile.id, independent);
+                        const independent = personalGymCopy(w, selected);
+                        if (getDemoSession()) {
+                          if (!getDemoState().programs.some(r => r.user_id===c.profile?.id && hasGymSource(r.definition, selected, source))) saveDemoProgram(c.profile.id, independent);
+                        }
                         else {
                           const { error } = await supabase
                             .from("client_programs")
                             .insert({
                               user_id: c.profile.id,
                               definition: independent as unknown as Json,
+                              source_gym_id: selected,
+                              source_workout_id: source,
                             });
-                          if (error) throw error;
+                          if (error && error.code !== "23505") throw error;
                         }
                         setSaved((s) => [...s, key]);
                         toast.success("Program saved to your personal workouts");

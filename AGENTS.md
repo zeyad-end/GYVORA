@@ -10,6 +10,7 @@
 <!-- LOVABLE:END -->
 
 ## Application architecture
+- User gym browsing uses the existing safe content RPC and a dashboard-styled client workspace; public projections never include management data or grant membership. Personal workout saves keep source gym/plan keys with a per-user unique index, while editable definitions remain independent.
 - Persisted staff page names grant read access and page:create/edit/delete grant independent actions in existing invitation/role permission arrays; database record triggers enforce actions, and member gym discovery includes owner-added memberships without manual directory links.
 - Gym lifecycle uses retained tombstones and a shared database entitlement predicate; dedicated owners are provider-banned after durable access revocation, while shared owners and membership history are preserved.
 - Local demo login remains destination-based without a login-mode selector; Cloud admin controls and contacts read durable shared records, while local lifecycle controls never mutate Cloud accounts.

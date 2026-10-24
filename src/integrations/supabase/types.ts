@@ -94,6 +94,8 @@ export type Database = {
           created_at: string
           definition: Json
           id: string
+          source_gym_id: string | null
+          source_workout_id: string | null
           user_id: string
         }
         Insert: {
@@ -101,6 +103,8 @@ export type Database = {
           created_at?: string
           definition: Json
           id?: string
+          source_gym_id?: string | null
+          source_workout_id?: string | null
           user_id: string
         }
         Update: {
@@ -108,6 +112,8 @@ export type Database = {
           created_at?: string
           definition?: Json
           id?: string
+          source_gym_id?: string | null
+          source_workout_id?: string | null
           user_id?: string
         }
         Relationships: [

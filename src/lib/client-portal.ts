@@ -8,7 +8,7 @@ import {
   readDemoGym,
   rememberDemoMemberships,
 } from "./demo";
-import type { Member, Workout } from "./store";
+import type { Member, Workout, Plan, Gym } from "./store";
 
 export type ClientGym = {
   id: string;
@@ -169,28 +169,26 @@ export function useClientGyms() {
   return { directory, links, joined, accessible, memberships, error, change };
 }
 export type ClientGymContent = {
+  profile: Partial<Gym> & {currency?: string};
+  plans: Plan[];
   workouts: Workout[];
-  products: { name: string; price: number; image?: string | undefined }[];
-  trainers: { name: string; specialty: string; bio: string; image?: string | undefined }[];
+  products: { id?: string; name: string; price: number; category?: string; image?: string | undefined }[];
+  trainers: {name: string; specialty: string; bio: string; image?: string | undefined; notes?: string | undefined}[];
 };
 export async function clientGymContent(id: string): Promise<ClientGymContent> {
   if (getDemoSession()) {
-    const { getDemoSessionInfo } = await import("./demo");
-    const userId = demoUserId(getDemoSessionInfo()?.email ?? "");
-    if (
-      !readClientLinks(userId).some((l) => l.gymId === id) &&
-      !demoMemberships(userId).some((m) => m.gymId === id) &&
-      !getDemoState().staffRoles.some((r) => r.userId === userId && r.gymId === id)
-    )
-      throw new Error("Join this gym to view its client pages");
+    if (!demoDirectory().some(g => g.id === id)) throw new Error("This gym is unavailable");
     const s = readDemoGym(id, id === "demo-gym");
     return {
+      profile: s.gym,
+      plans: s.plans,
       workouts: s.workouts,
       products: s.products.map((p) => ({ name: p.name, price: p.price, image: p.image })),
       trainers: s.trainers.map((t) => ({
         name: t.name,
         specialty: t.specialty,
         bio: t.bio,
+        notes: t.notes,
         image: t.image,
       })),
     };

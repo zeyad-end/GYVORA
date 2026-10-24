@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { initials } from "@/lib/mock";
-import type { Trainer } from "@/lib/store";
 
-export function TrainerAvatar({ t, size = "h-12 w-12" }: { t: Trainer; size?: string }) {
+export function TrainerAvatar({ t, size = "h-12 w-12" }: { t: {name: string; image?: string | undefined}; size?: string }) {
   const [failedImage, setFailedImage] = useState<string | null>(null);
   const name = t.name?.trim() || "Trainer";
   return t.image && failedImage !== t.image ? (
