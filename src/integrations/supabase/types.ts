@@ -126,6 +126,27 @@ export type Database = {
           },
         ]
       }
+      demo_gyvora_identity_keys: {
+        Row: {
+          account_id: string
+          installation_id: string
+          kind: string
+          local_key: string
+        }
+        Insert: {
+          account_id?: string
+          installation_id: string
+          kind: string
+          local_key: string
+        }
+        Update: {
+          account_id?: string
+          installation_id?: string
+          kind?: string
+          local_key?: string
+        }
+        Relationships: []
+      }
       gym_owner_event_status: {
         Row: {
           dismissed_at: string | null
@@ -700,6 +721,10 @@ export type Database = {
       refresh_gym_expiration_events: {
         Args: { day: string; g: string }
         Returns: undefined
+      }
+      reserve_demo_gyvora_ids: {
+        Args: { identities: Json; installation: string }
+        Returns: Json
       }
       respond_invitation: {
         Args: { accept: boolean; invitation_id: string }
