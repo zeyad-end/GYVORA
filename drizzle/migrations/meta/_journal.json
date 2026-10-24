@@ -127,6 +127,13 @@
       "when": 1792798743833,
       "tag": "0017_migration",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1792800203553,
+      "tag": "0018_gym_lifecycle_access",
+      "breakpoints": true
     }
   ]
 }
