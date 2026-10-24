@@ -45,19 +45,20 @@ function Members() {
             ))}
           </div>
         </div>
-        <DataTable head={["Member", "Phone", "Plan", "Sessions left", "Expires", "Status", ""]}>
+        <DataTable head={["Member", "Phone", "Plan", "Trainer", "Sessions left", "Expires", "Status", ""]}>
           {rows.map((m) => (
             <tr key={m.id}>
               <td className={td}><div className="flex items-center gap-3"><Avatar initials={m.initials} size="sm" /><div><div className="font-medium">{m.name}</div><div className="break-all text-xs text-muted-foreground">{m.gyvoraId??m.id}</div></div></div></td>
               <td className={`${td} text-muted-foreground`}>{m.phone}</td>
               <td className={td}>{m.plan}</td>
+              <td className={`${td} text-muted-foreground`}>{m.trainer || "—"}</td>
               <td className={td}>{m.type === "Limited" ? <span className={m.sessionsLeft === 0 ? "text-destructive" : "text-primary"}>{m.sessionsLeft} / {m.sessionsTotal}</span> : <span className="text-muted-foreground">Unlimited</span>}</td>
               <td className={`${td} text-muted-foreground`}>{m.expiry}</td>
               <td className={td}><StatusPill status={m.status} /></td>
               <td className={`${td} text-right`}>
                 <div className="flex justify-end gap-1">
-                  <Button asChild size="icon" variant="ghost"><Link to="/members/$id" params={{ id: m.id }} aria-label="View"><Eye className="h-4 w-4" /></Link></Button>
-                  {canChange(c.role,c.permissions,'Members','edit')&&<Button size="icon" variant="ghost" aria-label="Edit" onClick={() => { setEditing(storedMembers.find(x=>x.id===m.id)??null); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>}
+                  {canChange(c.role,c.permissions,'Members','edit')&&<Button size="icon" variant="ghost" aria-label="Edit" onClick={() => { setRenewing(false); setEditing(storedMembers.find(x=>x.id===m.id)??null); setOpen(true); }}><Pencil className="h-4 w-4" /></Button>}
+                  {canChange(c.role,c.permissions,'Members','edit')&&m.status==="Expired"&&<Button size="icon" variant="ghost" aria-label="Renew" onClick={() => { setRenewing(true); setEditing(storedMembers.find(x=>x.id===m.id)??null); setOpen(true); }}><RefreshCw className="h-4 w-4" /></Button>}
                 </div>
               </td>
             </tr>
