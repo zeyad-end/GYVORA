@@ -46,6 +46,7 @@ export type Plan = {
   id: string;
   name: string;
   duration: string;
+  durationMonths?: number;
   price: number;
   features: string[];
   featured?: boolean;

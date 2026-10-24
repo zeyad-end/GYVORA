@@ -2,7 +2,7 @@ import { z } from 'zod';
 export const text = z.string().trim().min(1).max(100);
 export const exerciseSchema = z.object({ name: text, sets: z.number().int().min(1).max(100), reps: z.string().trim().min(1).max(30), image: z.string().max(8000).optional() });
 export const programSchema = z.object({ id: z.string().optional(), name: text, trainer: z.string().max(100).default(''), notes: z.string().max(1000).default(''), exercises: z.array(exerciseSchema).min(1) });
-export const planSchema = z.object({ id: text, name: text, duration: text, price: z.number().finite().min(0), features: z.array(z.string().trim().min(1).max(100)), featured: z.boolean().optional() });
+export const planSchema = z.object({ id: text, name: text, duration: text, durationMonths: z.number().int().positive().max(Number.MAX_SAFE_INTEGER).optional(), price: z.number().finite().min(0), features: z.array(z.string().trim().min(1).max(100)), featured: z.boolean().optional() });
 export const sessionSchema = z.object({ id: text, name: text, trainer: z.string().max(100), price: z.number().finite().min(0), date: z.string().date(), type: text, method: text, memberId: z.string().optional() });
 export const recurringSchema = z.object({ id: text, name: text, category: text, frequency: z.enum(['Weekly','Monthly','Yearly','Custom']), next: z.string().date(), start: z.string().date(), amount: z.number().finite().positive() });
 export function nextPayment(frequency: string, from = new Date()) {
