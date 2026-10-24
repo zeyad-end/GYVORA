@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QRScanner } from "@/components/QRScanner";
 import { DataTable, PageHeader, Panel, td } from "@/components/kit";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MemberDialog } from "@/components/MemberDialog";
 import { toast } from "sonner";
 import { seo } from "@/lib/seo";
 import { useServerFn } from "@tanstack/react-start";
