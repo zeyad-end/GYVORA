@@ -1,6 +1,6 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
+import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
-import { Download, Plus, Eye, Pencil } from "lucide-react";
+import { Download, Plus, Pencil, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, DataTable, PageHeader, Panel, StatusPill, td } from "@/components/kit";
@@ -28,10 +28,11 @@ function Members() {
   const members=storedMembers.map(m=>({...m,status:membershipStatus(m,localDate())}));
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
+  const [renewing, setRenewing] = useState(false);
   const rows = members.filter((m) => (f === "All" || m.status === f) && (m.name + m.phone + (m.gyvoraId??'')).toLowerCase().includes(q.toLowerCase()));
   return (
     <>
-      <MemberDialog open={open} onOpenChange={setOpen} member={editing} />
+      <MemberDialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) setRenewing(false); }} member={editing} renew={renewing} />
       <PageHeader title="Members" subtitle={`${members.length} members`}
         actions={<><Button variant="secondary"><Download className="h-4 w-4" />Export</Button>{c.role==='Owner'&&<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Add Member</Button>}</>} />
       <div className="mb-5"><GymSubscriptionStatus gymId={c.gymId}/></div>
