@@ -134,6 +134,13 @@
       "when": 1792800203553,
       "tag": "0018_gym_lifecycle_access",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1792800213871,
+      "tag": "0019_allow_admin_account_lifecycle",
+      "breakpoints": true
     }
   ]
 }
