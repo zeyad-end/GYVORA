@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { QRScanner } from "@/components/QRScanner";
 import { DataTable, PageHeader, Panel, td } from "@/components/kit";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { MemberDialog } from "@/components/MemberDialog";
 import { toast } from "sonner";
 import { seo } from "@/lib/seo";
 import { useServerFn } from "@tanstack/react-start";
@@ -29,6 +31,8 @@ function Attendance() {
   const filtered = filterGymPeriod([...list, ...staffList], gymRange(period, new Date(), custom)).sort((a,b) => `${b.date} ${b.time}`.localeCompare(`${a.date} ${a.time}`));
   const [q, setQ] = useState("");
   const [scan, setScan] = useState(false);
+  const [expired, setExpired] = useState<Member | null>(null);
+  const [renewOpen, setRenewOpen] = useState(false);
   async function check(m: Member, method: "QR" | "Manual") {
     if (new Date(m.expiry + "T23:59:59").getTime() < Date.now()) {
       toast.error("Membership has expired");
@@ -93,6 +97,27 @@ function Attendance() {
           <p className="py-6 text-sm text-muted-foreground">No check-ins in this period.</p>
         )}
       </Panel>
+      <Dialog open={!!expired && !renewOpen} onOpenChange={(v) => { if (!v) setExpired(null); }}>
+        <DialogContent>
+          <DialogHeader><DialogTitle>Membership expired</DialogTitle></DialogHeader>
+          <p className="break-words">{expired?.name}'s membership expired on {expired?.expiry}. Renew it to record their check-in.</p>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setExpired(null)}>Cancel</Button>
+            <Button onClick={() => setRenewOpen(true)}>Renew</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <MemberDialog
+        open={renewOpen && !!expired}
+        onOpenChange={(v) => { setRenewOpen(v); if (!v) setExpired(null); }}
+        member={expired}
+        renew
+        onSaved={(updated) => {
+          setRenewOpen(false);
+          setExpired(null);
+          void check(updated, "QR");
+        }}
+      />
       <QRScanner
         open={scan}
         onClose={() => setScan(false)}
@@ -112,6 +137,10 @@ function Attendance() {
           if (!m) {
             toast.error("Member QR is not linked to this gym.");
             return false;
+          }
+          if (new Date(m.expiry + "T23:59:59").getTime() < Date.now()) {
+            setExpired(m);
+            return true;
           }
           return await check(m, "QR");
         }}

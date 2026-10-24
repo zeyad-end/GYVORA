@@ -23,7 +23,7 @@ function statusFor(expiry: string): Member["status"] {
   return d < 0 ? "Expired" : d <= 14 ? "Expiring" : "Active";
 }
 
-export function MemberDialog({ open, onOpenChange, member }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null }) {
+export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { open: boolean; onOpenChange: (o: boolean) => void; member?: Member | null; renew?: boolean; onSaved?: (m: Member) => void }) {
   const c=useCloud();const lookup=useServerFn(lookupClient);const [scan,setScan]=useState(false);const [memberId,setMemberId]=useState("");const [clientId,setClientId]=useState<string|undefined>();const [lookupBusy,setLookupBusy]=useState(false);const [busy,setBusy]=useState(false);const [error,setError]=useState('');
   const [legacyQrId,setLegacyQrId]=useState<string>();
   async function findClient(value:string, fromCamera=false){const id=value.trim().replace(/^ironhaus:member:/,"");if(!id){toast.error("Enter a GYVORA ID, name, QR code or email");return false;}setLookupBusy(true);setClientId(undefined);try{const p=getDemoSession()?lookupDemoClient(c.gymId,id):await lookup({data:{gymId:c.gymId,memberId:id}});assertUniqueClientMembership(getState().members,p.id,member?.id);up({name:p.full_name,email:p.email,phone:p.phone});setClientId(p.id);setLegacyQrId(p.member_id);setMemberId(p.gyvora_id??p.member_id);toast.success("Client found. Confirm their details before saving.");return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:"Client not found");return false;}finally{setLookupBusy(false);}}
@@ -32,8 +32,8 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
   const [f, setF] = useState(blank());
   useEffect(() => {
     if(open){setClientId(member?.clientId);setLegacyQrId(member?.memberQrId);setMemberId("");setError('');}
-    if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: member.start, expiry: member.expiry, trainer: member.trainer, notes: member.notes } : {...blank(),plan:plans[0]?.name??""});
-  }, [open, member]);
+    if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: renew ? new Date().toISOString().slice(0, 10) : member.start, expiry: renew ? "" : member.expiry, trainer: member.trainer, notes: member.notes } : {...blank(),plan:plans[0]?.name??""});
+  }, [open, member, renew]);
   const up = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
 
   const save = async (e: React.FormEvent) => {
@@ -46,15 +46,16 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
     const base = { ...f, ...(clientId?{clientId,memberQrId:legacyQrId||member?.memberQrId,...(isGyvoraId(memberId)?{gyvoraId:memberId}:{})}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
-      const left = f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0;
-      await saveState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
-      
+      const left = renew ? total : (f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0);
+      const updated = { ...member, ...base, sessionsLeft: Math.max(0, left) };
+      await saveState((s) => ({ members: s.members.map((m) => m.id === member.id ? updated : m) }));
+      onSaved?.(updated);
     } else {
       const id = generateId();
       await saveState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
       
     }
-    toast.success(member?'Membership updated':'Membership saved');onOpenChange(false);
+    toast.success(renew?'Membership renewed':member?'Membership updated':'Membership saved');onOpenChange(false);
     } catch(e) {setError(e instanceof Error?e.message:'Could not save membership. Please try again.');} finally {setBusy(false);}
   };
 
@@ -69,7 +70,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-h-[90vh] max-w-xl overflow-y-auto">
-        <DialogHeader><DialogTitle>{member ? "Edit member" : "Add member"}</DialogTitle></DialogHeader>
+        <DialogHeader><DialogTitle>{renew ? "Renew membership" : member ? "Edit member" : "Add member"}</DialogTitle></DialogHeader>
         <QRScanner open={scan} onClose={()=>setScan(false)} onScan={v=>findClient(v,true)}/>
         <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
           {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="GYVORA ID, name, QR code or email"><div className="flex gap-2"><Input aria-label="GYVORA ID, name, QR code or email" value={memberId} onChange={e=>{setMemberId(e.target.value);setClientId(undefined);}}/><Button type="button" disabled={lookupBusy||busy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="break-words text-sm text-success">Confirm existing client · {f.name} · {f.email||'Email not provided'} · {f.phone||'Phone not provided'} · {memberId}</p>}</div>}
@@ -91,9 +92,9 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
           <Field label="Trainer" className="sm:col-span-2"><select className={selectCls} value={f.trainer} onChange={(e) => up({ trainer: e.target.value })}><option value="">No trainer</option>{trainers.map((t) => <option key={t.id}>{t.name}</option>)}</select></Field>
           <Field label="Notes" className="sm:col-span-2"><Textarea maxLength={500} value={f.notes} onChange={(e) => up({ notes: e.target.value })} /></Field>
           <DialogFooter className="gap-2 sm:col-span-2">
-            {member && <Button type="button" disabled={busy} variant="destructive" className="sm:mr-auto" onClick={()=>void remove()}>Delete member</Button>}
+            {member && !renew && <Button type="button" disabled={busy} variant="destructive" className="sm:mr-auto" onClick={()=>void remove()}>Delete member</Button>}
             <Button type="button" disabled={busy} variant="secondary" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={busy||lookupBusy||!plans.length}>{busy?'Saving…':member ? "Save changes" : "Save"}</Button>
+            <Button type="submit" disabled={busy||lookupBusy||!plans.length}>{busy?'Saving…':renew ? "Renew" : member ? "Save changes" : "Save"}</Button>
           </DialogFooter>
           {error&&<p role="alert" className="text-sm text-destructive sm:col-span-2">{error}</p>}
         </form>
