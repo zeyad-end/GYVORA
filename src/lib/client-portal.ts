@@ -13,7 +13,7 @@ import { demoIdentity } from './demo-identities';
 
 export type ClientGym = {
   id: string;
-  gyvoraId?: string;
+  gyvoraId?: string | undefined;
   name: string;
   location: string;
   image: string;
