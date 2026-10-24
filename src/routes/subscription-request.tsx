@@ -104,7 +104,7 @@ function Request() {
     <p className="flex items-center gap-2 text-sm text-muted-foreground">
       <MessageCircle className="h-4 w-4 shrink-0 text-primary" />
       {(isDemoOwner?whatsapp:cloudWhatsapp) ? (
-        <span>Questions about your request? <a className="text-primary" href={whatsappLink(isDemoOwner?whatsapp:cloudWhatsapp, waText)} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp.</a></span>
+        <span>Questions about your request? <a className="text-primary" href={whatsappLink((isDemoOwner?whatsapp:cloudWhatsapp)??'', waText)} target="_blank" rel="noopener noreferrer">Contact us on WhatsApp.</a></span>
       ) : (
         <span>Questions about your request? WhatsApp contact isn't set yet — the platform administrator can add the number in Platform Settings.</span>
       )}
