@@ -46,9 +46,10 @@ export function MemberDialog({ open, onOpenChange, member, renew, onSaved }: { o
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
     const base = { ...f, ...(clientId?{clientId,memberQrId:legacyQrId||member?.memberQrId,...(isGyvoraId(memberId)?{gyvoraId:memberId}:{})}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
-      const left = f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0;
-      await saveState((s) => ({ members: s.members.map((m) => m.id === member.id ? { ...m, ...base, sessionsLeft: Math.max(0, left) } : m) }));
-      
+      const left = renew ? total : (f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0);
+      const updated = { ...member, ...base, sessionsLeft: Math.max(0, left) };
+      await saveState((s) => ({ members: s.members.map((m) => m.id === member.id ? updated : m) }));
+      onSaved?.(updated);
     } else {
       const id = generateId();
       await saveState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
