@@ -29,7 +29,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
   const [f, setF] = useState(blank());
   useEffect(() => {
     if(open){setClientId(member?.clientId);setMemberId("");setError('');}
-    if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: member.start, expiry: member.expiry, trainer: member.trainer, notes: member.notes } : blank());
+    if (open) setF(member ? { name: member.name, phone: member.phone, email: member.email, plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, start: member.start, expiry: member.expiry, trainer: member.trainer, notes: member.notes } : {...blank(),plan:plans[0]?.name??""});
   }, [open, member]);
   const up = (p: Partial<typeof f>) => setF((x) => ({ ...x, ...p }));
 
@@ -69,7 +69,7 @@ export function MemberDialog({ open, onOpenChange, member }: { open: boolean; on
         <DialogHeader><DialogTitle>{member ? "Edit member" : "Add member"}</DialogTitle></DialogHeader>
         <QRScanner open={scan} onClose={()=>setScan(false)} onScan={v=>void findClient(v)}/>
         <form onSubmit={save} className="grid gap-4 sm:grid-cols-2">
-          {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="Member ID or existing client email"><div className="flex gap-2"><Input aria-label="Member ID or existing client email" maxLength={255} value={memberId} onChange={e=>{setMemberId(e.target.value);setClientId(undefined);}}/><Button type="button" disabled={lookupBusy||busy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="text-sm text-success">Existing client linked · {f.name}</p>}</div>}
+          {!member&&<div className="space-y-3 border-b pb-4 sm:col-span-2"><Button type="button" variant="secondary" onClick={()=>setScan(true)}>Scan Member QR</Button><Field label="User ID, name, QR code or email"><div className="flex gap-2"><Input aria-label="User ID, name, QR code or email" maxLength={255} value={memberId} onChange={e=>{setMemberId(e.target.value);setClientId(undefined);}}/><Button type="button" disabled={lookupBusy||busy} onClick={()=>void findClient(memberId)}>{lookupBusy?"Finding…":"Look up"}</Button></div></Field><Button type="button" variant="link" className="px-0" onClick={()=>{setClientId(undefined);setMemberId("");up({name:"",email:"",phone:""});}}>Manual entry</Button>{clientId&&<p className="text-sm text-success">Existing client linked · {f.name} · {f.email} · {clientId}</p>}</div>}
           <Field label="Full name" className="sm:col-span-2"><Input required maxLength={80} value={f.name} onChange={(e) => up({ name: e.target.value })} /></Field>
           <Field label="Phone number"><Input required={!clientId} maxLength={30} value={f.phone} onChange={(e) => up({ phone: e.target.value })} /></Field>
           <Field label="Email"><Input type="email" maxLength={120} value={f.email} onChange={(e) => up({ email: e.target.value })} /></Field>

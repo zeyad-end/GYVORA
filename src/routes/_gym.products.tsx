@@ -26,6 +26,8 @@ import {
 } from "@/lib/product-sales";
 import { seo } from "@/lib/seo";
 import { generateId } from "@/lib/utils";
+import { useCloud } from "@/components/CloudProvider";
+import { canChange } from "@/lib/gym-permissions";
 
 export const Route = createFileRoute("/_gym/products")({
   head: () =>
@@ -135,6 +137,7 @@ function SoldQuantity({
   );
 }
 function Products() {
+  const c=useCloud();const may=(a:"create"|"edit"|"delete")=>canChange(c.role,c.permissions,"Products",a);
   const products = useStore((s) => s.products);
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<Product | null>(null);
@@ -192,7 +195,7 @@ function Products() {
       <PageHeader
         title="Products & inventory"
         actions={
-          <Button onClick={() => openForm(null)} disabled={busy}>
+          <Button disabled={busy||!may('create')} onClick={() => openForm(null)}>
             <Plus className="h-4 w-4" />
             Add Product
           </Button>
@@ -229,7 +232,7 @@ function Products() {
                   variant="ghost"
                   title="Edit product and stock"
                   aria-label={`Edit available ${p.name}`}
-                  disabled={busy}
+                  disabled={busy||!may('edit')}
                   onClick={(e) => {
                     e.stopPropagation();
                     openForm(p);
@@ -256,7 +259,7 @@ function Products() {
           <div className="border border-dashed p-8 text-center text-muted-foreground">
             <Package className="mx-auto mb-3 h-8 w-8" />
             <p>No products yet</p>
-            <Button variant="secondary" className="mt-4" onClick={() => openForm(null)}>
+            <Button variant="secondary" className="mt-4" disabled={!may('create')} onClick={() => openForm(null)}>
               <Plus className="h-4 w-4" />
               Add Product
             </Button>
@@ -283,7 +286,7 @@ function Products() {
                     className="shrink-0"
                     title="Edit product"
                     aria-label={`Edit ${p.name}`}
-                    disabled={busy}
+                    disabled={busy||!may('edit')}
                     onClick={() => openForm(p)}
                   >
                     <Pencil className="h-4 w-4" />
@@ -293,7 +296,7 @@ function Products() {
                   <p className="mb-2 text-sm text-muted-foreground">Quantity Sold</p>
                   <SoldQuantity
                     p={p}
-                    disabled={busy}
+                    disabled={busy||!may('edit')}
                     onChange={(n) =>
                       mutate((s) => ({
                         products: updateSoldQuantity(s.products, productKey(p), n),
@@ -335,7 +338,7 @@ function Products() {
                 <div className="grid grid-cols-2 gap-2">
                   <Button
                     variant="secondary"
-                    disabled={busy}
+                    disabled={busy||!may('edit')}
                     onClick={() => changeStock(viewing, 1)}
                   >
                     <Plus className="h-4 w-4" />
@@ -343,7 +346,7 @@ function Products() {
                   </Button>
                   <Button
                     variant="secondary"
-                    disabled={busy || viewing.qty === 0}
+                    disabled={busy || !may('edit') || viewing.qty === 0}
                     onClick={() => changeStock(viewing, -1)}
                   >
                     <Minus className="h-4 w-4" />
@@ -421,14 +424,14 @@ function Products() {
                 onChange={(e) => setName(e.target.value)}
                 required
                 maxLength={60}
-                disabled={busy}
+                disabled={busy||!may('edit')}
               />
             </Field>
             <Field label="Product Image">
               <Input
                 type="file"
                 accept="image/jpeg,image/png,image/webp"
-                disabled={busy || uploading}
+                disabled={busy || uploading || !may(editing?'edit':'create')}
                 onChange={async (e) => {
                   const f = e.target.files?.[0];
                   if (!f) return;
@@ -463,7 +466,7 @@ function Products() {
                   step="any"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  disabled={busy}
+                  disabled={busy||!may('edit')}
                   required
                 />
               </Field>
@@ -474,7 +477,7 @@ function Products() {
                   step={1}
                   value={quantity}
                   onChange={(e) => setQuantity(e.target.value)}
-                  disabled={busy}
+                  disabled={busy||!may('edit')}
                   required
                 />
               </Field>
@@ -485,11 +488,11 @@ function Products() {
               </p>
             )}
             <DialogFooter className="flex-wrap gap-2">
-              {editing && (
+              {editing && may('delete') && (
                 <Button
                   type="button"
                   variant="destructive"
-                  disabled={busy || uploading}
+                  disabled={busy || uploading || !may(editing?'edit':'create')}
                   onClick={() => {
                     if (editing.sales > 0) {
                       setFormError(
@@ -507,12 +510,12 @@ function Products() {
               <Button
                 type="button"
                 variant="secondary"
-                disabled={busy || uploading}
+                disabled={busy || uploading || !may(editing?'edit':'create')}
                 onClick={() => setFormOpen(false)}
               >
                 Cancel
               </Button>
-              <Button type="submit" disabled={busy || uploading}>
+              <Button type="submit" disabled={busy || uploading || !may(editing?'edit':'create')}>
                 {busy ? "Saving…" : "Save"}
               </Button>
             </DialogFooter>
@@ -529,12 +532,12 @@ function Products() {
             deleted.
           </p>
           <DialogFooter>
-            <Button variant="secondary" disabled={busy} onClick={() => setConfirmDelete(false)}>
+            <Button variant="secondary" disabled={busy||!may('edit')} onClick={() => setConfirmDelete(false)}>
               Cancel
             </Button>
             <Button
               variant="destructive"
-              disabled={busy}
+              disabled={busy||!may('edit')}
               onClick={async () => {
                 if (!editing) return;
                 const ok = await mutate(

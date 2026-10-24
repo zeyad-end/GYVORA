@@ -50,8 +50,7 @@ function Workouts() {
             <Send className="h-4 w-4" />
             Assign Workout
           </Button>}
-          <Button
-            disabled={!may('create')}
+          {may('create')&&<Button
             onClick={() => {
               setEditing(null);
               setName("");
@@ -61,7 +60,7 @@ function Workouts() {
           >
             <Plus className="h-4 w-4" />
             New program
-          </Button>
+          </Button>}
           </div>
         }
       />
@@ -71,8 +70,7 @@ function Workouts() {
             key={w.name}
             title={w.name}
             action={
-              <Button
-                disabled={!may('edit')}
+              may('edit')?<Button
                 size="sm"
                 variant="secondary"
                 onClick={() => {
@@ -82,7 +80,7 @@ function Workouts() {
               >
                 <Pencil className="h-4 w-4" />
                 Edit program
-              </Button>
+              </Button>:null
             }
           >
             {w.trainer && <p className="mb-4 text-sm text-muted-foreground">Trainer · {w.trainer}</p>}
