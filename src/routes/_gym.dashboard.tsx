@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Panel, PageHeader, StatCard } from "@/components/kit";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { dashboardTotals, gymToday } from "@/lib/gym-reporting";
+import { dashboardTotals, gymToday, reportingEvents } from "@/lib/gym-reporting";
 import { membershipStatus } from "@/lib/membership-link";
 import { cashSummary } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
@@ -27,7 +27,8 @@ function Dashboard() {
   const sessions = useStore(s => s.sessions);
   const members = useStore(s => s.members);
   const attendance = useStore(s => s.attendance);
-  const events = useStore(s => s.membershipEvents) ?? [];
+  const savedEvents = useStore(s => s.membershipEvents);
+  const events = reportingEvents(savedEvents ?? [], members);
   const today = gymToday(gym);
   const [date, setDate] = useState(today);
   const totals = dashboardTotals(sessions, events, transactions, date);
@@ -56,7 +57,7 @@ function Dashboard() {
         <StatCard label="Active" value={String(active)} icon={UserCheck} delta="On selected date" />
         <StatCard label="Expired" value={String(expired)} icon={UserX} delta="On selected date" tone="bad" />
         <StatCard label="Today's check-ins" value={String(attendance.filter(a => a.date === date).length)} icon={ScanLine} delta="Selected date" tone="good" />
-        <StatCard label="Today's revenue" value={egp(totals.revenue)} icon={TrendingUp} delta={`${egp(totals.sessionRevenue)} sessions · ${egp(totals.subscriptions)} subscriptions`} tone="good" />
+        <StatCard label="Total recorded income" value={egp(totals.revenue)} icon={TrendingUp} delta={`${egp(totals.sessionRevenue)} sessions · ${egp(totals.subscriptions)} subscriptions`} tone="good" />
         <StatCard label="Today's expenses" value={egp(totals.expenses)} icon={TrendingDown} delta={`${totals.expenseCount} paid expense invoices`} />
         <StatCard label="Net profit" value={`${totals.net < 0 ? "−" : ""}${egp(totals.net)}`} icon={PiggyBank} tone="good" delta="Selected date" />
         <StatCard label="Cash balance" value={`${cash.net < 0 ? "−" : ""}${egp(cash.net)}`} icon={Banknote} delta="Saved Finance invoices" />

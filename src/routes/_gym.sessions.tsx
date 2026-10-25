@@ -88,7 +88,7 @@ function Sessions() {
         : {}),
     }));
     setEditing(null);
-    setF(blank());
+    setF({ ...blank(), date: today });
     toast.success('Session saved');
     } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not save session'); }
     finally { setBusy(false); }
@@ -211,7 +211,7 @@ function Sessions() {
         manualLabel="Member ID"
       />
       <div className="grid gap-6 lg:grid-cols-5">
-        <Panel title="Register session" className="lg:col-span-2">
+        <Panel title="Register session" className="min-w-0 lg:col-span-2">
           <form className="space-y-4" onSubmit={save}>
             {!editing && fields}
             <Button type="submit" disabled={Boolean(editing) || busy} className="w-full">
@@ -219,9 +219,9 @@ function Sessions() {
             </Button>
           </form>
         </Panel>
-        <Panel title="Sessions" className="lg:col-span-3">
+        <Panel title="Sessions" className="min-w-0 lg:col-span-3">
           <GymPeriodFilter period={period} onPeriod={setPeriod} custom={custom} onCustom={setCustom}/>
-          <p className="mb-3 text-sm text-muted-foreground">Total sessions: {filtered.length}</p>
+          <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm"><span className="text-muted-foreground">Total Sessions: {filtered.length}</span><span className="font-semibold">Total Price: {egp(sessionTotal(filtered), currencyOf(gym))}</span></div>
           <DataTable head={["#", "Client", "Trainer", "Date", "Price", "Actions"]}>
             {filtered.map((s, index) => (
               <tr key={s.id}>
@@ -245,7 +245,6 @@ function Sessions() {
               </tr>
             ))}
           </DataTable>
-          <div className="mt-4 flex justify-between border-t pt-4 text-sm font-semibold"><span>Total Price</span><span>{egp(sessionTotal(filtered), currencyOf(gym))}</span></div>
           {!filtered.length && (
             <p className="py-6 text-sm text-muted-foreground">No sessions in this period.</p>
           )}

@@ -41,7 +41,7 @@ function Members() {
         actions={<><Button variant="secondary"><Download className="h-4 w-4" />Export</Button>{c.role==='Owner'&&<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Add Member</Button>}</>} />
       <div className="mb-5"><GymSubscriptionStatus gymId={c.gymId}/></div>
       <Panel>
-        <p className="mb-3 text-sm text-muted-foreground">Total Members: {rows.length}</p>
+        <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm"><span className="text-muted-foreground">Total Members: {rows.length}</span><span className="font-semibold">Total Price: {money(rows.reduce((sum, m) => sum + membershipPrice(m, plans), 0), currencyOf(gym))}</span></div>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, phone or GYVORA ID" className="h-10 bg-surface sm:max-w-xs" />
           <div className="flex gap-1 rounded-lg border bg-surface p-1">
@@ -70,7 +70,6 @@ function Members() {
             </tr>
           ))}
         </DataTable>
-        <div className="mt-4 flex justify-between border-t pt-4 text-sm font-semibold"><span>Total Price</span><span>{money(rows.reduce((sum, m) => sum + membershipPrice(m, plans), 0), currencyOf(gym))}</span></div>
       </Panel>
       {!getDemoSession() && c.role==='Owner' && c.gymId && <div className="mt-8"><CloudClients gymId={c.gymId}/></div>}
     </>

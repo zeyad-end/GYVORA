@@ -25,16 +25,16 @@ function QR() {
     <>
       <PageHeader title="QR management" />
       <div className="grid gap-6 lg:grid-cols-3">
-        <Panel title="Gym registration QR">
+        <Panel title="Gym registration QR" className="min-w-0">
           <div className="mx-auto w-fit rounded-2xl bg-foreground p-5">{gymId?<QRCodeSVG value={gymId} size={180} bgColor="transparent" fgColor="currentColor" className="text-background" />:<p className="text-background">Permanent QR unavailable</p>}</div>
           <div className="mt-4 text-center text-sm">GYVORA ID <span className="break-all font-display font-semibold text-primary">{gymId||'Unavailable'}</span></div>
           <Button variant="secondary" className="mt-4 w-full"><Download className="h-4 w-4" />Download</Button>
         </Panel>
-        <Panel title="Find member">
+        <Panel title="Find member" className="min-w-0">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search member" className="bg-surface" />
           <ul className="mt-3 space-y-1">{list.map((x) => <li key={x.id}><Button variant="ghost" onClick={() => setSelected(x.id)} className={`flex w-full justify-start gap-3 p-2 text-left text-sm ${m?.id === x.id ? "bg-secondary" : ""}`}><Avatar initials={x.initials} size="sm" />{x.name}</Button></li>)}</ul>
         </Panel>
-        <Panel title="Membership card">
+        <Panel title="Membership card" className="min-w-0">
           {m?<>
           <div className="rounded-2xl border border-primary/40 bg-accent p-5">
             <div className="flex flex-wrap items-center justify-between gap-2"><AppBrand /><StatusPill status={m.status} /></div>
