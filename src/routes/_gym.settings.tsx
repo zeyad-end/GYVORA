@@ -32,7 +32,7 @@ function Settings() {
     if (!name || !phone || !location) { setError("Gym name, phone and address are required."); return; }
     setBusy(true); setError("");
     try {
-      await saveState((s) => ({ gym: { ...s.gym, name, phone, location, logo: form.logo, preferences: { ...prefs, timeZone: prefs.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone } } }));
+      await saveState((s) => ({ gym: { ...s.gym, name, phone, location, logo: form.logo, preferences: { ...prefs, timeZone: prefs.timeZone ?? 'UTC' } } }));
       toast.success("Settings saved");
     } catch (e) { const m = e instanceof Error ? e.message : "Could not save settings"; setError(m); toast.error(m); }
     finally { setBusy(false); }
