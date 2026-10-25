@@ -73,6 +73,19 @@ function Notifications() {
   }, [c.profile?.id]);
   return (
     <ClientShell title="Notifications">
+      {messages.length > 0 && (
+        <section className="border-b pb-5">
+          <h2 className="text-lg font-semibold">Messages from GYVORA Administration</h2>
+          <ul className="mt-3 space-y-3">
+            {messages.map((m) => (
+              <li key={m.id} className="rounded-md border bg-card p-4">
+                <p className="whitespace-pre-wrap break-words text-sm">{m.body}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <AssignedWorkouts />
       {demo && !demoInviteDone && (
         <section className="border-b pb-5">
