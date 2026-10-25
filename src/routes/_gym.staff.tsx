@@ -271,25 +271,22 @@ function Staff() {
               }
             }}
           >
-            {!editing&&!getDemoSession()&&<><QRScanner open={scan} onClose={()=>setScan(false)} onScan={value=>find(value,true)}/><Field label="User ID, name, QR or email"><div className="flex gap-2"><Input aria-label="Staff user lookup" value={query} onChange={e=>{setQuery(e.target.value);setPerson(null);}}/><Button type="button" onClick={()=>void find(query)}>Look up</Button><Button type="button" variant="outline" onClick={()=>setScan(true)}>Scan QR</Button></div></Field>{person&&<p className="text-sm text-success">{person.full_name} · {person.email} · {person.id}</p>}</>}
+            {!editing&&!getDemoSession()&&<><QRScanner open={scan} onClose={()=>setScan(false)} onScan={value=>find(value,true)}/><Field label="User ID, name, QR or email"><div className="flex gap-2"><Input aria-label="Staff user lookup" value={query} onChange={e=>{setQuery(e.target.value);setPerson(null);}}/><Button type="button" onClick={()=>void find(query)}>Look up</Button><Button type="button" variant="outline" onClick={()=>setScan(true)}>Scan QR</Button></div></Field>{person&&<p className="text-sm text-success">{person.full_name} · {person.email||'No email'} · {person.phone||'No phone'} · {person.id}</p>}</>}
             <Field label="Full Name">
               <Input key={person?.id??editing?.id??'name'} name="name" required maxLength={100} defaultValue={editing?.name??person?.full_name} readOnly={!editing&&!getDemoSession()} />
             </Field>
-            <Field label="Email">
+            <Field label="Email (optional if phone provided)">
               <Input
                 name="email"
                 type="email"
-                required
                 maxLength={255}
                 key={person?.id??editing?.id??'email'} defaultValue={editing?.email??person?.email}
                 readOnly={Boolean(editing)||!getDemoSession()}
               />
             </Field>
-            {editing && (
-              <Field label="Phone">
-                <Input name="phone" maxLength={30} defaultValue={editing.phone} />
-              </Field>
-            )}
+            <Field label="Phone (optional if email provided)">
+              <Input name="phone" type="tel" maxLength={30} key={person?.id??editing?.id??'phone'} defaultValue={editing?.phone??person?.phone} readOnly={!editing&&!getDemoSession()} />
+            </Field>
             <Field label="Role">
               <select name="role" className={selectCls} defaultValue={editing?.role ?? "Reception"}>
                 {["Admin", "Reception", "Trainer"].map((r) => (
