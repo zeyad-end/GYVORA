@@ -420,6 +420,17 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     );
   }
   if (demo === "individual") {
+    const demoAcc = getDemoAccount();
+    const demoFreeze = demoAcc ? demoClientFrozen(demoUserId(demoAcc.email)) : null;
+    if (demoFreeze)
+      return (
+        <div className="mx-auto max-w-md p-10">
+          <h1 className="text-2xl">Account frozen</h1>
+          <p className="mt-2 text-muted-foreground">Your account has been frozen by the administrator. Client pages are unavailable until it is reactivated.</p>
+          {demoFreeze.note.trim() && <p className="mt-4 rounded-md border bg-card p-4 text-sm"><span className="font-medium">Reason: </span>{demoFreeze.note}</p>}
+          <Button className="mt-6" onClick={() => void c.logout()}>Log out</Button>
+        </div>
+      );
     if (isClientPortalPath(path) || path === "/gyms") return children;
     return (
       <div className="mx-auto max-w-md p-10">
@@ -468,6 +479,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
       </div>
     );
   if(c.profile.disabled_at)return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Account deactivated</h1><p className="mt-2 text-muted-foreground">This account has been disabled by the administrator.</p><Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
+  if(c.profile.frozen_at && c.profile.account_type !== 'owner' && c.role !== 'super_admin')return <div className="mx-auto max-w-md p-10"><h1 className="text-2xl">Account frozen</h1><p className="mt-2 text-muted-foreground">Your account has been frozen by the administrator. Client pages and data are unavailable until it is reactivated.</p>{c.profile.freeze_note?.trim()?<p className="mt-4 whitespace-pre-wrap break-words rounded-md border bg-card p-4 text-sm"><span className="font-medium">Reason: </span>{c.profile.freeze_note}</p>:null}<Button className="mt-6" onClick={()=>void c.logout()}>Log out</Button></div>;
   if (
     isClientPortalPath(path) ||
     path === "/subscription-request" ||
