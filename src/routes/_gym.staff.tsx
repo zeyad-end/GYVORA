@@ -6,7 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useStore, type StaffMember } from "@/lib/store";
 import { useCloud } from "@/components/CloudProvider";
 import { manageInvitation, manageStaff, lookupClient } from "@/lib/cloud.functions";
-import { gymPages } from '@/lib/gym-permissions';
+import { gymPages, formatPermissions } from '@/lib/gym-permissions';
 import { QRScanner } from '@/components/QRScanner';
 import { invitationStatus } from "@/lib/validation";
 import { StaffAttendance } from "@/components/StaffAttendance";
@@ -42,7 +42,7 @@ function Staff() {
   const invite = useServerFn(manageInvitation);
   const lookup = useServerFn(lookupClient);
   const [query,setQuery]=useState('');
-  const [person,setPerson]=useState<{id:string;full_name:string;email:string}|null>(null);
+  const [person,setPerson]=useState<{id:string;full_name:string;email:string;phone:string}|null>(null);
   const [scan,setScan]=useState(false);
   async function find(value:string, fromCamera=false){setPerson(null);try{setPerson(await lookup({data:{gymId:c.gymId,memberId:value.trim()}}));return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:'User lookup failed');return false;}}
   const edit = useServerFn(manageStaff);
@@ -128,7 +128,7 @@ function Staff() {
                   <td className={td}>{s.name}</td>
                   <td className={td}>{s.email}</td>
                   <td className={td}>{s.role}</td>
-                  <td className={td}>{s.permissions?.join(", ")}</td>
+                  <td className={td}>{formatPermissions(s.permissions ?? [])}</td>
                   <td className={td}>
                     {c.role === "Owner" && s.role !== "Owner" && (
                       <div className="flex gap-2"><Button
@@ -222,6 +222,7 @@ function Staff() {
               setBusy(true);
               const d = new FormData(e.currentTarget);
               try {
+                if (!String(d.get("email") ?? "").trim() && !String(d.get("phone") ?? "").trim()) throw new Error("Provide at least an email or a phone number.");
                 if (editing?.id) {
                   if (getDemoSession()) changeDemoStaff(c.gymId, editing.id, { role: String(d.get("role")), permissions, name: String(d.get("name")), phone: String(d.get("phone") ?? "") });
                   else await edit({
@@ -271,25 +272,22 @@ function Staff() {
               }
             }}
           >
-            {!editing&&!getDemoSession()&&<><QRScanner open={scan} onClose={()=>setScan(false)} onScan={value=>find(value,true)}/><Field label="User ID, name, QR or email"><div className="flex gap-2"><Input aria-label="Staff user lookup" value={query} onChange={e=>{setQuery(e.target.value);setPerson(null);}}/><Button type="button" onClick={()=>void find(query)}>Look up</Button><Button type="button" variant="outline" onClick={()=>setScan(true)}>Scan QR</Button></div></Field>{person&&<p className="text-sm text-success">{person.full_name} · {person.email} · {person.id}</p>}</>}
+            {!editing&&!getDemoSession()&&<><QRScanner open={scan} onClose={()=>setScan(false)} onScan={value=>find(value,true)}/><Field label="User ID, name, QR or email"><div className="flex gap-2"><Input aria-label="Staff user lookup" value={query} onChange={e=>{setQuery(e.target.value);setPerson(null);}}/><Button type="button" onClick={()=>void find(query)}>Look up</Button><Button type="button" variant="outline" onClick={()=>setScan(true)}>Scan QR</Button></div></Field>{person&&<p className="text-sm text-success">{person.full_name} · {person.email||'No email'} · {person.phone||'No phone'} · {person.id}</p>}</>}
             <Field label="Full Name">
               <Input key={person?.id??editing?.id??'name'} name="name" required maxLength={100} defaultValue={editing?.name??person?.full_name} readOnly={!editing&&!getDemoSession()} />
             </Field>
-            <Field label="Email">
+            <Field label="Email (optional if phone provided)">
               <Input
                 name="email"
                 type="email"
-                required
                 maxLength={255}
                 key={person?.id??editing?.id??'email'} defaultValue={editing?.email??person?.email}
                 readOnly={Boolean(editing)||!getDemoSession()}
               />
             </Field>
-            {editing && (
-              <Field label="Phone">
-                <Input name="phone" maxLength={30} defaultValue={editing.phone} />
-              </Field>
-            )}
+            <Field label="Phone (optional if email provided)">
+              <Input name="phone" type="tel" maxLength={30} key={person?.id??editing?.id??'phone'} defaultValue={editing?.phone??person?.phone} readOnly={!editing&&!getDemoSession()} />
+            </Field>
             <Field label="Role">
               <select name="role" className={selectCls} defaultValue={editing?.role ?? "Reception"}>
                 {["Admin", "Reception", "Trainer"].map((r) => (
