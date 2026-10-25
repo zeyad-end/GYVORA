@@ -19,6 +19,10 @@ export const saveRecords = createServerFn({method:'POST'}).middleware([requireSu
   const {error}=await context.supabase.rpc('save_gym_records',{g:data.gymId,changes:data.changes as never}); if(error) throw new Error(error.message); const {data:records,error:readError}=await context.supabase.from('gym_records').select('kind,data').eq('gym_id',data.gymId);if(readError)throw new Error(readError.message);return {saved:true,records};
  });
 
+export const getReportingEvents = createServerFn({method:'POST'}).middleware([requireSupabaseAuth])
+ .inputValidator(input => z.object({gymId:z.string().uuid()}).parse(input))
+ .handler(async ({data,context}) => { const {data:events,error}=await context.supabase.rpc('gym_reporting_events',{g:data.gymId}); if(error)throw new Error(error.message); return events as unknown as import('./gym-reporting').MembershipEvent[]; });
+
 export const lookupClient = createServerFn({method:'POST'}).middleware([requireLookupSession, requireSupabaseAuth])
  .inputValidator(input=>z.object({gymId:z.string().uuid(),memberId:z.string().trim().min(1).refine(v=>isGyvoraId(normalizeAccountLookup(v))||v.length<=255,'Lookup text is too long')}).parse(input))
  .handler(async({data,context})=>{
