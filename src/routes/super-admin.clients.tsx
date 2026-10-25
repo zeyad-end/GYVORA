@@ -53,7 +53,7 @@ function DemoClients() {
   return (
     <div>
       <PageHeader title="Clients" subtitle={`Total client accounts: ${clients.length} · fictional demo data.`} />
-      <DataTable head={['Client', 'Phone', 'Gyms', 'Actions']}>
+      <DataTable head={['Client', 'Phone', 'Gyms', 'Status', 'Actions']}>
         {clients.map((c) => (
           <tr key={c.id}>
             <td className={td}>
@@ -75,9 +75,14 @@ function DemoClients() {
                 {!c.gyms.length && <span className="text-xs text-muted-foreground">No gyms</span>}
               </div>
             </td>
+            <td className={td}><span className={freezeMap[c.id] ? 'text-destructive' : 'text-success'}>{freezeMap[c.id] ? 'Frozen' : 'Active'}</span></td>
             <td className={td}>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <Button size="icon" variant="ghost" aria-label={`Message ${c.name}`} title="Send message" onClick={() => { setMessaging(c); setMessageBody(''); }}><MessageSquare className="h-4 w-4" /></Button>
                 <Button size="sm" variant="outline" onClick={() => openEdit(c)}>Edit</Button>
+                {freezeMap[c.id]
+                  ? <Button size="sm" variant="secondary" onClick={() => { if (window.confirm(`Unfreeze ${c.name}? They regain access to their demo account.`)) { setDemoClientFrozen(c.id, false, ''); toast.success(`${c.name} unfrozen (demo).`); } }}>Unfreeze</Button>
+                  : <Button size="sm" variant="secondary" onClick={() => { setFreezing(c); setFreezeNote(''); setFreezeMessage(''); }}>Freeze</Button>}
                 <Button size="sm" variant="destructive" onClick={() => { if (window.confirm(`Delete ${c.name} entirely? This removes all their demo gym memberships.`)) { deleteClient(c.id); toast.success(`${c.name} deleted (demo).`); } }}>Delete</Button>
               </div>
             </td>
