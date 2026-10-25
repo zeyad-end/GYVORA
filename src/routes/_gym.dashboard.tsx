@@ -10,7 +10,6 @@ import { membershipStatus } from "@/lib/membership-link";
 import { cashSummary } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
 import { useStore } from '@/lib/store';
-import { dailySummary } from '@/lib/gym-updates';
 import { localDate } from '@/lib/gym-period';
 import { money as egp, currencyOf } from "@/lib/store";
 
@@ -37,9 +36,9 @@ function Dashboard() {
   const revenueSeries = Array.from({ length: 7 }, (_, i) => {
     const day = new Date(`${date}T12:00:00`); day.setDate(day.getDate() - 6 + i);
     const key = localDate(day); const values = dashboardTotals(sessions, events, transactions, key);
-    return { month: key.slice(5), revenue: values.revenue, expenses: values.expenses, members: events.filter(e => e.kind === 'created' && e.date <= key).length };
+    return { date: key, month: key.slice(5), revenue: values.revenue, expenses: values.expenses, members: events.filter(e => e.kind === 'created' && e.date <= key).length };
   });
-  const attendanceSeries = revenueSeries.map(r => ({ day: r.month, visits: attendance.filter(a => a.date === `${date.slice(0,4)}-${r.month}`).length }));
+  const attendanceSeries = revenueSeries.map(r => ({ day: r.month, visits: attendance.filter(a => a.date === r.date).length }));
   const activity = events.slice().sort((a,b) => b.date.localeCompare(a.date)).slice(0,5).map(e => ({ action: `${e.kind === 'created' ? 'Membership created' : 'Membership renewed'} · ${members.find(m => m.id === e.memberId)?.name ?? 'Membership'}`, user: egp(e.price), time: e.date }));
   return (
     <>

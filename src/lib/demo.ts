@@ -10,7 +10,7 @@ import { generateId } from "./utils";
 import { demoIdentity, demoIdentityMatches, ensureDemoIdentity } from './demo-identities';
 import { normalizeAccountLookup } from './gyvora-id';
 import { validateMembershipChanges } from './membership-link';
-import { gymToday, membershipPrice } from './gym-reporting';
+import { gymToday } from './gym-reporting';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -817,6 +817,7 @@ export function readDemoGym(gymId: string, withSeed = false): State {
   };
 }
 export function writeDemoGym(gymId: string, state: State) {
+  const submitted = state;
   const account=getDemoAccount();
   if(getDemoSession()==='owner'&&account&&!demoOwnerHasAccess(account))throw new Error('Gym access unavailable');
   const previous = readDemoGym(gymId, gymId === "demo-gym");
@@ -837,7 +838,7 @@ export function writeDemoGym(gymId: string, state: State) {
     rememberDemoMemberships(gymId, state.gym.name, state.members);
   }
   localStorage.setItem(`ironhaus-demo-gym:${gymId}`, JSON.stringify(state));
-  Object.assign(arguments[1], state);
+  Object.assign(submitted, state);
   if (gymId === "demo-gym") localStorage.setItem("ironhaus-demo-gym-state", JSON.stringify(state));
   appendGymEvents(gymId, gymEvents(previous, state));
 }
