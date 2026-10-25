@@ -11,11 +11,11 @@
 
 ## Application architecture
 - GYVORA IDs use a shared locked text allocator and append-only versioned registry; old reservations stay retired, demo caches migrate once, and opaque demo reservations return only IDs. Browser-local contacts and legacy account keys stay isolated.
-- Individual signup uses provider email/password with the existing signup profile trigger; saved client management uses authenticated server functions, gym-scoped removal and platform-only retained-profile deactivation. The separate client sign-in page preserves the destination-based Local demo login.
+- Unified signup creates provider email/phone password accounts through server-only verification challenges and the existing profile trigger; owner approval still provisions gym access. Temporary verification requires build-time DEV and a nonproduction runtime, and production fails closed until a real provider replaces the send/verify adapter.
 - User gym browsing uses the existing safe content RPC and a dashboard-styled client workspace; public projections never include management data or grant membership. Personal workout saves keep source gym/plan keys with a per-user unique index, while editable definitions remain independent.
 - Persisted staff page names grant read access and page:create/edit/delete grant independent actions in existing invitation/role permission arrays; database record triggers enforce actions, and member gym discovery includes owner-added memberships without manual directory links.
 - Admin gym deletion uses retained tombstones, an append-only deletion/restore history and the shared database entitlement predicate; reversible suspension never disables owner authentication or removes associations, while the separate permanent-account flow remains isolated.
-- Local demo login remains destination-based without a login-mode selector; Cloud admin controls and contacts read durable shared records, while local lifecycle controls never mutate Cloud accounts.
+- Normal login validates provider credentials and the selected persisted account type; legacy local data remains isolated and cannot grant Cloud account access.
 - Existing-client memberships reuse gym_records/client_id and historical snapshots; database uniqueness and owner/approved-gym guards enforce linking, while client-owned directory links never grant access. Shared summaries expose only gym approval/plan, never billing credentials or receipts. Client portal path exceptions match /member or /member/ exactly, not /members or /memberships.
 - Shared app branding uses a reusable component backed by uploaded CDN asset pointers; gym identity and legacy storage/QR namespaces stay separate to preserve user records and permanent codes.
 - Super Admin plans, dates, notes, prices and branding extend existing prototype snapshots; assigning a plan copies its stable ID, billing type, duration and agreed prices into the gym, so catalog edits cannot change agreements. Projected billing uses saved billing types and anchored dates, with plan duration end dates exclusive, never payment receipts. Provider identities are read from authenticated accounts without substituting social sign-in for linking or fabricating demo connections.
@@ -27,8 +27,8 @@
 - Keep platform expenses, gym-scoped prototype invitations and workout assignment snapshots in the existing demo store, and session client selections keyed by gym; this preserves local persistence without granting Cloud access or mixing platform and gym finances.
 - Preserve TanStack routes and the UI kit; project RPC middleware attaches refreshed provider tokens, private QR lookup requires a session, and scanners await lookup results so failures stay visible.
 - Store gym records under a gym ID with permission-enforced access; keep account profiles, gym role associations, invitations and approval requests in separate tables so editable profile data never grants access.
-- Real authentication uses provider password auth without OTP; `otp_verified()` remains an authenticated-session compatibility shim so existing RLS policies stay intact.
-- Prototype login uses isolated local demo sessions selected by destination, never provider authentication or account lookup; display preferences exclude passwords so fictional access cannot grant Cloud permissions.
+- Real login uses provider password auth; signup code challenges are not login sessions. `otp_verified()` remains an authenticated-session compatibility shim so existing RLS policies stay intact.
+- Login display preferences exclude passwords; local demo sessions are cleared before credential sign-in so stored fictional access cannot grant Cloud permissions.
 - Demo data stays isolated; member history follows changes; duplicate checks apply only to new/relinked record IDs, never edits/removals.
 
 - Locked writes preserve profiles; reports sum sessions and atomic subscription price/date events, subtracting paid invoices. Demo reports stay isolated.

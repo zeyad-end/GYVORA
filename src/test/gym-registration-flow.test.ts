@@ -5,8 +5,8 @@ import { approveRequest, demoDestination, demoOwnerHasAccess, getDemoState, regi
 describe("Gym Account demo registration and subscription", () => {
   beforeEach(() => localStorage.clear());
 
-  it("registers a Gym Account without phone or email", () => {
-    expect(registrationSchema.safeParse({ full_name: "Fake Gym", phone: "", email: "", password: "whatever1", account_type: "gym" }).success).toBe(true);
+  it("requires contact for normal Gym Account signup", () => {
+    expect(registrationSchema.safeParse({ full_name: "Fake Gym", phone: "", email: "", password: "whatever1", account_type: "gym" }).success).toBe(false);
   });
 
   it("Send creates one pending request even when sent twice", () => {

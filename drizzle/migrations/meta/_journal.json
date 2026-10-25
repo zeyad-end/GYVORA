@@ -253,6 +253,13 @@
       "when": 1792929993526,
       "tag": "0035_account_messages_client_freeze",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1792932775920,
+      "tag": "0036_signup_verification_challenges",
+      "breakpoints": true
     }
   ]
 }

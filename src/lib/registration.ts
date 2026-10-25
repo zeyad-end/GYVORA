@@ -4,8 +4,7 @@ export const registrationSchema = z.object({
  phone: z.string().trim().max(30).default(''),
  email: z.union([z.string().trim().email().max(255), z.literal('')]).default(''),
  password: z.string().min(8).max(128),
- account_type: z.enum(['gym', 'individual', 'dashboard']),
+ account_type: z.enum(['gym', 'individual']),
 }).superRefine((value, ctx) => {
- if (value.account_type === 'individual' && !value.phone && !value.email) ctx.addIssue({ code: 'custom', path: ['email'], message: 'Enter either a Phone Number or Email.' });
- if (value.account_type === 'dashboard' && !value.email) ctx.addIssue({ code: 'custom', path: ['email'], message: 'Email is required for a Dashboard account.' });
+ if (!value.phone && !value.email) ctx.addIssue({ code: 'custom', path: ['email'], message: 'Enter either a Phone Number or Email.' });
 });

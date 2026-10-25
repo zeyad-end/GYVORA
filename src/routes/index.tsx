@@ -9,13 +9,18 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { cn } from "@/lib/utils";
 import { seo } from "@/lib/seo";
 import { type DemoAccountType } from "@/lib/demo";
-import { enterPrototype, getPrototypePreference, savePrototypePreference } from "@/lib/prototype-login";
+import { getPrototypePreference, savePrototypePreference } from "@/lib/prototype-login";
+import { supabase } from "@/integrations/supabase/client";
+import { setDemoSession } from "@/lib/demo";
+import { resolveDestination } from "@/lib/post-login";
+import { matchesAccountType, normalizeContact } from "@/lib/signup-verifier";
 import cover from "@/assets/gyvora-login-hero.jpg.asset.json";
 import { AppBrand } from '@/components/AppBrand';
 import { SocialSignIn } from "@/components/SocialSignIn";
 
 export const Route = createFileRoute("/")({
-  head: () => seo("Login", "Open your GYVORA gym, client or platform demo workspace."),
+  head: () => ({meta: [...seo("Login", "Sign in to your GYVORA gym or client account with your email or phone and password.").meta, {property:"og:image",content:cover.url},{name:"twitter:image",content:cover.url}]}),
+  validateSearch: (search: Record<string, unknown>) => ({created: search["created"] === true || search["created"] === "true"}),
   component: Login,
 });
 
@@ -40,6 +45,7 @@ function Login() {
   const [error,setError]=useState('');
   const navigate = useNavigate();
   const cloud = useCloud();
+  const { created } = Route.useSearch();
 
   useEffect(() => {
     const preference = getPrototypePreference();
@@ -60,7 +66,20 @@ function Login() {
     e.preventDefault();
     setBusy(true);setError('');
     try {
-      const to=enterPrototype({destination,name,email},remember);await cloud.refresh();await navigate({to});
+      setDemoSession(null);
+      const identifier=email.trim();
+      if (!identifier || !password) throw new Error('Enter your email or phone and password.');
+      const credential=identifier.includes('@') ? {email:identifier.toLowerCase(),password} : {phone:normalizeContact('phone',identifier),password};
+      const result=await supabase.auth.signInWithPassword(credential);
+      if(result.error || !result.data.user) throw new Error('Sign-in failed. Check your email or phone and password.');
+      const user=result.data.user;
+      const [profile, roles]=await Promise.all([supabase.from('profiles').select('account_type,disabled_at').eq('id',user.id).single(),supabase.from('user_roles').select('role').eq('user_id',user.id)]);
+      if(profile.error || roles.error || !profile.data || !matchesAccountType(destination,profile.data.account_type,roles.data?.some(r=>r.role==='super_admin') ?? false)) {
+        await supabase.auth.signOut(); throw new Error('Choose the account type registered for these credentials.');
+      }
+      if(profile.data.disabled_at){await supabase.auth.signOut();throw new Error('This account has been deactivated.');}
+      savePrototypePreference({destination,name,email},remember);
+      await cloud.refresh();await navigate({to:await resolveDestination()});
     }catch(e){setError(e instanceof Error?e.message:'Could not sign in.');}
     finally{setBusy(false);}
   }
@@ -80,9 +99,10 @@ function Login() {
         <div className="w-full max-w-sm">
           <AppBrand large className="mb-8" />
           <h1 className="text-3xl font-semibold">Welcome back</h1>
-          <p className="mt-1 text-sm text-muted-foreground">Demo access · No real authentication</p>
+          <p className="mt-1 text-sm text-muted-foreground">Sign in to your account</p>
+          {created && <p role="status" className="mt-3 text-sm text-success">Account created. Sign in with your email or phone and password.</p>}
 
-          <div className="mt-8 grid grid-cols-3 gap-1 rounded-lg border bg-card p-1" role="group" aria-label="Demo destination">
+          <div className="mt-8 grid grid-cols-3 gap-1 rounded-lg border bg-card p-1" role="group" aria-label="Account type">
             {([["gym", "Gym Account", Building2], ["individual", "Client / Individual", User], ["dashboard", "Dashboard", LayoutDashboard]] as const).map(([key, label, Icon]) => (
               <Button type="button" variant="ghost" key={key} onClick={() => setDestination(key)} aria-pressed={destination === key}
                 className={cn("h-16 min-w-0 flex-col gap-1 rounded-md px-1 text-xs font-medium transition-colors", destination === key ? "bg-secondary text-foreground" : "text-muted-foreground hover:text-foreground")}>
@@ -94,15 +114,14 @@ function Login() {
           <form className="mt-6 space-y-4" onSubmit={signIn} noValidate>
             <div className="space-y-2"><Label htmlFor="demo-name">Name</Label><Input id="demo-name" name="name" value={name} onChange={e => setName(e.target.value)} autoComplete="name" className="h-11 bg-card" /></div>
             <div className="space-y-2">
-              <Label htmlFor="demo-email">Email</Label>
-              <Input id="demo-email" name="identifier" type="text" value={email} onChange={e => setEmail(e.target.value)} autoComplete="username" placeholder="Demo email" className="h-11 bg-card" />
+              <Label htmlFor="demo-email">Email or phone</Label>
+              <Input id="demo-email" name="identifier" type="text" value={email} onChange={e => setEmail(e.target.value)} autoComplete="username" placeholder="Email or phone with country code" className="h-11 bg-card" />
             </div>
             <div className="space-y-2">
-              <div className="flex justify-between"><Label htmlFor="demo-password">Password</Label>
-                <Link to="/demo-recovery" className="text-xs text-primary hover:underline">Forgot Password?</Link>
-              </div>
-              <Input id="demo-password" name="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" type="password" placeholder="••••••••" className="h-11 bg-card" />
+              <Label htmlFor="demo-password">Password</Label>
+              <Input id="demo-password" name="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="current-password" type="password" placeholder="••••••••" className="h-11 bg-card" />
             </div>
+            <Link to="/forgot-password" className="block text-xs text-primary hover:underline">Forgot password?</Link>
             <div className="flex items-center gap-2"><Checkbox id="demo-remember" checked={remember} onCheckedChange={value => setRemember(value === true)} /><Label htmlFor="demo-remember" className="text-sm font-normal">Remember Me</Label></div>
             {error&&<p role="alert" className="text-sm text-destructive">{error}</p>}
             <Button type="submit" disabled={busy} className="h-11 w-full">{busy?'Signing in…':'Login'}</Button>
@@ -110,8 +129,6 @@ function Login() {
           <SocialSignIn />
           <p className="mt-6 text-center text-sm text-muted-foreground">
             New here? <Link to="/register" className="text-primary hover:underline">Create account</Link>
-            {' · '}
-            <Link to="/demo-signup" className="text-primary hover:underline">Demo phone sign up</Link>
           </p>
           <p className="mt-6 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border bg-secondary text-primary">

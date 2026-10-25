@@ -635,6 +635,33 @@ export type Database = {
           },
         ]
       }
+      signup_verification_challenges: {
+        Row: {
+          channel: string
+          consumed_at: string | null
+          contact: string
+          created_at: string
+          expires_at: string
+          token_hash: string
+        }
+        Insert: {
+          channel: string
+          consumed_at?: string | null
+          contact: string
+          created_at?: string
+          expires_at?: string
+          token_hash: string
+        }
+        Update: {
+          channel?: string
+          consumed_at?: string | null
+          contact?: string
+          created_at?: string
+          expires_at?: string
+          token_hash?: string
+        }
+        Relationships: []
+      }
       staff_invitations: {
         Row: {
           accepted_by: string | null
