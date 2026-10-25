@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      account_messages: {
+        Row: {
+          body: string
+          created_at: string
+          id: string
+          read_at: string | null
+          recipient_id: string
+          sender_id: string | null
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id: string
+          sender_id?: string | null
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          id?: string
+          read_at?: string | null
+          recipient_id?: string
+          sender_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "account_messages_recipient_id_fkey"
+            columns: ["recipient_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       client_gym_links: {
         Row: {
           favorite: boolean
@@ -555,6 +590,8 @@ export type Database = {
           account_type: string
           disabled_at: string | null
           email: string
+          freeze_note: string
+          frozen_at: string | null
           full_name: string
           gyvora_id: string | null
           id: string
@@ -566,6 +603,8 @@ export type Database = {
           account_type?: string
           disabled_at?: string | null
           email?: string
+          freeze_note?: string
+          frozen_at?: string | null
           full_name?: string
           gyvora_id?: string | null
           id: string
@@ -577,6 +616,8 @@ export type Database = {
           account_type?: string
           disabled_at?: string | null
           email?: string
+          freeze_note?: string
+          frozen_at?: string | null
           full_name?: string
           gyvora_id?: string | null
           id?: string
@@ -745,6 +786,7 @@ export type Database = {
       }
       allocate_gyvora_id: { Args: { a: string; k: string }; Returns: string }
       can_read_image: { Args: { path: string }; Returns: boolean }
+      client_frozen: { Args: never; Returns: boolean }
       client_gym_content: { Args: { g: string }; Returns: Json }
       client_gym_directory: { Args: never; Returns: Json }
       client_has_gym_approval: { Args: { g: string }; Returns: boolean }
@@ -793,6 +835,14 @@ export type Database = {
       }
       save_gym_records: {
         Args: { changes: Json; g: string }
+        Returns: undefined
+      }
+      send_account_message: {
+        Args: { body: string; target: string }
+        Returns: string
+      }
+      set_client_frozen: {
+        Args: { frozen: boolean; note: string; target: string }
         Returns: undefined
       }
       set_gym_deleted: {
