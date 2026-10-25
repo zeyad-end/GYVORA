@@ -422,8 +422,7 @@ export function AccessBoundary({ children }: { children: ReactNode }) {
     );
   }
   if (demo === "individual") {
-    const demoAcc = getDemoAccount();
-    const demoFreeze = demoAcc ? demoClientFrozen(demoUserId(demoAcc.email)) : null;
+    const demoFreeze = demoClientFrozen(demoUserId(getDemoSessionInfo()?.email ?? ""));
     if (demoFreeze)
       return (
         <div className="mx-auto max-w-md p-10">
