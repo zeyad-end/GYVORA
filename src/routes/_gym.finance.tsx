@@ -17,7 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable, PageHeader, Panel, StatCard, td, selectCls, Field } from "@/components/kit";
 import { InvoiceFields } from "@/components/InvoiceFields";
-import { gymToday, recordedTotals, revenueReports } from "@/lib/gym-reporting";
+import { gymToday, recordedTotals, revenueReports, reportingEvents } from "@/lib/gym-reporting";
 import { money as egp, currencyOf } from "@/lib/store";
 import { useStore, saveState, readFile, type Invoice } from "@/lib/store";
 import {
@@ -53,7 +53,7 @@ function Finance() {
   const sessions = useStore(s => s.sessions);
   const savedEvents = useStore(s => s.membershipEvents);
   const members = useStore(s => s.members);
-  const events = savedEvents?.filter(e => members.some(m => m.id === e.memberId));
+  const events = reportingEvents(savedEvents ?? [], members);
   const localToday = gymToday(gym);
   const localNow = new Date(`${localToday}T12:00:00`);
   const records = useStore((s) => s.transactions);

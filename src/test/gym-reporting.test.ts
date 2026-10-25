@@ -1,5 +1,5 @@
 import { describe, expect, it, beforeEach } from 'vitest';
-import { dashboardTotals, gymToday, membershipPrice, sessionTotal, recordedTotals, revenueReports } from '@/lib/gym-reporting';
+import { dashboardTotals, gymToday, membershipPrice, sessionTotal, recordedTotals, revenueReports, reportingEvents } from '@/lib/gym-reporting';
 import { initialState, type Session, type Invoice } from '@/lib/store';
 import { readDemoGym, setDemoSession, writeDemoGym } from '@/lib/demo';
 describe('saved gym reporting', () => {
@@ -15,6 +15,10 @@ describe('saved gym reporting', () => {
     expect(recordedTotals([{...sessions[0] as Session,price:200}],events,[],{from:'2026-10-25',to:'2026-10-25'}).income).toBe(550);
     expect(recordedTotals([],events,[],{from:'2026-10-25',to:'2026-10-25'}).income).toBe(350);
     expect(recordedTotals(sessions,events,[],{from:'2026-10-24',to:'2026-10-24'}).income).toBe(675);
+  });
+  it('removed memberships are excluded from live totals while history is retained', () => {
+    expect(recordedTotals(sessions,reportingEvents(events,[]),[],{from:'2026-10-25',to:'2026-10-25'}).income).toBe(150);
+    expect(events).toHaveLength(2);
   });
   it('month and YTD stop at local today and subtract only same-year paid expenses', () => {
     const rows = [...sessions,{...sessions[0] as Session,id:'jan',date:'2026-01-01',price:200},{...sessions[0] as Session,id:'future',date:'2026-10-26',price:999},{...sessions[0] as Session,id:'old',date:'2025-12-31',price:900}];

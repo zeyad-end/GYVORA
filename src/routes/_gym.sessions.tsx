@@ -211,7 +211,7 @@ function Sessions() {
         manualLabel="Member ID"
       />
       <div className="grid gap-6 lg:grid-cols-5">
-        <Panel title="Register session" className="lg:col-span-2">
+        <Panel title="Register session" className="min-w-0 lg:col-span-2">
           <form className="space-y-4" onSubmit={save}>
             {!editing && fields}
             <Button type="submit" disabled={Boolean(editing) || busy} className="w-full">
@@ -219,7 +219,7 @@ function Sessions() {
             </Button>
           </form>
         </Panel>
-        <Panel title="Sessions" className="lg:col-span-3">
+        <Panel title="Sessions" className="min-w-0 lg:col-span-3">
           <GymPeriodFilter period={period} onPeriod={setPeriod} custom={custom} onCustom={setCustom}/>
           <div className="mb-3 flex flex-wrap items-center gap-x-6 gap-y-2 text-sm"><span className="text-muted-foreground">Total Sessions: {filtered.length}</span><span className="font-semibold">Total Price: {egp(sessionTotal(filtered), currencyOf(gym))}</span></div>
           <DataTable head={["#", "Client", "Trainer", "Date", "Price", "Actions"]}>

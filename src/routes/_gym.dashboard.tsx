@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Panel, PageHeader, StatCard } from "@/components/kit";
 import { useState } from "react";
 import { Input } from "@/components/ui/input";
-import { dashboardTotals, gymToday } from "@/lib/gym-reporting";
+import { dashboardTotals, gymToday, reportingEvents } from "@/lib/gym-reporting";
 import { membershipStatus } from "@/lib/membership-link";
 import { cashSummary } from "@/lib/gym-updates";
 import { seo } from "@/lib/seo";
@@ -28,7 +28,7 @@ function Dashboard() {
   const members = useStore(s => s.members);
   const attendance = useStore(s => s.attendance);
   const savedEvents = useStore(s => s.membershipEvents);
-  const events = (savedEvents ?? []).filter(e => members.some(m => m.id === e.memberId));
+  const events = reportingEvents(savedEvents ?? [], members);
   const today = gymToday(gym);
   const [date, setDate] = useState(today);
   const totals = dashboardTotals(sessions, events, transactions, date);

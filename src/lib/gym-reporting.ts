@@ -12,6 +12,8 @@ export function membershipPrice(member: Pick<Member, 'planPrice' | 'plan'>, plan
   return member.planPrice ?? plans.find(p => p.name === member.plan)?.price ?? 0;
 }
 export const sessionTotal = (sessions: Session[]) => sessions.reduce((sum, row) => sum + row.price, 0);
+/** Keep immutable history, but exclude removed memberships from live reports. */
+export const reportingEvents = (events: MembershipEvent[], members: Pick<Member, 'id'>[]) => events.filter(e => members.some(m => m.id === e.memberId));
 /** Collected session and subscription income; invoices supply paid expenses only. */
 export function recordedTotals(sessions: Session[], events: MembershipEvent[], invoices: Invoice[], range: { from: string; to: string }) {
   const inRange = (date: string) => date >= range.from && date <= range.to;
@@ -30,9 +32,5 @@ export function revenueReports(sessions: Session[], events: MembershipEvent[], i
   };
 }
 export function dashboardTotals(sessions: Session[], events: MembershipEvent[], invoices: Invoice[], date: string) {
-  const sessionRevenue = sessionTotal(sessions.filter(s => s.date === date));
-  const unique = new Map(events.map(e => [e.id, e]));
-  const subscriptions = [...unique.values()].filter(e => e.date === date).reduce((sum, e) => sum + e.price, 0);
-  const expenses = dailySummary(invoices, date);
-  return { sessionRevenue, subscriptions, revenue: sessionRevenue + subscriptions, expenses: expenses.total, expenseCount: expenses.count, net: sessionRevenue + subscriptions - expenses.total };
+  return recordedTotals(sessions, events, invoices, { from: date, to: date });
 }
