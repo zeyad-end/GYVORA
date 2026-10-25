@@ -34,8 +34,15 @@ export function CloudClients({gymId}: {gymId?: string}) {
       <td className={td}><span className="break-all">{p.gyvora_id || 'Unavailable'}</span></td>
       <td className={td}><p className="break-all">{p.email || 'Email not provided'}</p><p className="text-xs text-muted-foreground">{p.phone || 'Phone not provided'}</p></td>
       <td className={td}>{p.gyms.map(g=>g.name).join(', ') || 'No gym memberships'}</td>
-      <td className={td}>{p.disabled_at ? 'Deactivated' : 'Active'}</td>
-      <td className={td}><div className="flex gap-2"><Button size="sm" variant="outline" disabled={!!p.disabled_at} onClick={()=>{setEditing(p);setDetails({name:p.full_name,email:p.email,phone:p.phone,photo:p.photo});}}>Edit</Button><Button size="sm" variant="destructive" onClick={()=>setDeleting(p)}>{p.disabled_at ? 'Retry Delete' : 'Delete'}</Button></div></td>
+      <td className={td}>{p.disabled_at ? 'Deactivated' : p.frozen_at ? 'Frozen' : 'Active'}</td>
+      <td className={td}><div className="flex flex-wrap gap-2">
+        <Button size="icon" variant="ghost" aria-label={`Message ${p.full_name || 'client'}`} title="Send message" disabled={!!p.disabled_at} onClick={()=>{setMessaging(p);setMessageBody('');}}><MessageSquare className="h-4 w-4"/></Button>
+        <Button size="sm" variant="outline" disabled={!!p.disabled_at} onClick={()=>{setEditing(p);setDetails({name:p.full_name,email:p.email,phone:p.phone,photo:p.photo});}}>Edit</Button>
+        {p.frozen_at
+          ? <Button size="sm" variant="secondary" disabled={busy} onClick={async()=>{if(!window.confirm(`Unfreeze ${p.full_name || 'this client'}? They regain access to their account.`))return;setBusy(true);try{await freezeClient({data:{target:p.id,frozen:false}});toast.success('Client unfrozen');await refresh();}catch(e){toast.error(e instanceof Error?e.message:'Could not unfreeze client');}finally{setBusy(false);}}}>Unfreeze</Button>
+          : <Button size="sm" variant="secondary" disabled={!!p.disabled_at} onClick={()=>{setFreezing(p);setFreezeNote('');setFreezeMessage('');}}>Freeze</Button>}
+        <Button size="sm" variant="destructive" onClick={()=>setDeleting(p)}>{p.disabled_at ? 'Retry Delete' : 'Delete'}</Button>
+      </div></td>
     </tr>)}</DataTable>
     {!loading && !error && !rows.length && <p className="py-6 text-muted-foreground">No clients.</p>}
     <Dialog open={!!editing} onOpenChange={v=>{if(!busy&&!v)setEditing(null);}}><DialogContent><DialogHeader><DialogTitle>Edit client</DialogTitle></DialogHeader><div className="space-y-4">
