@@ -31,7 +31,8 @@ function Dashboard() {
   const today = gymToday(gym);
   const [date, setDate] = useState(today);
   const totals = dashboardTotals(sessions, events, transactions, date);
-  const active = members.filter(m => membershipStatus(m, date) !== 'Expired').length;
+  const active = members.filter(m => ['Active', 'Expiring'].includes(membershipStatus(m, date))).length;
+  const expired = members.filter(m => membershipStatus(m, date) === 'Expired').length;
   const cash = cashSummary(transactions, { from: '0001-01-01', to: date });
   const revenueSeries = Array.from({ length: 7 }, (_, i) => {
     const day = new Date(`${date}T12:00:00`); day.setDate(day.getDate() - 6 + i);
@@ -53,7 +54,7 @@ function Dashboard() {
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total members" value={String(members.length)} icon={Users} delta="Saved memberships" tone="good" />
         <StatCard label="Active" value={String(active)} icon={UserCheck} delta="On selected date" />
-        <StatCard label="Expired" value={String(members.length - active)} icon={UserX} delta="On selected date" tone="bad" />
+        <StatCard label="Expired" value={String(expired)} icon={UserX} delta="On selected date" tone="bad" />
         <StatCard label="Today's check-ins" value={String(attendance.filter(a => a.date === date).length)} icon={ScanLine} delta="Selected date" tone="good" />
         <StatCard label="Today's revenue" value={egp(totals.revenue)} icon={TrendingUp} delta={`${egp(totals.sessionRevenue)} sessions · ${egp(totals.subscriptions)} subscriptions`} tone="good" />
         <StatCard label="Today's expenses" value={egp(totals.expenses)} icon={TrendingDown} delta={`${totals.expenseCount} paid expense invoices`} />

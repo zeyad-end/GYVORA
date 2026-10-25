@@ -60,7 +60,7 @@ function Settings() {
             <div className="space-y-2"><Label htmlFor="g-lang">Language</Label><select id="g-lang" className={sel} value={prefs.language} onChange={(e) => setPrefs({ ...prefs, language: e.target.value as GymPreferences["language"] })}><option>English</option><option>العربية</option></select></div>
           </div>
           <p className="mt-3 text-xs text-muted-foreground">Currency changes the displayed label only; saved amounts are not converted.</p>
-          <div className="mt-4 space-y-2"><Label htmlFor="g-zone">Time zone</Label><select id="g-zone" className={sel} value={prefs.timeZone ?? Intl.DateTimeFormat().resolvedOptions().timeZone} onChange={e => setPrefs({ ...prefs, timeZone: e.target.value })}>{Array.from(new Set([Intl.DateTimeFormat().resolvedOptions().timeZone, ...Intl.supportedValuesOf('timeZone'), 'UTC'])).sort().map(zone => <option key={zone}>{zone}</option>)}</select></div>
+          <div className="mt-4 space-y-2"><Label htmlFor="g-zone">Time zone</Label><select id="g-zone" className={sel} value={prefs.timeZone ?? 'UTC'} onChange={e => setPrefs({ ...prefs, timeZone: e.target.value })}>{Array.from(new Set([Intl.DateTimeFormat().resolvedOptions().timeZone, ...Intl.supportedValuesOf('timeZone'), 'UTC'])).sort().map(zone => <option key={zone}>{zone}</option>)}</select></div>
         </Panel>
         <Panel title="Notifications" className="lg:col-span-2">
           <div className="space-y-4">
