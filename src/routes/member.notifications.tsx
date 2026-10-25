@@ -51,7 +51,7 @@ function Notifications() {
   const demoMessages = useDemoStore((s) => s.adminMessages);
   const [cloudMessages, setCloudMessages] = useState<{ id: string; body: string; created_at: string }[]>([]);
   const messages = demo
-    ? (demoMessages ?? []).filter((m) => m.to === (c.profile?.id ?? ""))
+    ? (demoMessages ?? []).filter((m) => m.to === (c.profile?.id ?? "")).map((m) => ({ id: m.id, body: m.body, created_at: m.createdAt }))
     : cloudMessages;
   useEffect(() => {
     if (demo || !c.profile) return;

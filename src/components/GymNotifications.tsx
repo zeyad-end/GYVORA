@@ -20,7 +20,7 @@ export function GymNotifications() {
  const { data = [], error, isPending, refetch } = useQuery({ queryKey: ['gym-notifications', c.gymId, c.profile?.id, demo], enabled: c.role === 'Owner' && !!c.gymId, queryFn: async () => {
    const notices = demo ? demoGymNotices(c.gymId) : await get({ data: { gymId: c.gymId, day: localDate() } });
    const messages = demo
-     ? demoAdminMessagesFor(getDemoAccount()?.email ?? '')
+     ? demoAdminMessagesFor(getDemoAccount()?.email ?? '').map(m => ({ id: m.id, body: m.body, created_at: m.createdAt, read_at: null as string | null }))
      : await listAccountMessages().catch(() => [] as { id: string; body: string; created_at: string; read_at: string | null }[]);
    const adminNotices = messages.map(m => ({ id: `admin-${m.id}`, type: 'Admin message', description: m.body, page: '', createdAt: m.created_at, read: demo ? false : !!m.read_at, dismissed: false }));
    return [...adminNotices, ...notices];
