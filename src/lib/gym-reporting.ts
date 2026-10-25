@@ -1,5 +1,4 @@
 import type { Gym, Member, Plan, Session, Invoice } from './store';
-import { dailySummary } from './gym-updates';
 
 export type MembershipEvent = { id: string; memberId: string; date: string; price: number; kind: 'created' | 'renewed' };
 export function gymToday(gym: Partial<Gym>, now = new Date()) {
