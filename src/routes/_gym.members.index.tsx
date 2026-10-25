@@ -14,6 +14,8 @@ import { localDate } from '@/lib/gym-period';
 import { CloudClients } from '@/components/CloudClients';
 import { getDemoSession } from '@/lib/demo';
 import { canChange } from '@/lib/gym-permissions';
+import { gymToday, membershipPrice } from '@/lib/gym-reporting';
+import { money, currencyOf } from '@/lib/store';
 
 export const Route = createFileRoute("/_gym/members/")({
   head: () => seo("Members", "Search, filter and manage every member of your gym."),
@@ -25,7 +27,9 @@ function Members() {
   const [q, setQ] = useState("");
   const [f, setF] = useState("All");
   const storedMembers = useStore((s) => s.members);
-  const members=storedMembers.map(m=>({...m,status:membershipStatus(m,localDate())}));
+  const gym = useStore(s => s.gym);
+  const plans = useStore(s => s.plans);
+  const members=storedMembers.map(m=>({...m,status:membershipStatus(m,gymToday(gym))}));
   const [open, setOpen] = useState(false);
   const [editing, setEditing] = useState<Member | null>(null);
   const [renewing, setRenewing] = useState(false);
@@ -37,6 +41,7 @@ function Members() {
         actions={<><Button variant="secondary"><Download className="h-4 w-4" />Export</Button>{c.role==='Owner'&&<Button onClick={() => { setEditing(null); setOpen(true); }}><Plus className="h-4 w-4" />Add Member</Button>}</>} />
       <div className="mb-5"><GymSubscriptionStatus gymId={c.gymId}/></div>
       <Panel>
+        <p className="mb-3 text-sm text-muted-foreground">Total Members: {rows.length}</p>
         <div className="mb-4 flex flex-col gap-3 sm:flex-row">
           <Input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name, phone or GYVORA ID" className="h-10 bg-surface sm:max-w-xs" />
           <div className="flex gap-1 rounded-lg border bg-surface p-1">
@@ -45,9 +50,10 @@ function Members() {
             ))}
           </div>
         </div>
-        <DataTable head={["Member", "Phone", "Plan", "Trainer", "Sessions left", "Expires", "Status", ""]}>
-          {rows.map((m) => (
+        <DataTable head={["#", "Member", "Phone", "Plan", "Trainer", "Sessions left", "Expires", "Status", ""]}>
+          {rows.map((m, index) => (
             <tr key={m.id}>
+              <td className={td}>{index + 1}</td>
               <td className={td}><div className="flex items-center gap-3"><Avatar initials={m.initials} size="sm" /><div><div className="font-medium">{m.name}</div><div className="break-all text-xs text-muted-foreground">{m.gyvoraId??m.id}</div></div></div></td>
               <td className={`${td} text-muted-foreground`}>{m.phone}</td>
               <td className={td}>{m.plan}</td>
@@ -64,6 +70,7 @@ function Members() {
             </tr>
           ))}
         </DataTable>
+        <div className="mt-4 flex justify-between border-t pt-4 text-sm font-semibold"><span>Total Price</span><span>{money(rows.reduce((sum, m) => sum + membershipPrice(m, plans), 0), currencyOf(gym))}</span></div>
       </Panel>
       {!getDemoSession() && c.role==='Owner' && c.gymId && <div className="mt-8"><CloudClients gymId={c.gymId}/></div>}
     </>

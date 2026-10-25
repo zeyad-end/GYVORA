@@ -23,6 +23,7 @@ import { money as egp, currencyOf } from "@/lib/store";
 import { toast } from "sonner";
 import { seo } from "@/lib/seo";
 import { generateId } from "@/lib/utils";
+import { gymToday, sessionTotal } from '@/lib/gym-reporting';
 export const Route = createFileRoute("/_gym/sessions")({
   head: () => seo("Daily sessions", "Register, edit and manage IronHaus daily sessions."),
   component: Sessions,
@@ -40,11 +41,13 @@ function Sessions() {
   const members = useStore((s) => s.members);
   const trainers = useStore((s) => s.trainers);
   const sessions = useStore((s) => s.sessions);
+  const gym = useStore(s => s.gym);
+  const today = gymToday(gym);
   const [period, setPeriod] = useState<GymPeriod>('today');
-  const [custom, setCustom] = useState({ from: localDate(), to: localDate() });
-  const filtered = filterGymPeriod(sessions, gymRange(period, new Date(), custom));
+  const [custom, setCustom] = useState({ from: today, to: today });
+  const filtered = filterGymPeriod(sessions, gymRange(period, new Date(`${today}T12:00:00`), custom));
   const [busy, setBusy] = useState(false);
-  const [f, setF] = useState<Session>(blank);
+  const [f, setF] = useState<Session>(() => ({ ...blank(), date: today }));
   const [editing, setEditing] = useState<Session | null>(null);
   const c = useCloud();
   const [scan, setScan] = useState(false);
@@ -242,6 +245,7 @@ function Sessions() {
               </tr>
             ))}
           </DataTable>
+          <div className="mt-4 flex justify-between border-t pt-4 text-sm font-semibold"><span>Total Price</span><span>{egp(sessionTotal(filtered), currencyOf(gym))}</span></div>
           {!filtered.length && (
             <p className="py-6 text-sm text-muted-foreground">No sessions in this period.</p>
           )}
