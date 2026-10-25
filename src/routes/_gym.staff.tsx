@@ -6,7 +6,7 @@ import type { Database } from "@/integrations/supabase/types";
 import { useStore, type StaffMember } from "@/lib/store";
 import { useCloud } from "@/components/CloudProvider";
 import { manageInvitation, manageStaff, lookupClient } from "@/lib/cloud.functions";
-import { gymPages } from '@/lib/gym-permissions';
+import { gymPages, formatPermissions } from '@/lib/gym-permissions';
 import { QRScanner } from '@/components/QRScanner';
 import { invitationStatus } from "@/lib/validation";
 import { StaffAttendance } from "@/components/StaffAttendance";
@@ -42,7 +42,7 @@ function Staff() {
   const invite = useServerFn(manageInvitation);
   const lookup = useServerFn(lookupClient);
   const [query,setQuery]=useState('');
-  const [person,setPerson]=useState<{id:string;full_name:string;email:string}|null>(null);
+  const [person,setPerson]=useState<{id:string;full_name:string;email:string;phone:string}|null>(null);
   const [scan,setScan]=useState(false);
   async function find(value:string, fromCamera=false){setPerson(null);try{setPerson(await lookup({data:{gymId:c.gymId,memberId:value.trim()}}));return true;}catch(e){if(fromCamera)throw e;toast.error(e instanceof Error?e.message:'User lookup failed');return false;}}
   const edit = useServerFn(manageStaff);
@@ -128,7 +128,7 @@ function Staff() {
                   <td className={td}>{s.name}</td>
                   <td className={td}>{s.email}</td>
                   <td className={td}>{s.role}</td>
-                  <td className={td}>{s.permissions?.join(", ")}</td>
+                  <td className={td}>{formatPermissions(s.permissions ?? [])}</td>
                   <td className={td}>
                     {c.role === "Owner" && s.role !== "Owner" && (
                       <div className="flex gap-2"><Button
