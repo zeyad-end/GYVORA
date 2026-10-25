@@ -6,9 +6,9 @@ import { useDemoStore } from "@/lib/demo";
 import { AssignedWorkouts } from "@/components/AssignedWorkouts";
 import { Button } from "@/components/ui/button";
 import { initials } from "@/lib/mock";
+import { toast } from "sonner";
 import {
   QrCode,
-  CreditCard,
   CalendarCheck,
   ClipboardList,
   Bell,
@@ -27,7 +27,6 @@ export const Route = createFileRoute("/member/")({
 
 const actions = [
   { label: "My QR", icon: QrCode, to: "/member/qr" },
-  { label: "My Membership", icon: CreditCard, to: "/member/membership" },
   { label: "Attendance History", icon: CalendarCheck, to: "/member/attendance" },
   { label: "Workout Program", icon: ClipboardList, to: "/member/workouts" },
   { label: "Join a Gym", icon: Plus, to: "/member/join" },
@@ -111,20 +110,32 @@ function MemberHome() {
             key={g.id}
             gym={g}
             actions={
-              <Button
-                variant="ghost"
-                size="icon"
-                aria-label={`${p.links.find((l) => l.gymId === g.id)?.favorite ? "Unfavorite" : "Favorite"} ${g.name}`}
-                onClick={() => void p.change(g.id, "favorite")}
-              >
-                <Star
-                  className={
-                    p.links.find((l) => l.gymId === g.id)?.favorite
-                      ? "h-5 w-5 fill-primary text-primary"
-                      : "h-5 w-5"
-                  }
-                />
-              </Button>
+              <div className="flex items-center gap-1">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  aria-label={`${p.links.find((l) => l.gymId === g.id)?.favorite ? "Unfavorite" : "Favorite"} ${g.name}`}
+                  onClick={() => void p.change(g.id, "favorite")}
+                >
+                  <Star
+                    className={
+                      p.links.find((l) => l.gymId === g.id)?.favorite
+                        ? "h-5 w-5 fill-primary text-primary"
+                        : "h-5 w-5"
+                    }
+                  />
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    if (window.confirm(`Leave ${g.name}? You can rejoin later if the gym adds or approves you again.`))
+                      void p.change(g.id, "leave").catch((e) => toast.error(e instanceof Error ? e.message : String(e)));
+                  }}
+                >
+                  Leave Gym
+                </Button>
+              </div>
             }
           />
         ))}

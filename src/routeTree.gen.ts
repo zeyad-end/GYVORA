@@ -37,7 +37,6 @@ import { Route as MemberIndexRouteImport } from './routes/member.index'
 import { Route as MemberAttendanceRouteImport } from './routes/member.attendance'
 import { Route as MemberBrowseRouteImport } from './routes/member.browse'
 import { Route as MemberJoinRouteImport } from './routes/member.join'
-import { Route as MemberMembershipRouteImport } from './routes/member.membership'
 import { Route as MemberNotificationsRouteImport } from './routes/member.notifications'
 import { Route as MemberQrRouteImport } from './routes/member.qr'
 import { Route as MemberSettingsRouteImport } from './routes/member.settings'
@@ -193,11 +192,6 @@ const MemberJoinRoute = MemberJoinRouteImport.update({
   path: '/member/join',
   getParentRoute: () => rootRouteImport,
 } as any)
-const MemberMembershipRoute = MemberMembershipRouteImport.update({
-  id: '/member/membership',
-  path: '/member/membership',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const MemberNotificationsRoute = MemberNotificationsRouteImport.update({
   id: '/member/notifications',
   path: '/member/notifications',
@@ -301,7 +295,6 @@ export interface FileRoutesByFullPath {
   '/member/attendance': typeof MemberAttendanceRoute
   '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
-  '/member/membership': typeof MemberMembershipRoute
   '/member/notifications': typeof MemberNotificationsRoute
   '/member/qr': typeof MemberQrRoute
   '/member/settings': typeof MemberSettingsRoute
@@ -345,7 +338,6 @@ export interface FileRoutesByTo {
   '/member/attendance': typeof MemberAttendanceRoute
   '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
-  '/member/membership': typeof MemberMembershipRoute
   '/member/notifications': typeof MemberNotificationsRoute
   '/member/qr': typeof MemberQrRoute
   '/member/settings': typeof MemberSettingsRoute
@@ -392,7 +384,6 @@ export interface FileRoutesById {
   '/member/attendance': typeof MemberAttendanceRoute
   '/member/browse': typeof MemberBrowseRoute
   '/member/join': typeof MemberJoinRoute
-  '/member/membership': typeof MemberMembershipRoute
   '/member/notifications': typeof MemberNotificationsRoute
   '/member/qr': typeof MemberQrRoute
   '/member/settings': typeof MemberSettingsRoute
@@ -439,7 +430,6 @@ export interface FileRouteTypes {
     | '/member/attendance'
     | '/member/browse'
     | '/member/join'
-    | '/member/membership'
     | '/member/notifications'
     | '/member/qr'
     | '/member/settings'
@@ -483,7 +473,6 @@ export interface FileRouteTypes {
     | '/member/attendance'
     | '/member/browse'
     | '/member/join'
-    | '/member/membership'
     | '/member/notifications'
     | '/member/qr'
     | '/member/settings'
@@ -529,7 +518,6 @@ export interface FileRouteTypes {
     | '/member/attendance'
     | '/member/browse'
     | '/member/join'
-    | '/member/membership'
     | '/member/notifications'
     | '/member/qr'
     | '/member/settings'
@@ -563,7 +551,6 @@ export interface RootRouteChildren {
   MemberAttendanceRoute: typeof MemberAttendanceRoute
   MemberBrowseRoute: typeof MemberBrowseRoute
   MemberJoinRoute: typeof MemberJoinRoute
-  MemberMembershipRoute: typeof MemberMembershipRoute
   MemberNotificationsRoute: typeof MemberNotificationsRoute
   MemberQrRoute: typeof MemberQrRoute
   MemberSettingsRoute: typeof MemberSettingsRoute
@@ -770,13 +757,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof MemberJoinRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/member/membership': {
-      id: '/member/membership'
-      path: '/member/membership'
-      fullPath: '/member/membership'
-      preLoaderRoute: typeof MemberMembershipRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/member/notifications': {
       id: '/member/notifications'
       path: '/member/notifications'
@@ -964,7 +944,6 @@ const rootRouteChildren: RootRouteChildren = {
   MemberAttendanceRoute: MemberAttendanceRoute,
   MemberBrowseRoute: MemberBrowseRoute,
   MemberJoinRoute: MemberJoinRoute,
-  MemberMembershipRoute: MemberMembershipRoute,
   MemberNotificationsRoute: MemberNotificationsRoute,
   MemberQrRoute: MemberQrRoute,
   MemberSettingsRoute: MemberSettingsRoute,
