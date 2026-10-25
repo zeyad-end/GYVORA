@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { initials } from '@/lib/mock';
-import { useDemoStore, editClient, deleteClient, removeClientGym, type DemoClient } from '@/lib/demo';
+import { useDemoStore, editClient, deleteClient, removeClientGym, sendDemoAdminMessage, setDemoClientFrozen, type DemoClient } from '@/lib/demo';
 import { CloudClients } from '@/components/CloudClients';
 import { getDemoSession } from '@/lib/demo';
 import { seo } from '@/lib/seo';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { MessageSquare } from 'lucide-react';
 
 export const Route = createFileRoute('/super-admin/clients')({
   head: () => seo('Clients', 'Review and manage saved GYVORA client profiles and account access.'),
@@ -23,6 +26,12 @@ function DemoClients() {
   const [editing, setEditing] = useState<DemoClient | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const freezeMap = useDemoStore((s) => s.clientFreeze) ?? {};
+  const [messaging, setMessaging] = useState<DemoClient | null>(null);
+  const [messageBody, setMessageBody] = useState('');
+  const [freezing, setFreezing] = useState<DemoClient | null>(null);
+  const [freezeNote, setFreezeNote] = useState('');
+  const [freezeMessage, setFreezeMessage] = useState('');
 
   function openEdit(c: DemoClient) {
     setEditing(c);
