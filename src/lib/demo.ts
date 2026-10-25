@@ -1041,6 +1041,11 @@ export function demoClientFrozen(clientId: string): { note: string; at: string }
   return demoState.clientFreeze?.[clientId] ?? null;
 }
 
+/** Browser-local directory of demo client accounts known on this device. */
+export function demoClientDirectory(): { id: string; name: string; email: string; phone: string }[] {
+  return localClients().map((c) => ({ id: c.id, name: c.full_name, email: c.email, phone: c.phone }));
+}
+
 /* ---------------- Period filtering ---------------- */
 
 export type Period =

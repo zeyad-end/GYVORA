@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { initials } from '@/lib/mock';
-import { useDemoStore, editClient, deleteClient, removeClientGym, sendDemoAdminMessage, setDemoClientFrozen, getDemoAccounts, demoUserId, type DemoClient } from '@/lib/demo';
+import { useDemoStore, editClient, deleteClient, removeClientGym, sendDemoAdminMessage, setDemoClientFrozen, getDemoAccounts, demoUserId, demoClientDirectory, type DemoClient } from '@/lib/demo';
 import { CloudClients } from '@/components/CloudClients';
 import { getDemoSession } from '@/lib/demo';
 import { seo } from '@/lib/seo';
@@ -23,9 +23,12 @@ function Clients() {
 }
 function DemoClients() {
   const seeded = useDemoStore((s) => s.clients);
-  const registered: DemoClient[] = getDemoAccounts()
-    .filter((a) => a.type === 'individual')
-    .map((a) => ({ id: demoUserId(a.email), name: a.name || a.email, phone: a.phone || '', photo: '', gyms: [] }));
+  const registered: DemoClient[] = [
+    ...getDemoAccounts()
+      .filter((a) => a.type === 'individual')
+      .map((a) => ({ id: demoUserId(a.email), name: a.name || a.email, phone: a.phone || '', photo: '', gyms: [] })),
+    ...demoClientDirectory().map((d) => ({ id: d.id, name: d.name, phone: d.phone, photo: '', gyms: [] })),
+  ];
   const clients = [...seeded, ...registered.filter((r) => !seeded.some((c) => c.id === r.id))];
   const [editing, setEditing] = useState<DemoClient | null>(null);
   const [name, setName] = useState('');
