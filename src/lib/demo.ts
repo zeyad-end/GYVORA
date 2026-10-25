@@ -261,6 +261,8 @@ export type DemoState = {
   staffRoles: DemoStaffRole[];
   programs: DemoProgram[];
   assignments: DemoAssignment[];
+  adminMessages?: DemoAdminMessage[];
+  clientFreeze?: Record<string, { note: string; at: string }>;
 };
 export type DemoAssignment = {
   id: string;
@@ -1008,6 +1010,35 @@ export function removeClientGym(clientId: string, gymName: string) {
 
 export function deleteClient(id: string) {
   commit({ ...demoState, clients: demoState.clients.filter((c) => c.id !== id) });
+}
+
+/* ---------------- Admin messages & client freeze (demo) ---------------- */
+
+export type DemoAdminMessage = { id: string; to: string; body: string; createdAt: string };
+
+/** Sends a browser-local demo message to a client (by demo user id) or gym owner (by gym email). */
+export function sendDemoAdminMessage(to: string, body: string) {
+  if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');
+  const text = body.trim();
+  if (!text || text.length > 2000) throw new Error('Message must be 1-2000 characters');
+  commit({ ...demoState, adminMessages: [{ id: generateId(), to, body: text, createdAt: new Date().toISOString() }, ...(demoState.adminMessages ?? [])] });
+}
+
+export function demoAdminMessagesFor(key: string): DemoAdminMessage[] {
+  return (demoState.adminMessages ?? []).filter((m) => m.to === key);
+}
+
+/** Reversible demo client freeze; account and data are retained. */
+export function setDemoClientFrozen(clientId: string, frozen: boolean, note: string) {
+  if (getDemoSession() !== 'super') throw new Error('Administrator prototype access required');
+  const next = { ...(demoState.clientFreeze ?? {}) };
+  if (frozen) next[clientId] = { note: note.trim().slice(0, 1000), at: new Date().toISOString() };
+  else delete next[clientId];
+  commit({ ...demoState, clientFreeze: next });
+}
+
+export function demoClientFrozen(clientId: string): { note: string; at: string } | null {
+  return demoState.clientFreeze?.[clientId] ?? null;
 }
 
 /* ---------------- Period filtering ---------------- */
