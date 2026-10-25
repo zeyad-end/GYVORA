@@ -23,8 +23,19 @@ export const Route = createFileRoute("/member/notifications")({
     ),
   component: Notifications,
 });
+/** Fictional trainer invitation shown in demo sessions only. Accepting it grants no real gym access. */
+const DEMO_TRAINER_INVITATION = {
+  id: "demo-trainer-invitation",
+  gym_name: "IronWorks Demo Gym (fictional)",
+  role: "Trainee",
+  full_name: "Coach Demo",
+  created_at: "2026-10-20T00:00:00Z",
+  expires_at: "2026-12-31T00:00:00Z",
+};
+
 function Notifications() {
   const c = useCloud();
+  const [demoInviteDone, setDemoInviteDone] = useState<"" | "accepted" | "declined">("");
   const all = useDemoStore((s) => s.invitations);
   const assignments = useDemoStore((s) => s.assignments);
   const [cloudRows, setCloudRows] = useState<
@@ -46,6 +57,19 @@ function Notifications() {
   return (
     <ClientShell title="Notifications">
       <AssignedWorkouts />
+      {demo && !demoInviteDone && (
+        <section className="border-b pb-5">
+          <h2 className="text-lg font-semibold">{DEMO_TRAINER_INVITATION.gym_name}</h2>
+          <p className="mt-2">Invited as {DEMO_TRAINER_INVITATION.role}</p>
+          <p className="text-sm text-muted-foreground">
+            {DEMO_TRAINER_INVITATION.full_name} · Demo invitation — accepting it does not grant access to any real gym.
+          </p>
+          <div className="mt-4 flex gap-2">
+            <Button onClick={() => { setDemoInviteDone("accepted"); toast.success("Demo invitation accepted (no real gym access granted)"); }}>Accept</Button>
+            <Button variant="outline" onClick={() => { setDemoInviteDone("declined"); toast.success("Demo invitation declined"); }}>Reject</Button>
+          </div>
+        </section>
+      )}
       <div className="space-y-5">
         {rows.map((i) => (
           <section key={i.id} className="border-b pb-5">
