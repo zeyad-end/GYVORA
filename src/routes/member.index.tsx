@@ -6,9 +6,9 @@ import { useDemoStore } from "@/lib/demo";
 import { AssignedWorkouts } from "@/components/AssignedWorkouts";
 import { Button } from "@/components/ui/button";
 import { initials } from "@/lib/mock";
+import { toast } from "sonner";
 import {
   QrCode,
-  CreditCard,
   CalendarCheck,
   ClipboardList,
   Bell,
