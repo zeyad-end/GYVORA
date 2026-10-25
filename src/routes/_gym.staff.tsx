@@ -222,6 +222,7 @@ function Staff() {
               setBusy(true);
               const d = new FormData(e.currentTarget);
               try {
+                if (!String(d.get("email") ?? "").trim() && !String(d.get("phone") ?? "").trim()) throw new Error("Provide at least an email or a phone number.");
                 if (editing?.id) {
                   if (getDemoSession()) changeDemoStaff(c.gymId, editing.id, { role: String(d.get("role")), permissions, name: String(d.get("name")), phone: String(d.get("phone") ?? "") });
                   else await edit({
