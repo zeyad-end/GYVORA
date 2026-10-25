@@ -17,7 +17,7 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { DataTable, PageHeader, Panel, StatCard, td, selectCls, Field } from "@/components/kit";
 import { InvoiceFields } from "@/components/InvoiceFields";
-import { revenueSeries } from "@/lib/mock";
+import { gymToday, recordedTotals, revenueReports } from "@/lib/gym-reporting";
 import { money as egp, currencyOf } from "@/lib/store";
 import { useStore, saveState, readFile, type Invoice } from "@/lib/store";
 import {
@@ -50,6 +50,16 @@ const blank = (): Invoice => ({
   method: "Cash",
 });
 function Finance() {
+  const gym = useStore(s => s.gym);
+  const sessions = useStore(s => s.sessions);
+  const events = useStore(s => s.membershipEvents);
+  const localToday = gymToday(gym);
+  const localNow = new Date(`${localToday}T12:00:00`);
+  const reports = revenueReports(sessions, events ?? [], useStore(s => s.transactions), localToday);
+  const revenueSeries = Array.from({ length: Number(localToday.slice(5, 7)) }, (_, i) => {
+    const month = `${localToday.slice(0, 4)}-${String(i + 1).padStart(2, '0')}`;
+    return { month, ...recordedTotals(sessions, events ?? [], recordsForChart, { from: `${month}-01`, to: month === localToday.slice(0, 7) ? localToday : `${month}-31` }) };
+  });
   const records = useStore((s) => s.transactions);
   const tx = records.filter((r) => !r.deleted);
   const [draft, setDraft] = useState(blank);
