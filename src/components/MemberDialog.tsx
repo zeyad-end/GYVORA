@@ -19,6 +19,7 @@ import { initialMembershipDates, membershipEnd, planMonths } from '@/lib/members
 import { localDate } from '@/lib/gym-period';
 import { canChange } from '@/lib/gym-permissions';
 import { membershipEmailSchema } from '@/lib/validation';
+import { gymToday } from '@/lib/gym-reporting';
 
 const blank = () => ({ name: "", phone: "", email: "", plan: "Basic", type: "Unlimited" as Member["type"], sessionsTotal: 20, start: localDate(), expiry: "", trainer: "", notes: "" });
 
@@ -43,6 +44,7 @@ export function MemberDialog({ open, onOpenChange, member: initialMember, renew:
     if (open) {
       const plan = member ? plans.find(p => p.name === member.plan) : plans[0];
       const dates = initialMembershipDates(member ?? undefined, Boolean(renew), planMonths(plan));
+      if (!member || renew) { dates.start = gymToday(getState().gym); const months = planMonths(plan); if (months) dates.expiry = membershipEnd(dates.start, months); }
       setF(member ? { name: member.name, phone: member.phone, email: member.email ?? '', plan: member.plan, type: member.type, sessionsTotal: member.sessionsTotal || 20, ...dates, trainer: member.trainer, notes: member.notes } : {...blank(), plan:plan?.name??"", ...dates});
     }
   }, [open, member, renew]);
@@ -66,15 +68,16 @@ export function MemberDialog({ open, onOpenChange, member: initialMember, renew:
     }
     if(member&&!getState().members.some(m=>m.id===member.id))throw new Error('This membership is no longer available. Refresh the Members page.');
     const total = f.type === "Limited" ? Math.max(1, Math.floor(f.sessionsTotal)) : 0;
+    const subscription = !member || renew ? { subscriptionEventId: generateId(), planPrice: plans.find(p => p.name === f.plan)?.price ?? 0 } : {};
     const base = { ...f, email: membershipEmailSchema.parse(f.email) ?? '', ...(clientId?{clientId,memberQrId:legacyQrId||member?.memberQrId,...(isGyvoraId(memberId)?{gyvoraId:memberId}:{})}:{}), sessionsTotal: total, initials: initials(f.name), status: statusFor(f.expiry), remaining: Math.max(0, Math.ceil((new Date(f.expiry).getTime() - Date.now()) / 86400000)) };
     if (member) {
       const left = renew ? total : (f.type === "Limited" ? (member.type === "Limited" ? Math.min(member.sessionsLeft + (total - member.sessionsTotal), total) : total) : 0);
-      const updated = { ...member, ...base, sessionsLeft: Math.max(0, left) };
+      const updated = { ...member, ...base, ...subscription, sessionsLeft: Math.max(0, left) };
       await saveState((s) => ({ members: s.members.map((m) => m.id === member.id ? updated : m) }));
       onSaved?.(updated);
     } else {
       const id = generateId();
-      await saveState((s) => ({ members: [{ id, ...base, sessionsLeft: total }, ...s.members] }));
+      await saveState((s) => ({ members: [{ id, ...base, ...subscription, sessionsLeft: total }, ...s.members] }));
       
     }
     toast.success(renew?'Membership renewed':member?'Membership updated':'Membership saved');onOpenChange(false);

@@ -16,6 +16,7 @@ export type Member = (typeof membersSeed)[number] & {
   memberQrId?: string | undefined;
   planPrice?: number;
   createdByName?: string;
+  subscriptionEventId?: string;
 };
 export type Product = {
   id?: string | undefined;
@@ -123,6 +124,7 @@ export type State = {
   staffAttendance: AttendanceEvent[];
   recurring: RecurringExpense[];
   transactions: Invoice[];
+  membershipEvents?: import('./gym-reporting').MembershipEvent[];
 };
 
 export const initialState: State = {
@@ -221,7 +223,7 @@ export const readFile = (f: File) =>
 
 export const CURRENCIES = ["EGP", "USD", "SAR", "AED"] as const;
 export type Currency = (typeof CURRENCIES)[number];
-export type GymPreferences = { currency: Currency; language: "English" | "العربية"; notifications: Record<string, boolean> };
+export type GymPreferences = { currency: Currency; language: "English" | "العربية"; notifications: Record<string, boolean>; timeZone?: string };
 export const defaultPreferences: GymPreferences = { currency: "EGP", language: "English", notifications: {} };
 /** Display-only currency label from the saved gym settings; amounts are never converted. */
 export function currencyOf(g: Partial<Gym> | undefined = state.gym): Currency {

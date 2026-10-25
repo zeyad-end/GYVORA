@@ -266,6 +266,47 @@ export type Database = {
           },
         ]
       }
+      gym_subscription_events: {
+        Row: {
+          event_type: string
+          gym_id: string
+          id: string
+          member_record_id: string
+          occurred_at: string
+          occurred_on: string
+          plan_name: string
+          price: number
+        }
+        Insert: {
+          event_type: string
+          gym_id: string
+          id: string
+          member_record_id: string
+          occurred_at?: string
+          occurred_on: string
+          plan_name: string
+          price: number
+        }
+        Update: {
+          event_type?: string
+          gym_id?: string
+          id?: string
+          member_record_id?: string
+          occurred_at?: string
+          occurred_on?: string
+          plan_name?: string
+          price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "gym_subscription_events_gym_id_fkey"
+            columns: ["gym_id"]
+            isOneToOne: false
+            referencedRelation: "gyms"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       gyms: {
         Row: {
           created_at: string
@@ -727,6 +768,7 @@ export type Database = {
         Returns: boolean
       }
       gym_operational: { Args: { g: string }; Returns: boolean }
+      gym_reporting_events: { Args: { g: string }; Returns: Json }
       gym_subscription_summary: { Args: { g: string }; Returns: Json }
       gyvora_next_number: { Args: { value: string }; Returns: string }
       is_super_admin: { Args: never; Returns: boolean }

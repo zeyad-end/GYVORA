@@ -10,6 +10,7 @@ import { generateId } from "./utils";
 import { demoIdentity, demoIdentityMatches, ensureDemoIdentity } from './demo-identities';
 import { normalizeAccountLookup } from './gyvora-id';
 import { validateMembershipChanges } from './membership-link';
+import { gymToday, membershipPrice } from './gym-reporting';
 
 /**
  * Prototype-only demo layer. Completely isolated from production auth and the
@@ -823,11 +824,20 @@ export function writeDemoGym(gymId: string, state: State) {
   const membersChanged = JSON.stringify(state.members) !== JSON.stringify(previous.members);
   if (membersChanged) {
     validateMembershipChanges(previous.members, state.members);
+    const events = [...(previous.membershipEvents ?? [])];
+    state = { ...state, members: state.members.map(m => {
+      const old = previous.members.find(row => row.id === m.id);
+      const isSubscription = !old || (m.subscriptionEventId && m.subscriptionEventId !== old.subscriptionEventId);
+      const price = isSubscription ? state.plans.find(p => p.name === m.plan)?.price ?? 0 : membershipPrice(old, previous.plans);
+      if (isSubscription) events.push({ id: m.subscriptionEventId ?? generateId(), memberId: m.id, kind: old ? 'renewed' : 'created', date: gymToday(state.gym), price });
+      return { ...m, planPrice: price };
+    }), membershipEvents: events };
     state={...state,members:state.members.map(m=>({...m,...(m.clientId?{gyvoraId:demoMemberId(m.clientId)||undefined}: {})}))};
     rememberDemoMemberships(gymId, previous.gym.name, previous.members);
     rememberDemoMemberships(gymId, state.gym.name, state.members);
   }
   localStorage.setItem(`ironhaus-demo-gym:${gymId}`, JSON.stringify(state));
+  Object.assign(arguments[1], state);
   if (gymId === "demo-gym") localStorage.setItem("ironhaus-demo-gym-state", JSON.stringify(state));
   appendGymEvents(gymId, gymEvents(previous, state));
 }

@@ -225,6 +225,13 @@
       "when": 1792842676395,
       "tag": "0031_growing_gyvora_numeric_ids",
       "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1792921765631,
+      "tag": "0032_gym_subscription_reporting",
+      "breakpoints": true
     }
   ]
 }

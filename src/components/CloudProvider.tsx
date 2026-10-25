@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { bindPersistence, hydrateState, getState, type State } from "@/lib/store";
 import { gym as gymSeed } from "@/lib/mock";
-import { saveRecords, getStaff } from "@/lib/cloud.functions";
+import { saveRecords, getStaff, getReportingEvents } from "@/lib/cloud.functions";
 import { Button } from "./ui/button";
 import { toast } from "sonner";
 import { readOwnerProfile } from '@/lib/owner-profile';
@@ -68,6 +68,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
   const router = useRouter();
   const save = useServerFn(saveRecords);
   const staffFetch = useServerFn(getStaff);
+  const reportingFetch = useServerFn(getReportingEvents);
   const reserveIds = useServerFn(reserveDemoIdentities);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [gyms, setGyms] = useState<GymRow[]>([]);
@@ -148,6 +149,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       }
     }
     if (current !== generation.current) return;
+    base.membershipEvents = await reportingFetch({data:{gymId:id}});
     hydrateState(base);
     setGymId(id);
     let savedRows = rows ?? [];
@@ -189,6 +191,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
         });
         savedRows = result.records as typeof savedRows;
         const next = { ...getState(), ...changes };
+        if (changes.members) next.membershipEvents = await reportingFetch({data:{gymId:id}});
         for (const kind of Object.keys(changes)) {
           const current = result.records?.filter((r) => r.kind === kind).map((r) => {
             const data = r.data as Record<string, unknown>;
