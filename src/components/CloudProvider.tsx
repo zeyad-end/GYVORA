@@ -149,7 +149,7 @@ export function CloudProvider({ children }: { children: ReactNode }) {
       }
     }
     if (current !== generation.current) return;
-    base.membershipEvents = await reportingFetch({data:{gymId:id}});
+    base.membershipEvents = r?.role === 'Owner' || r?.permissions?.some(p => p === 'Members' || p === 'Dashboard') ? await reportingFetch({data:{gymId:id}}) : [];
     hydrateState(base);
     setGymId(id);
     let savedRows = rows ?? [];

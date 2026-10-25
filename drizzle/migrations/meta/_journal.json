@@ -232,6 +232,20 @@
       "when": 1792921765631,
       "tag": "0032_gym_subscription_reporting",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1792921951845,
+      "tag": "0033_backfill_known_subscription_creations",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1792922050266,
+      "tag": "0034_dashboard_reporting_access",
+      "breakpoints": true
     }
   ]
 }

@@ -3,12 +3,12 @@ import { dailySummary } from './gym-updates';
 
 export type MembershipEvent = { id: string; memberId: string; date: string; price: number; kind: 'created' | 'renewed' };
 export function gymToday(gym: Partial<Gym>, now = new Date()) {
-  const timeZone = gym.preferences?.timeZone;
+  const timeZone = gym.preferences?.timeZone ?? 'UTC';
   const parts = new Intl.DateTimeFormat('en-CA', { timeZone, year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(now);
   const part = (name: string) => parts.find(p => p.type === name)?.value ?? '';
   return `${part('year')}-${part('month')}-${part('day')}`;
 }
-export function membershipPrice(member: Member, plans: Plan[]) {
+export function membershipPrice(member: Pick<Member, 'planPrice' | 'plan'>, plans: Plan[]) {
   return member.planPrice ?? plans.find(p => p.name === member.plan)?.price ?? 0;
 }
 export const sessionTotal = (sessions: Session[]) => sessions.reduce((sum, row) => sum + row.price, 0);
