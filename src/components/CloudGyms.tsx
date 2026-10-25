@@ -6,6 +6,8 @@ import { DataTable, PageHeader, td } from './kit';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
+import { sendAccountMessage } from '@/lib/account-messages.functions';
+import { MessageSquare } from 'lucide-react';
 
 type AdminGym = Awaited<ReturnType<typeof listAdminGyms>>[number];
 
@@ -21,6 +23,9 @@ export function CloudGyms({ deleted = false }: { deleted?: boolean }) {
   const [deleting, setDeleting] = useState<AdminGym | null>(null);
   const [restoring, setRestoring] = useState<AdminGym | null>(null);
   const [deletionNote, setDeletionNote] = useState('');
+  const [messaging, setMessaging] = useState<AdminGym | null>(null);
+  const [messageBody, setMessageBody] = useState('');
+  const sendMessage = useServerFn(sendAccountMessage);
 
   async function load() {
     try { setRows(await list({})); setError(''); }
