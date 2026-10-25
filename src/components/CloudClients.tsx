@@ -10,13 +10,19 @@ import { initials } from '@/lib/mock';
 import { uploadImage } from '@/lib/images';
 import { toast } from 'sonner';
 import { useCloud } from './CloudProvider';
+import { sendAccountMessage, setClientFrozen } from '@/lib/account-messages.functions';
+import { Textarea } from './ui/textarea';
+import { MessageSquare } from 'lucide-react';
 type Client = Awaited<ReturnType<typeof listClients>>[number];
 export function CloudClients({gymId}: {gymId?: string}) {
   const cloud = useCloud();
   const fetch = useServerFn(listClients); const update = useServerFn(updateClient); const remove = useServerFn(deleteClientAccount);
   const [rows,setRows] = useState<Client[]>([]); const [error,setError] = useState(''); const [loading,setLoading] = useState(true);
   const [editing,setEditing] = useState<Client | null>(null); const [deleting,setDeleting] = useState<Client | null>(null);
+  const [messaging,setMessaging] = useState<Client | null>(null); const [messageBody,setMessageBody] = useState('');
+  const [freezing,setFreezing] = useState<Client | null>(null); const [freezeNote,setFreezeNote] = useState(''); const [freezeMessage,setFreezeMessage] = useState('');
   const [details,setDetails] = useState({name:'',email:'',phone:'',photo:''}); const [busy,setBusy] = useState(false);
+  const sendMessage = useServerFn(sendAccountMessage); const freezeClient = useServerFn(setClientFrozen);
   const input = gymId ? {gymId} : {};
   async function refresh() {setLoading(true);try {setRows(await fetch({data:input}));setError('');} catch(e){setError(e instanceof Error ? e.message : 'Could not load clients');} finally{setLoading(false);}}
   useEffect(() => {void refresh();},[gymId]);
