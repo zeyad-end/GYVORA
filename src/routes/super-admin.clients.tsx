@@ -106,6 +106,23 @@ function DemoClients() {
           </div>
         </div>
       )}
+      <Dialog open={!!messaging} onOpenChange={(v) => { if (!v) setMessaging(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>Message {messaging?.name}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Demo only: the message appears in this client's Notifications on this browser and remains after refresh.</p>
+          <label className="block text-sm">Message<Textarea className="mt-2" rows={4} maxLength={2000} value={messageBody} onChange={(e) => setMessageBody(e.target.value)} placeholder="Write your message…" /></label>
+          <DialogFooter><Button variant="outline" onClick={() => setMessaging(null)}>Cancel</Button><Button disabled={!messageBody.trim()} onClick={() => { if (!messaging) return; try { sendDemoAdminMessage(messaging.id, messageBody); toast.success('Message sent (demo).'); setMessaging(null); } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not send message'); } }}>Send message</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!freezing} onOpenChange={(v) => { if (!v) setFreezing(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>Freeze {freezing?.name}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Demo only: the client is blocked from their demo account pages on this browser until unfrozen. Account and data are retained.</p>
+          <div className="space-y-4">
+            <label className="block text-sm">Reason (optional, shown to the client)<Textarea className="mt-2" rows={3} maxLength={1000} value={freezeNote} onChange={(e) => setFreezeNote(e.target.value)} /></label>
+            <label className="block text-sm">Message to the client (optional)<Textarea className="mt-2" rows={3} maxLength={2000} value={freezeMessage} onChange={(e) => setFreezeMessage(e.target.value)} /></label>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setFreezing(null)}>Cancel</Button><Button variant="destructive" onClick={() => { if (!freezing) return; try { setDemoClientFrozen(freezing.id, true, freezeNote); if (freezeMessage.trim()) sendDemoAdminMessage(freezing.id, freezeMessage); toast.success(`${freezing.name} frozen (demo).`); setFreezing(null); } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not freeze client'); } }}>Freeze account</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
