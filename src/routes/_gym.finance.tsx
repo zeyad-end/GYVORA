@@ -28,7 +28,6 @@ import {
   reportRange,
   reportInvoices,
   groupInvoices,
-  cashSummary,
   dailySummary,
   type ReportPeriod,
 } from "@/lib/gym-updates";
@@ -52,7 +51,9 @@ const blank = (): Invoice => ({
 function Finance() {
   const gym = useStore(s => s.gym);
   const sessions = useStore(s => s.sessions);
-  const events = useStore(s => s.membershipEvents);
+  const savedEvents = useStore(s => s.membershipEvents);
+  const members = useStore(s => s.members);
+  const events = savedEvents?.filter(e => members.some(m => m.id === e.memberId));
   const localToday = gymToday(gym);
   const localNow = new Date(`${localToday}T12:00:00`);
   const records = useStore((s) => s.transactions);
@@ -294,7 +295,7 @@ function Finance() {
                 <StatCard label="Total paid expenses" value={egp(cash.expenses)} icon={TrendingDown} tone="bad" />
                 <StatCard
                   label="Net profit"
-                  value={egp(cash.net)}
+                  value={`${cash.net < 0 ? '−' : ''}${egp(cash.net)}`}
                   icon={Wallet}
                   tone={cash.net >= 0 ? "good" : "bad"}
                   delta="Income − paid expenses"
