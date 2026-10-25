@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as GymRouteImport } from './routes/_gym'
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as ClientSignInRouteImport } from './routes/client-sign-in'
+import { Route as DemoRecoveryRouteImport } from './routes/demo-recovery'
+import { Route as DemoSignupRouteImport } from './routes/demo-signup'
 import { Route as GymsRouteImport } from './routes/gyms'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
@@ -69,6 +71,16 @@ const AuthRoute = AuthRouteImport.update({
 const ClientSignInRoute = ClientSignInRouteImport.update({
   id: '/client-sign-in',
   path: '/client-sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoRecoveryRoute = DemoRecoveryRouteImport.update({
+  id: '/demo-recovery',
+  path: '/demo-recovery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DemoSignupRoute = DemoSignupRouteImport.update({
+  id: '/demo-signup',
+  path: '/demo-signup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GymsRoute = GymsRouteImport.update({
@@ -266,6 +278,8 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/client-sign-in': typeof ClientSignInRoute
+  '/demo-recovery': typeof DemoRecoveryRoute
+  '/demo-signup': typeof DemoSignupRoute
   '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -309,6 +323,8 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/client-sign-in': typeof ClientSignInRoute
+  '/demo-recovery': typeof DemoRecoveryRoute
+  '/demo-signup': typeof DemoSignupRoute
   '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -353,6 +369,8 @@ export interface FileRoutesById {
   '/_gym': typeof GymRouteWithChildren
   '/auth': typeof AuthRoute
   '/client-sign-in': typeof ClientSignInRoute
+  '/demo-recovery': typeof DemoRecoveryRoute
+  '/demo-signup': typeof DemoSignupRoute
   '/gyms': typeof GymsRoute
   '/register': typeof RegisterRoute
   '/reset-password': typeof ResetPasswordRoute
@@ -398,6 +416,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/client-sign-in'
+    | '/demo-recovery'
+    | '/demo-signup'
     | '/gyms'
     | '/register'
     | '/reset-password'
@@ -441,6 +461,8 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/client-sign-in'
+    | '/demo-recovery'
+    | '/demo-signup'
     | '/gyms'
     | '/register'
     | '/reset-password'
@@ -484,6 +506,8 @@ export interface FileRouteTypes {
     | '/_gym'
     | '/auth'
     | '/client-sign-in'
+    | '/demo-recovery'
+    | '/demo-signup'
     | '/gyms'
     | '/register'
     | '/reset-password'
@@ -529,6 +553,8 @@ export interface RootRouteChildren {
   GymRoute: typeof GymRouteWithChildren
   AuthRoute: typeof AuthRoute
   ClientSignInRoute: typeof ClientSignInRoute
+  DemoRecoveryRoute: typeof DemoRecoveryRoute
+  DemoSignupRoute: typeof DemoSignupRoute
   GymsRoute: typeof GymsRoute
   RegisterRoute: typeof RegisterRoute
   ResetPasswordRoute: typeof ResetPasswordRoute
@@ -574,6 +600,20 @@ declare module '@tanstack/react-router' {
       path: '/client-sign-in'
       fullPath: '/client-sign-in'
       preLoaderRoute: typeof ClientSignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo-recovery': {
+      id: '/demo-recovery'
+      path: '/demo-recovery'
+      fullPath: '/demo-recovery'
+      preLoaderRoute: typeof DemoRecoveryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/demo-signup': {
+      id: '/demo-signup'
+      path: '/demo-signup'
+      fullPath: '/demo-signup'
+      preLoaderRoute: typeof DemoSignupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gyms': {
@@ -914,6 +954,8 @@ const rootRouteChildren: RootRouteChildren = {
   GymRoute: GymRouteWithChildren,
   AuthRoute: AuthRoute,
   ClientSignInRoute: ClientSignInRoute,
+  DemoRecoveryRoute: DemoRecoveryRoute,
+  DemoSignupRoute: DemoSignupRoute,
   GymsRoute: GymsRoute,
   RegisterRoute: RegisterRoute,
   ResetPasswordRoute: ResetPasswordRoute,

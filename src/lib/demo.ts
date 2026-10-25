@@ -157,7 +157,7 @@ export function registerDemoAccount(
 
 export function updateDemoAccount(
   email: string,
-  patch: Partial<Pick<DemoAccount, "skipped" | "requestPending" | "deletedAt" | "trialStartedAt">>,
+  patch: Partial<Pick<DemoAccount, "skipped" | "requestPending" | "deletedAt" | "trialStartedAt" | "password">>,
 ) {
   saveAccounts(getDemoAccounts().map((a) => (a.email === email ? { ...a, ...patch } : a)));
 }

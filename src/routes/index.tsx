@@ -1,6 +1,5 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useCloud } from "@/components/CloudProvider";
-import { toast } from "sonner";
 import { useEffect, useState } from "react";
 import { Building2, User, LayoutDashboard } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -100,7 +99,7 @@ function Login() {
             </div>
             <div className="space-y-2">
               <div className="flex justify-between"><Label htmlFor="demo-password">Password</Label>
-                <Button type="button" variant="link" className="h-auto p-0 text-xs" onClick={() => toast.info("Password recovery is unavailable in demo mode. You can log in with any values or leave the fields blank.")}>Forgot Password?</Button>
+                <Link to="/demo-recovery" className="text-xs text-primary hover:underline">Forgot Password?</Link>
               </div>
               <Input id="demo-password" name="password" value={password} onChange={e => setPassword(e.target.value)} autoComplete="off" type="password" placeholder="••••••••" className="h-11 bg-card" />
             </div>
@@ -109,6 +108,11 @@ function Login() {
             <Button type="submit" disabled={busy} className="h-11 w-full">{busy?'Signing in…':'Login'}</Button>
           </form>
           <SocialSignIn />
+          <p className="mt-6 text-center text-sm text-muted-foreground">
+            New here? <Link to="/register" className="text-primary hover:underline">Create account</Link>
+            {' · '}
+            <Link to="/demo-signup" className="text-primary hover:underline">Demo phone sign up</Link>
+          </p>
           <p className="mt-6 flex items-center justify-center gap-2 text-sm font-medium text-muted-foreground">
             <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full border bg-secondary text-primary">
               <WhatsAppGlyph />
