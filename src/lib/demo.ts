@@ -828,9 +828,9 @@ export function writeDemoGym(gymId: string, state: State) {
     state = { ...state, members: state.members.map(m => {
       const old = previous.members.find(row => row.id === m.id);
       const isSubscription = !old || (m.subscriptionEventId && m.subscriptionEventId !== old.subscriptionEventId);
-      const price = isSubscription ? state.plans.find(p => p.name === m.plan)?.price ?? 0 : membershipPrice(old, previous.plans);
-      if (isSubscription) events.push({ id: m.subscriptionEventId ?? generateId(), memberId: m.id, kind: old ? 'renewed' : 'created', date: gymToday(state.gym), price });
-      return { ...m, planPrice: price };
+      const price = isSubscription ? state.plans.find(p => p.name === m.plan)?.price ?? 0 : old?.planPrice;
+      if (isSubscription) events.push({ id: m.subscriptionEventId ?? generateId(), memberId: m.id, kind: old ? 'renewed' : 'created', date: gymToday(state.gym), price: price ?? 0 });
+      return price === undefined ? m : { ...m, planPrice: price };
     }), membershipEvents: events };
     state={...state,members:state.members.map(m=>({...m,...(m.clientId?{gyvoraId:demoMemberId(m.clientId)||undefined}: {})}))};
     rememberDemoMemberships(gymId, previous.gym.name, previous.members);
