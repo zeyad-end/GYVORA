@@ -12,7 +12,10 @@ import {
   pendingDemoInvitations,
   respondDemoInvitation,
   pendingDemoAssignments,
+  demoAdminMessagesFor,
 } from "@/lib/demo";
+import { listAccountMessages } from "@/lib/account-messages.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { seo } from "@/lib/seo";
 import { toast } from "sonner";
 export const Route = createFileRoute("/member/notifications")({
@@ -44,6 +47,20 @@ function Notifications() {
   const [busy, setBusy] = useState("");
   const demo = getDemoSession();
   const rows = demo ? pendingDemoInvitations(c.profile?.email ?? "", all) : cloudRows;
+  const fetchMessages = useServerFn(listAccountMessages);
+  const demoMessages = useDemoStore((s) => s.adminMessages);
+  const [cloudMessages, setCloudMessages] = useState<{ id: string; body: string; created_at: string }[]>([]);
+  const messages = demo
+    ? (demoMessages ?? []).filter((m) => m.to === (c.profile?.id ?? ""))
+    : cloudMessages;
+  useEffect(() => {
+    if (demo || !c.profile) return;
+    let cancelled = false;
+    fetchMessages()
+      .then((data) => { if (!cancelled) setCloudMessages(data); })
+      .catch(() => { if (!cancelled) setCloudMessages([]); });
+    return () => { cancelled = true; };
+  }, [c.profile?.id, demo]);
   async function load() {
     if (demo || !c.profile) return;
     const { data, error } = await supabase.rpc('my_staff_invitations');
