@@ -7,16 +7,24 @@ import { useCloud } from './CloudProvider';
 import { Button } from './ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from './ui/dialog';
 import { selectCls } from './kit';
-import { getDemoSession } from '@/lib/demo';
+import { getDemoSession, getDemoAccount, demoAdminMessagesFor } from '@/lib/demo';
 import { localDate } from '@/lib/gym-period';
 import { demoGymNotices, changeDemoNotices } from '@/lib/gym-notifications-demo';
 import { getGymNotices, changeGymNotices } from '@/lib/gym-notifications.functions';
+import { listAccountMessages } from '@/lib/account-messages.functions';
 import { toast } from 'sonner';
 const pages = ['/members', '/attendance', '/sessions', '/finance', '/staff', '/products'] as const;
 export function GymNotifications() {
  const c = useCloud(); const get = useServerFn(getGymNotices); const change = useServerFn(changeGymNotices); const demo = !!getDemoSession();
  const [open, setOpen] = useState(false); const [category, setCategory] = useState('All'); const [busy, setBusy] = useState(false);
- const { data = [], error, isPending, refetch } = useQuery({ queryKey: ['gym-notifications', c.gymId, c.profile?.id, demo], enabled: c.role === 'Owner' && !!c.gymId, queryFn: () => demo ? Promise.resolve(demoGymNotices(c.gymId)) : get({ data: { gymId: c.gymId, day: localDate() } }), refetchInterval: 15000 });
+ const { data = [], error, isPending, refetch } = useQuery({ queryKey: ['gym-notifications', c.gymId, c.profile?.id, demo], enabled: c.role === 'Owner' && !!c.gymId, queryFn: async () => {
+   const notices = demo ? demoGymNotices(c.gymId) : await get({ data: { gymId: c.gymId, day: localDate() } });
+   const messages = demo
+     ? demoAdminMessagesFor(getDemoAccount()?.email ?? '')
+     : await listAccountMessages().catch(() => [] as { id: string; body: string; created_at: string; read_at: string | null }[]);
+   const adminNotices = messages.map(m => ({ id: `admin-${m.id}`, type: 'Admin message', description: m.body, page: '', createdAt: m.created_at, read: demo ? false : !!m.read_at, dismissed: false }));
+   return [...adminNotices, ...notices];
+ }, refetchInterval: 15000 });
  useEffect(() => { const refresh = () => { void refetch(); }; window.addEventListener('ironhaus-gym-events', refresh); return () => window.removeEventListener('ironhaus-gym-events', refresh); }, [refetch]);
  const visible = data.filter(e => !e.dismissed); const unread = visible.filter(e => !e.read).length;
  async function update(ids: string[], dismiss = false) { setBusy(true); try { if (demo) changeDemoNotices(c.gymId, ids, dismiss); else await change({ data: { gymId: c.gymId, ids, dismiss } }); await refetch(); } catch (err) { toast.error(err instanceof Error ? err.message : 'Could not update notifications'); } finally { setBusy(false); } }
