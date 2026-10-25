@@ -19,12 +19,6 @@ const AppleIcon = () => (
     <path d="M16.4 12.6c0-2.6 2.1-3.8 2.2-3.9-1.2-1.8-3.1-2-3.7-2-1.6-.2-3.1.9-3.9.9-.8 0-2-.9-3.4-.9-1.7 0-3.3 1-4.2 2.6-1.8 3.1-.5 7.7 1.3 10.2.9 1.2 1.9 2.6 3.2 2.6 1.3-.1 1.8-.8 3.3-.8s2 .8 3.4.8c1.4 0 2.3-1.3 3.1-2.5 1-1.4 1.4-2.8 1.4-2.9 0 0-2.7-1-2.7-4.1ZM13.9 4.9c.7-.9 1.2-2 1.1-3.2-1 0-2.3.7-3 1.6-.7.8-1.2 2-1.1 3.1 1.1.1 2.3-.6 3-1.5Z" />
   </svg>
 );
-const XIcon = () => (
-  <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current" aria-hidden="true">
-    <path d="M18.2 2.3h3.4l-7.4 8.4 8.7 11.5h-6.8l-5.3-7-6.1 7H1.3l7.9-9L.9 2.3h7l4.8 6.4 5.5-6.4Zm-1.2 17.9h1.9L7.1 4.2H5.1l11.9 16Z" />
-  </svg>
-);
-
 /** Optional social sign-in; only provider-confirmed sessions count as success. */
 export function SocialSignIn() {
   const [busy, setBusy] = useState("");
@@ -59,12 +53,9 @@ export function SocialSignIn() {
         <span className="relative z-10 bg-background px-2">or continue with</span>
         <span className="absolute inset-x-0 top-1/2 border-t" />
       </div>
-      <div className="grid grid-cols-3 gap-2">
+      <div className="grid grid-cols-2 gap-2">
         <Button type="button" variant="outline" className="h-11 gap-2 bg-card" disabled={!!busy} onClick={() => start("google")} aria-label="Sign in with Google"><GoogleIcon />Google</Button>
         <Button type="button" variant="outline" className="h-11 gap-2 bg-card" disabled={!!busy} onClick={() => start("apple")} aria-label="Sign in with Apple"><AppleIcon />Apple</Button>
-        <Button type="button" variant="outline" className="h-11 gap-2 bg-card" disabled={!!busy} aria-label="X sign-in unavailable"
-          title="Unavailable: the app's sign-in service does not offer X (Twitter) as a provider"
-          onClick={() => toast.info("X (Twitter) sign-in is unavailable: the app's sign-in service only offers Google, Apple and email/password. Enabling X would require the service to add X as a supported provider with an X developer app (API key and secret) and its callback address. Nothing was connected.")}><XIcon />X · Unavailable</Button>
       </div>
     </div>
   );
