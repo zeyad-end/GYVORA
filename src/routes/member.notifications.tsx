@@ -12,7 +12,10 @@ import {
   pendingDemoInvitations,
   respondDemoInvitation,
   pendingDemoAssignments,
+  demoAdminMessagesFor,
 } from "@/lib/demo";
+import { listAccountMessages } from "@/lib/account-messages.functions";
+import { useServerFn } from "@tanstack/react-start";
 import { seo } from "@/lib/seo";
 import { toast } from "sonner";
 export const Route = createFileRoute("/member/notifications")({
@@ -44,6 +47,20 @@ function Notifications() {
   const [busy, setBusy] = useState("");
   const demo = getDemoSession();
   const rows = demo ? pendingDemoInvitations(c.profile?.email ?? "", all) : cloudRows;
+  const fetchMessages = useServerFn(listAccountMessages);
+  const demoMessages = useDemoStore((s) => s.adminMessages);
+  const [cloudMessages, setCloudMessages] = useState<{ id: string; body: string; created_at: string }[]>([]);
+  const messages = demo
+    ? (demoMessages ?? []).filter((m) => m.to === (c.profile?.id ?? "")).map((m) => ({ id: m.id, body: m.body, created_at: m.createdAt }))
+    : cloudMessages;
+  useEffect(() => {
+    if (demo || !c.profile) return;
+    let cancelled = false;
+    fetchMessages()
+      .then((data) => { if (!cancelled) setCloudMessages(data); })
+      .catch(() => { if (!cancelled) setCloudMessages([]); });
+    return () => { cancelled = true; };
+  }, [c.profile?.id, demo]);
   async function load() {
     if (demo || !c.profile) return;
     const { data, error } = await supabase.rpc('my_staff_invitations');
@@ -56,6 +73,19 @@ function Notifications() {
   }, [c.profile?.id]);
   return (
     <ClientShell title="Notifications">
+      {messages.length > 0 && (
+        <section className="border-b pb-5">
+          <h2 className="text-lg font-semibold">Messages from GYVORA Administration</h2>
+          <ul className="mt-3 space-y-3">
+            {messages.map((m) => (
+              <li key={m.id} className="rounded-md border bg-card p-4">
+                <p className="whitespace-pre-wrap break-words text-sm">{m.body}</p>
+                <p className="mt-2 text-xs text-muted-foreground">{new Date(m.created_at).toLocaleString()}</p>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
       <AssignedWorkouts />
       {demo && !demoInviteDone && (
         <section className="border-b pb-5">

@@ -5,10 +5,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { toast } from 'sonner';
 import { initials } from '@/lib/mock';
-import { useDemoStore, editClient, deleteClient, removeClientGym, type DemoClient } from '@/lib/demo';
+import { useDemoStore, editClient, deleteClient, removeClientGym, sendDemoAdminMessage, setDemoClientFrozen, getDemoAccounts, demoUserId, demoClientDirectory, type DemoClient } from '@/lib/demo';
 import { CloudClients } from '@/components/CloudClients';
 import { getDemoSession } from '@/lib/demo';
 import { seo } from '@/lib/seo';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
+import { MessageSquare } from 'lucide-react';
 
 export const Route = createFileRoute('/super-admin/clients')({
   head: () => seo('Clients', 'Review and manage saved GYVORA client profiles and account access.'),
@@ -19,10 +22,23 @@ function Clients() {
   return getDemoSession() ? <DemoClients /> : <CloudClients />;
 }
 function DemoClients() {
-  const clients = useDemoStore((s) => s.clients);
+  const seeded = useDemoStore((s) => s.clients);
+  const registered: DemoClient[] = [
+    ...getDemoAccounts()
+      .filter((a) => a.type === 'individual')
+      .map((a) => ({ id: demoUserId(a.email), name: a.name || a.email, phone: a.phone || '', photo: '', gyms: [] })),
+    ...demoClientDirectory().map((d) => ({ id: d.id, name: d.name, phone: d.phone, photo: '', gyms: [] })),
+  ];
+  const clients = [...seeded, ...registered.filter((r) => !seeded.some((c) => c.id === r.id))];
   const [editing, setEditing] = useState<DemoClient | null>(null);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const freezeMap = useDemoStore((s) => s.clientFreeze) ?? {};
+  const [messaging, setMessaging] = useState<DemoClient | null>(null);
+  const [messageBody, setMessageBody] = useState('');
+  const [freezing, setFreezing] = useState<DemoClient | null>(null);
+  const [freezeNote, setFreezeNote] = useState('');
+  const [freezeMessage, setFreezeMessage] = useState('');
 
   function openEdit(c: DemoClient) {
     setEditing(c);
@@ -44,7 +60,7 @@ function DemoClients() {
   return (
     <div>
       <PageHeader title="Clients" subtitle={`Total client accounts: ${clients.length} · fictional demo data.`} />
-      <DataTable head={['Client', 'Phone', 'Gyms', 'Actions']}>
+      <DataTable head={['Client', 'Phone', 'Gyms', 'Status', 'Actions']}>
         {clients.map((c) => (
           <tr key={c.id}>
             <td className={td}>
@@ -66,9 +82,14 @@ function DemoClients() {
                 {!c.gyms.length && <span className="text-xs text-muted-foreground">No gyms</span>}
               </div>
             </td>
+            <td className={td}><span className={freezeMap[c.id] ? 'text-destructive' : 'text-success'}>{freezeMap[c.id] ? 'Frozen' : 'Active'}</span></td>
             <td className={td}>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
+                <Button size="icon" variant="ghost" aria-label={`Message ${c.name}`} title="Send message" onClick={() => { setMessaging(c); setMessageBody(''); }}><MessageSquare className="h-4 w-4" /></Button>
                 <Button size="sm" variant="outline" onClick={() => openEdit(c)}>Edit</Button>
+                {freezeMap[c.id]
+                  ? <Button size="sm" variant="secondary" onClick={() => { if (window.confirm(`Unfreeze ${c.name}? They regain access to their demo account.`)) { setDemoClientFrozen(c.id, false, ''); toast.success(`${c.name} unfrozen (demo).`); } }}>Unfreeze</Button>
+                  : <Button size="sm" variant="secondary" onClick={() => { setFreezing(c); setFreezeNote(''); setFreezeMessage(''); }}>Freeze</Button>}
                 <Button size="sm" variant="destructive" onClick={() => { if (window.confirm(`Delete ${c.name} entirely? This removes all their demo gym memberships.`)) { deleteClient(c.id); toast.success(`${c.name} deleted (demo).`); } }}>Delete</Button>
               </div>
             </td>
@@ -92,6 +113,23 @@ function DemoClients() {
           </div>
         </div>
       )}
+      <Dialog open={!!messaging} onOpenChange={(v) => { if (!v) setMessaging(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>Message {messaging?.name}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Demo only: the message appears in this client's Notifications on this browser and remains after refresh.</p>
+          <label className="block text-sm">Message<Textarea className="mt-2" rows={4} maxLength={2000} value={messageBody} onChange={(e) => setMessageBody(e.target.value)} placeholder="Write your message…" /></label>
+          <DialogFooter><Button variant="outline" onClick={() => setMessaging(null)}>Cancel</Button><Button disabled={!messageBody.trim()} onClick={() => { if (!messaging) return; try { sendDemoAdminMessage(messaging.id, messageBody); toast.success('Message sent (demo).'); setMessaging(null); } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not send message'); } }}>Send message</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!freezing} onOpenChange={(v) => { if (!v) setFreezing(null); }}>
+        <DialogContent><DialogHeader><DialogTitle>Freeze {freezing?.name}</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">Demo only: the client is blocked from their demo account pages on this browser until unfrozen. Account and data are retained.</p>
+          <div className="space-y-4">
+            <label className="block text-sm">Reason (optional, shown to the client)<Textarea className="mt-2" rows={3} maxLength={1000} value={freezeNote} onChange={(e) => setFreezeNote(e.target.value)} /></label>
+            <label className="block text-sm">Message to the client (optional)<Textarea className="mt-2" rows={3} maxLength={2000} value={freezeMessage} onChange={(e) => setFreezeMessage(e.target.value)} /></label>
+          </div>
+          <DialogFooter><Button variant="outline" onClick={() => setFreezing(null)}>Cancel</Button><Button variant="destructive" onClick={() => { if (!freezing) return; try { setDemoClientFrozen(freezing.id, true, freezeNote); if (freezeMessage.trim()) sendDemoAdminMessage(freezing.id, freezeMessage); toast.success(`${freezing.name} frozen (demo).`); setFreezing(null); } catch (e) { toast.error(e instanceof Error ? e.message : 'Could not freeze client'); } }}>Freeze account</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

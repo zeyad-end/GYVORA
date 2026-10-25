@@ -6,6 +6,8 @@ import { DataTable, PageHeader, td } from './kit';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from './ui/dialog';
 import { Textarea } from './ui/textarea';
 import { toast } from 'sonner';
+import { sendAccountMessage } from '@/lib/account-messages.functions';
+import { MessageSquare } from 'lucide-react';
 
 type AdminGym = Awaited<ReturnType<typeof listAdminGyms>>[number];
 
@@ -21,6 +23,9 @@ export function CloudGyms({ deleted = false }: { deleted?: boolean }) {
   const [deleting, setDeleting] = useState<AdminGym | null>(null);
   const [restoring, setRestoring] = useState<AdminGym | null>(null);
   const [deletionNote, setDeletionNote] = useState('');
+  const [messaging, setMessaging] = useState<AdminGym | null>(null);
+  const [messageBody, setMessageBody] = useState('');
+  const sendMessage = useServerFn(sendAccountMessage);
 
   async function load() {
     try { setRows(await list({})); setError(''); }
@@ -82,7 +87,9 @@ export function CloudGyms({ deleted = false }: { deleted?: boolean }) {
               <td className={td}>{g.plan || '—'}</td>
               <td className={td}><span className={g.frozen ? 'text-destructive' : 'text-success'}>{g.frozen ? 'Frozen' : 'Active'}</span></td>
               <td className={td}>{g.frozen && g.freezeNote ? g.freezeNote : '—'}</td>
-              <td className={td}><div className="flex flex-wrap gap-2">{g.frozen
+              <td className={td}><div className="flex flex-wrap gap-2">
+                <Button size="icon" variant="ghost" aria-label={`Message ${g.name} owner`} title="Message gym owner" disabled={busy} onClick={()=>{setMessaging(g);setMessageBody('');}}><MessageSquare className="h-4 w-4"/></Button>
+                {g.frozen
                 ? <Button size="sm" variant="secondary" disabled={busy} onClick={()=>void unfreeze(g)}>Unfreeze</Button>
                 : <Button size="sm" variant="secondary" disabled={busy} onClick={()=>{setFreezing(g);setNote('');}}>Freeze</Button>}
                 <Button size="sm" variant="destructive" disabled={busy} onClick={()=>{setDeleting(g);setDeletionNote('');}}>Delete</Button>
@@ -97,6 +104,13 @@ export function CloudGyms({ deleted = false }: { deleted?: boolean }) {
         <DialogContent><DialogHeader><DialogTitle>{deleting ? 'Delete' : 'Restore'} {(deleting ?? restoring)?.name}</DialogTitle></DialogHeader>
           {deleting ? <><p className="text-sm text-muted-foreground">The gym will be suspended until restored. The owner can still sign in; all memberships and gym data are retained.</p><label className="text-sm">Notes / Reason<Textarea className="mt-2" rows={4} maxLength={1000} value={deletionNote} onChange={e=>setDeletionNote(e.target.value)}/></label></> : <><p className="text-sm text-muted-foreground">Restore this gym to Approved Gyms? Its previous deletion reason and history will be retained. Any separate Freeze restriction remains.</p><p className="whitespace-pre-wrap break-words text-sm">{restoring?.deletionNote || 'No deletion note recorded.'}</p></>}
           <DialogFooter><Button variant="outline" disabled={busy} onClick={()=>{setDeleting(null);setRestoring(null);}}>Cancel</Button><Button variant={deleting ? 'destructive' : 'default'} disabled={busy} onClick={()=>void confirmDeletion()}>{busy ? 'Saving…' : deleting ? 'Confirm delete' : 'Restore to Approved'}</Button></DialogFooter>
+        </DialogContent>
+      </Dialog>
+      <Dialog open={!!messaging} onOpenChange={(open)=>{if(!busy&&!open)setMessaging(null);}}>
+        <DialogContent><DialogHeader><DialogTitle>Message {messaging?.name} owner</DialogTitle></DialogHeader>
+          <p className="text-sm text-muted-foreground">This in-app message will appear in the gym owner's Notifications and remain after refresh.</p>
+          <label className="block text-sm">Message<Textarea className="mt-2" rows={4} maxLength={2000} value={messageBody} onChange={(e)=>setMessageBody(e.target.value)} placeholder="Write your message…"/></label>
+          <DialogFooter><Button variant="outline" disabled={busy} onClick={()=>setMessaging(null)}>Cancel</Button><Button disabled={busy||!messageBody.trim()} onClick={async()=>{if(!messaging)return;setBusy(true);setError('');try{await sendMessage({data:{target:messaging.ownerId,body:messageBody}});toast.success(`Message sent to ${messaging.name}'s owner.`);setMessaging(null);}catch(e){setError(e instanceof Error?e.message:'Could not send the message.');}finally{setBusy(false);}}}>{busy?'Sending…':'Send message'}</Button></DialogFooter>
         </DialogContent>
       </Dialog>
       <Dialog open={!!freezing} onOpenChange={(open) => { if (!open) setFreezing(null); }}>
