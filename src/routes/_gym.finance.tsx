@@ -55,31 +55,31 @@ function Finance() {
   const events = useStore(s => s.membershipEvents);
   const localToday = gymToday(gym);
   const localNow = new Date(`${localToday}T12:00:00`);
-  const reports = revenueReports(sessions, events ?? [], useStore(s => s.transactions), localToday);
+  const records = useStore((s) => s.transactions);
+  const reports = revenueReports(sessions, events ?? [], records, localToday);
   const revenueSeries = Array.from({ length: Number(localToday.slice(5, 7)) }, (_, i) => {
     const month = `${localToday.slice(0, 4)}-${String(i + 1).padStart(2, '0')}`;
-    return { month, ...recordedTotals(sessions, events ?? [], recordsForChart, { from: `${month}-01`, to: month === localToday.slice(0, 7) ? localToday : `${month}-31` }) };
+    return { month, ...recordedTotals(sessions, events ?? [], records, { from: `${month}-01`, to: month === localToday.slice(0, 7) ? localToday : `${month}-31` }) };
   });
-  const records = useStore((s) => s.transactions);
   const tx = records.filter((r) => !r.deleted);
-  const [draft, setDraft] = useState(blank);
+  const [draft, setDraft] = useState(() => ({ ...blank(), date: localToday }));
   const [selected, setSelected] = useState<Invoice | null>(null);
   const [mode, setMode] = useState<"view" | "edit">("view");
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [period, setPeriod] = useState<ReportPeriod>("month");
-  const [from, setFrom] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [from, setFrom] = useState(localToday);
   const [to, setTo] = useState(from);
   const [group, setGroup] = useState<"daily" | "weekly" | "monthly" | "yearly">("daily");
   const [cashPeriod, setCashPeriod] = useState<ReportPeriod>("month");
-  const [cashFrom, setCashFrom] = useState(format(new Date(), "yyyy-MM-dd"));
+  const [cashFrom, setCashFrom] = useState(localToday);
   const [cashTo, setCashTo] = useState(cashFrom);
-  const [day, setDay] = useState(format(new Date(), "yyyy-MM-dd"));
-  const cashRange = reportRange(cashPeriod, new Date(), { from: cashFrom, to: cashTo });
+  const [day, setDay] = useState(localToday);
+  const cashRange = reportRange(cashPeriod, localNow, { from: cashFrom, to: cashTo });
   const cashInvalid = cashRange.from > cashRange.to;
-  const cash = cashInvalid ? { income: 0, expenses: 0, net: 0 } : cashSummary(records, cashRange);
+  const cash = cashInvalid ? { income: 0, expenses: 0, net: 0 } : recordedTotals(sessions, events ?? [], records, cashRange);
   const today = dailySummary(records, day);
-  const range = reportRange(period, new Date(), { from, to });
+  const range = reportRange(period, localNow, { from, to });
   const invalid = range.from > range.to;
   const matches = invalid ? [] : reportInvoices(records, range);
   const groups = groupInvoices(matches, group);
@@ -186,7 +186,7 @@ function Finance() {
                 try {
                   await saveState((s) => ({ transactions: createInvoice(s.transactions, draft) }));
                   toast.success("Expense saved");
-                  setDraft(blank());
+                  setDraft({ ...blank(), date: localToday });
                 } catch (error) {
                   failure(error);
                 } finally {
@@ -287,8 +287,7 @@ function Finance() {
           ) : (
             <>
               <p className="mb-4 text-sm text-muted-foreground">
-                {cashRange.from} – {cashRange.to} · Recorded invoices only; unpaid recurring
-                expenses are not subtracted.
+                {cashRange.from} – {cashRange.to} · Recorded sessions and subscriptions; only paid expenses are subtracted.
               </p>
               <div className="grid gap-4 sm:grid-cols-3">
                 <StatCard label="Total recorded income" value={egp(cash.income)} icon={TrendingUp} tone="good" />
@@ -413,12 +412,12 @@ function Finance() {
             )}
           </section>
           <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
-            <StatCard label="Daily revenue" value={egp(18420)} icon={TrendingUp} />
-            <StatCard label="Monthly revenue" value={egp(212000)} icon={TrendingUp} />
-            <StatCard label="Yearly revenue" value={egp(1730000)} icon={TrendingUp} />
+            <StatCard label="Daily revenue" value={egp(reports.daily.income)} icon={TrendingUp} />
+            <StatCard label="Monthly revenue" value={egp(reports.monthly.income)} icon={TrendingUp} />
+            <StatCard label="Yearly revenue" value={egp(reports.yearly.income)} icon={TrendingUp} />
             <StatCard
               label="Net profit (YTD)"
-              value={egp(812000)}
+              value={`${reports.yearly.net < 0 ? "−" : ""}${egp(reports.yearly.net)}`}
               icon={Wallet}
               tone="good"
               delta="Expenses deducted"
